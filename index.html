@@ -125,7 +125,7 @@
 @media(max-width:560px){#ih-app .ih-intro{grid-template-columns:1fr;gap:6px;padding:30px 0 12px;min-height:0}#ih-app .ih-intro h1{font-size:37px;margin-bottom:17px}#ih-app .ih-intro .ih-hero-copy>p{font-size:12px;max-width:330px}#ih-app .ih-description{min-height:61px}}
 /* The hero's light spans the whole window, separating headline and copy. */
 #ih-app{container-type:inline-size}
-#ih-app .ih-intro{position:relative;isolation:isolate;display:block;width:100cqw;margin-inline:calc((100% - 100cqw)/2);padding:44px 0;min-height:340px;overflow:hidden}
+#ih-app .ih-intro{position:relative;isolation:isolate;display:block;width:100cqw;margin-inline:calc((100% - 100cqw)/2);padding:44px 0 28px;min-height:328px;overflow:hidden}
 #ih-app .ih-hero-copy{position:relative;z-index:1;width:90%;max-width:1230px;margin-inline:auto;pointer-events:none}
 #ih-app .ih-intro h1{max-width:68%;margin:0 0 58px}
 #ih-app .ih-hero-subcopy{max-width:67%;display:flex;flex-direction:column;gap:5px}
@@ -133,8 +133,8 @@
 #ih-app .ih-hero-subcopy p:first-child{color:#48483f}
 #ih-app .ih-hero-optics{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:0}
 @media(min-width:1250px){#ih-app .ih-hero-copy{width:calc(100% - 80px)}}
-@media(max-width:850px){#ih-app .ih-intro{display:block;padding:36px 0;min-height:300px}#ih-app .ih-hero-copy{width:92%}#ih-app .ih-intro h1{font-size:35px;max-width:69%;margin-bottom:58px}#ih-app .ih-hero-subcopy{max-width:67%}#ih-app .ih-hero-subcopy p{font-size:11px}}
-@media(max-width:560px){#ih-app .ih-intro{display:block;padding:30px 0;min-height:0}#ih-app .ih-hero-copy{width:90%}#ih-app .ih-intro h1{font-size:36px;max-width:100%;margin-bottom:184px}#ih-app .ih-hero-subcopy{max-width:100%;gap:7px}#ih-app .ih-hero-subcopy p{font-size:12px}}
+@media(max-width:850px){#ih-app .ih-intro{display:block;padding:36px 0 24px;min-height:288px}#ih-app .ih-hero-copy{width:92%}#ih-app .ih-intro h1{font-size:35px;max-width:69%;margin-bottom:58px}#ih-app .ih-hero-subcopy{max-width:67%}#ih-app .ih-hero-subcopy p{font-size:11px}}
+@media(max-width:560px){#ih-app .ih-intro{display:block;padding:30px 0 18px;min-height:0}#ih-app .ih-hero-copy{width:90%}#ih-app .ih-intro h1{font-size:36px;max-width:100%;margin-bottom:184px}#ih-app .ih-hero-subcopy{max-width:100%;gap:7px}#ih-app .ih-hero-subcopy p{font-size:12px}}
 </style>
 <script>
 (()=>{
@@ -222,12 +222,14 @@
   function draw(progress=1){
    if(w<=0||h<=0)return;
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-   const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(280,w*.225,h*.79);
-   const cx=w*(mobile?.65:.76),hw=size*.44,cy=rayY;
+   const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96);
+   const cx=w*(mobile?.63:.735),hw=size*.44,cy=rayY-(mobile?0:size*.045);
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=p=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
-   const entry=[cx-size*(imageLoaded?.298:.2464),rayY],exitY=rayY+size*.025,exit=[imageLoaded?cx+size*.409:cx+hw*((exitY-A[1])/size),exitY];
+   const entry=[imageLoaded?cx-size*.5073*((rayY-A[1])/(size*.9519)):cx-hw*((rayY-A[1])/size),rayY],exitY=rayY+size*.025;
+   const sideRatio=(exitY-photoY-photoSize*.076)/(photoSize*.784);
+   const exit=[imageLoaded?photoX+photoSize*(.555+.415*sideRatio):cx+hw*((exitY-A[1])/size),exitY];
    const reach=w-exit[0],spread=Math.min(h*.23,reach*.42),pulse=Math.sin(Math.PI*progress);
    // Ground caustic and a soft contact shadow give the glass volume.
    ctx.save();ctx.filter='blur(12px)';ctx.fillStyle='#31374613';ctx.beginPath();ctx.ellipse(cx+depth[0]*.5,C[1]+size*.03,hw*1.02,size*.04,0,0,Math.PI*2);ctx.fill();ctx.restore();
