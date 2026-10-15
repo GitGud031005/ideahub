@@ -223,7 +223,7 @@
    if(w<=0||h<=0)return;
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
    const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96);
-   const cx=w*(mobile?.60:.70),hw=size*.44,cy=rayY-(mobile?0:size*.045);
+   const cx=w*(mobile?.60:.70),hw=size*.44,cy=rayY+size*.08405;
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=p=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
