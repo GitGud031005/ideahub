@@ -8,8 +8,8 @@
   </header>
   <main class="ih-main">
     <section class="ih-intro" aria-label="Nơi những ý tưởng lớn gặp nhau">
-      <div class="ih-hero-copy"><h1>Nơi những ý tưởng lớn<br><em>gặp nhau.</em></h1><p>Chia sẻ điều bạn ấp ủ.<br>Gặp người cùng chí hướng và bắt tay biến ý tưởng thành hiện thực.</p></div>
-      <div class="ih-hero-art" aria-hidden="true"><div class="ih-prism-scene"><span class="ih-prism-shadow"></span><span class="ih-prism-side"></span><span class="ih-prism-outline"></span><span class="ih-prism-glass"></span><span class="ih-prism-facet"></span><span class="ih-prism-ray"></span><span class="ih-prism-inner-ray"></span><span class="ih-spectrum ih-spectrum-red"></span><span class="ih-spectrum ih-spectrum-orange"></span><span class="ih-spectrum ih-spectrum-yellow"></span><span class="ih-spectrum ih-spectrum-green"></span><span class="ih-spectrum ih-spectrum-blue"></span><span class="ih-spectrum ih-spectrum-indigo"></span><span class="ih-spectrum ih-spectrum-violet"></span><span class="ih-prism-glint"></span></div></div>
+      <canvas class="ih-hero-optics" id="ih-hero-optics" aria-hidden="true"></canvas>
+      <div class="ih-hero-copy"><h1>Nơi những ý tưởng lớn<br><em>gặp nhau.</em></h1><div class="ih-hero-subcopy"><p>Từng tia ý tưởng lóe lên, hội tụ thành những điều lớn lao.</p><p>Cùng nhau biến những ý tưởng của chúng ta thành hiện thực.</p></div></div>
     </section>
     <section aria-label="Các ý tưởng">
       <div class="ih-toolbar"><div class="ih-tabs" role="group" aria-label="Lọc ý tưởng"><button class="ih-tab ih-active" data-view="all" aria-pressed="true">Tất cả ý tưởng <span id="ih-all-count">6</span></button><button class="ih-tab" data-view="joined" aria-pressed="false">Đã tham gia <span id="ih-joined-count">2</span></button><button class="ih-tab" data-view="mine" aria-pressed="false">Của bạn <span id="ih-mine-count">1</span></button></div><label class="ih-sort-label"><span>Sắp xếp</span><select id="ih-sort" aria-label="Sắp xếp ý tưởng"><option value="new">Mới nhất</option><option value="popular">Nhiều người tham gia</option></select></label></div>
@@ -47,7 +47,7 @@
 #ih-app .ih-join:hover::before,#ih-app .ih-join:focus-visible::before{transform:translateX(0)}
 
 
-@media(max-width:560px){#ih-app .ih-intro p{font-size:12px}#ih-app .ih-idea{min-height:285px}#ih-app .ih-description{min-height:0}#ih-app .ih-tag,}
+@media(max-width:560px){#ih-app .ih-intro p{font-size:12px}#ih-app .ih-idea{min-height:285px}#ih-app .ih-description{min-height:0}}
 @media(prefers-reduced-motion:reduce){#ih-app .ih-join::before{transition:none}}
 /* Editorial hero */
 #ih-app{min-height:0}
@@ -57,7 +57,7 @@
 #ih-app .ih-intro h1 em{font-family:Georgia,"Times New Roman",serif;font-size:1.12em;font-weight:400;line-height:1;font-style:italic;letter-spacing:-2.6px}
 
 #ih-app .ih-intro .ih-hero-copy>p{font-size:12px;line-height:1.85;color:#74746e}
-#ih-app .ih-hero-art{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:0 5px 0 0}
+
 
 
 
@@ -94,35 +94,47 @@
 #ih-app .ih-footer-logo{font-size:24px;letter-spacing:-1.2px;color:#fff;font-weight:700}
 
 @media(max-width:850px){#ih-app .ih-intro{grid-template-columns:minmax(0,1fr) 170px;gap:22px;padding:37px 0 32px;min-height:260px}#ih-app .ih-intro h1{font-size:38px;letter-spacing:-1.7px}}
-@media(max-width:560px){#ih-app .ih-intro{grid-template-columns:1fr;padding:32px 0 28px;min-height:0}#ih-app .ih-intro h1{font-size:37px;letter-spacing:-1.7px;margin-bottom:18px}#ih-app .ih-intro h1 em{letter-spacing:-1.7px}#ih-app .ih-hero-art{display:none}#ih-app .ih-intro .ih-hero-copy>p{font-size:11px}#ih-app .ih-grid{gap:13px}#ih-app .ih-idea{min-height:222px;padding-top:18px}#ih-app .ih-idea-heading h2{font-size:17px}#ih-app .ih-tag{font-size:11px}#ih-app .ih-description{font-size:12px}#ih-app .ih-footer{margin-top:28px;padding:24px 5%}#ih-app .ih-footer-inner{align-items:center;gap:14px}}
+@media(max-width:560px){#ih-app .ih-intro{grid-template-columns:1fr;padding:32px 0 28px;min-height:0}#ih-app .ih-intro h1{font-size:37px;letter-spacing:-1.7px;margin-bottom:18px}#ih-app .ih-intro h1 em{letter-spacing:-1.7px}#ih-app .ih-intro .ih-hero-copy>p{font-size:11px}#ih-app .ih-grid{gap:13px}#ih-app .ih-idea{min-height:222px;padding-top:18px}#ih-app .ih-idea-heading h2{font-size:17px}#ih-app .ih-tag{font-size:11px}#ih-app .ih-description{font-size:12px}#ih-app .ih-footer{margin-top:28px;padding:24px 5%}#ih-app .ih-footer-inner{align-items:center;gap:14px}}
 /* A single idea opens into a spectrum of possibilities. */
 #ih-app .ih-intro{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:26px;padding:38px 0 34px;min-height:290px}
-#ih-app .ih-hero-art{display:block;min-width:0;width:100%;padding:0}
-#ih-app .ih-prism-scene{width:100%;aspect-ratio:1.65;position:relative;isolation:isolate;overflow:hidden}
-#ih-app .ih-prism-scene>span{position:absolute;display:block;inset:0;pointer-events:none}
-#ih-app .ih-prism-shadow{background:radial-gradient(ellipse at 49% 85%,#20202013 0,transparent 31%)}
-#ih-app .ih-prism-side{clip-path:polygon(46% 15%,51% 8%,70% 75%,65% 82%);background:linear-gradient(112deg,#ededed 36%,#bfc1c3 65%,#e4e5e6 80%);z-index:1}
-#ih-app .ih-prism-outline{clip-path:polygon(46% 15%,65% 82%,27% 82%);background:linear-gradient(130deg,#353739,#87898b 55%,#56585a);z-index:2}
-#ih-app .ih-prism-glass{clip-path:polygon(46% 15.8%,64.55% 81.5%,27.65% 81.5%);background:linear-gradient(115deg,#f7f8f8dd 25%,#e3e5e7ee 55%,#fafaf9 79%);z-index:3}
-#ih-app .ih-prism-facet{clip-path:polygon(46% 15.8%,46% 81.5%,27.65% 81.5%);background:linear-gradient(135deg,#ffffff00 35%,#ffffffc9 66%,#dedfe366);z-index:3}
-#ih-app .ih-prism-scene>.ih-prism-ray{inset:auto;left:0;top:52%;width:35.6%;height:2px;background:#202020;transform:translateY(-50%);z-index:2}
-#ih-app .ih-prism-scene>.ih-prism-inner-ray{inset:auto;left:35.6%;top:52%;width:20.9%;height:1px;background:linear-gradient(90deg,#40404080,#80808024);transform:translateY(-50%);z-index:4}
-#ih-app .ih-spectrum{z-index:4;opacity:.81}
-#ih-app .ih-spectrum-red{clip-path:polygon(56.5% 51.8%,100% 23%,100% 30%,56.5% 52.2%);background:#df756c}
-#ih-app .ih-spectrum-orange{clip-path:polygon(56.5% 51.8%,100% 30%,100% 37%,56.5% 52.2%);background:#e5a16a}
-#ih-app .ih-spectrum-yellow{clip-path:polygon(56.5% 51.8%,100% 37%,100% 44%,56.5% 52.2%);background:#e6c56e}
-#ih-app .ih-spectrum-green{clip-path:polygon(56.5% 51.8%,100% 44%,100% 51%,56.5% 52.2%);background:#90b596}
-#ih-app .ih-spectrum-blue{clip-path:polygon(56.5% 51.8%,100% 51%,100% 58%,56.5% 52.2%);background:#80a9c6}
-#ih-app .ih-spectrum-indigo{clip-path:polygon(56.5% 51.8%,100% 58%,100% 65%,56.5% 52.2%);background:#8d96be}
-#ih-app .ih-spectrum-violet{clip-path:polygon(56.5% 51.8%,100% 65%,100% 72%,56.5% 52.2%);background:#af96bc}
-#ih-app .ih-prism-scene>.ih-prism-glint{inset:auto;left:56.5%;top:52%;width:5px;height:5px;border-radius:50%;background:#ffffffe6;box-shadow:0 0 9px 3px #ffffffa6;transform:translate(-50%,-50%);z-index:5}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #ih-app .ih-idea{transition:border-color .2s,box-shadow .2s}
 #ih-app .ih-idea:hover{transform:none}
 #ih-app .ih-description{min-height:61px;-webkit-line-clamp:3}
 #ih-app .ih-state:not(.ih-state-joined){border:1.5px dashed #aaa99e;background:transparent}
 #ih-app .ih-footer-inner{justify-content:flex-start}
 @media(max-width:850px){#ih-app .ih-intro{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;min-height:260px;padding:32px 0}#ih-app .ih-intro h1{font-size:35px;letter-spacing:-1.6px}#ih-app .ih-intro .ih-hero-copy>p{font-size:11px}}
-@media(max-width:560px){#ih-app .ih-intro{grid-template-columns:1fr;gap:6px;padding:30px 0 12px;min-height:0}#ih-app .ih-intro h1{font-size:37px;margin-bottom:17px}#ih-app .ih-intro .ih-hero-copy>p{font-size:12px;max-width:330px}#ih-app .ih-hero-art{display:block;width:100%;max-width:450px;justify-self:center}#ih-app .ih-prism-scene{aspect-ratio:2.15}#ih-app .ih-description{min-height:61px}}
+@media(max-width:560px){#ih-app .ih-intro{grid-template-columns:1fr;gap:6px;padding:30px 0 12px;min-height:0}#ih-app .ih-intro h1{font-size:37px;margin-bottom:17px}#ih-app .ih-intro .ih-hero-copy>p{font-size:12px;max-width:330px}#ih-app .ih-description{min-height:61px}}
+/* The hero's light spans the whole window, separating headline and copy. */
+#ih-app{container-type:inline-size}
+#ih-app .ih-intro{position:relative;isolation:isolate;display:block;width:100cqw;margin-inline:calc((100% - 100cqw)/2);padding:44px 0;min-height:340px;overflow:hidden}
+#ih-app .ih-hero-copy{position:relative;z-index:1;width:90%;max-width:1230px;margin-inline:auto;pointer-events:none}
+#ih-app .ih-intro h1{max-width:68%;margin:0 0 58px}
+#ih-app .ih-hero-subcopy{max-width:67%;display:flex;flex-direction:column;gap:5px}
+#ih-app .ih-hero-subcopy p{font-size:12px;line-height:1.8;color:#77776e;overflow-wrap:break-word}
+#ih-app .ih-hero-subcopy p:first-child{color:#48483f}
+#ih-app .ih-hero-optics{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:0}
+@media(min-width:1250px){#ih-app .ih-hero-copy{width:calc(100% - 80px)}}
+@media(max-width:850px){#ih-app .ih-intro{display:block;padding:36px 0;min-height:300px}#ih-app .ih-hero-copy{width:92%}#ih-app .ih-intro h1{font-size:35px;max-width:69%;margin-bottom:58px}#ih-app .ih-hero-subcopy{max-width:67%}#ih-app .ih-hero-subcopy p{font-size:11px}}
+@media(max-width:560px){#ih-app .ih-intro{display:block;padding:30px 0;min-height:0}#ih-app .ih-hero-copy{width:90%}#ih-app .ih-intro h1{font-size:36px;max-width:100%;margin-bottom:184px}#ih-app .ih-hero-subcopy{max-width:100%;gap:7px}#ih-app .ih-hero-subcopy p{font-size:12px}}
 </style>
 <script>
 (()=>{
@@ -194,7 +206,74 @@
  $('#ih-message-form').addEventListener('submit',e=>{e.preventDefault();const text=$('#ih-message').value.trim();if(!text||!activeId)return;if(!Array.isArray(messages[activeId]))messages[activeId]=[];messages[activeId].push({name:'Bạn',initial:'B',text,time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),own:true});save();$('#ih-message').value='';$('#ih-send').disabled=true;renderMessages();$('#ih-message').focus();});
  $('#ih-message').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!$('#ih-send').disabled)$('#ih-message-form').requestSubmit();}});
  root.addEventListener('keydown',e=>{const layer=!$('#ih-new-layer').hidden?$('#ih-new-layer'):!$('#ih-chat-layer').hidden?$('#ih-chat-layer'):null;if(e.key==='Escape'&&layer){closeLayer(layer.id==='ih-new-layer'?'new':'chat');return;}if(e.key==='/'&&!layer&&!['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)){e.preventDefault();$('#ih-search').focus();}if(e.key==='Tab'&&layer){const focusable=[...layer.querySelectorAll('button:not(:disabled),input,textarea,select')];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+ function setupHeroOptics(){
+  const canvas=$('#ih-hero-optics');
+  if(!canvas?.getContext)return;
+  const ctx=canvas.getContext('2d');if(!ctx)return;
+  const hero=$('.ih-intro'),heading=$('.ih-hero-copy h1'),subcopy=$('.ih-hero-subcopy');
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  let w=0,h=0,rayY=0,dpr=1,frame=0,started=0,light=.45;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  function polygon(points){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();}
+  function line(points,style,width=1){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=style;ctx.lineWidth=width;ctx.stroke();}
+  function gradient(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);stops.forEach(s=>g.addColorStop(s[0],s[1]));return g;}
+  function draw(progress=1){
+   if(w<=0||h<=0)return;
+   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+   const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(280,w*.225,h*.79);
+   const cx=w*(mobile?.65:.76),hw=size*.44,cy=rayY;
+   const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
+   const depth=[size*.11,-size*.075],add=p=>[p[0]+depth[0],p[1]+depth[1]];
+   const entry=[cx-hw*.56,rayY],exitY=rayY+size*.025,exit=[cx+hw*((exitY-A[1])/size),exitY];
+   const reach=w-exit[0],spread=Math.min(h*.23,reach*.42),pulse=Math.sin(Math.PI*progress);
+   // Ground caustic and a soft contact shadow give the glass volume.
+   ctx.save();ctx.filter='blur(12px)';ctx.fillStyle='#31374613';ctx.beginPath();ctx.ellipse(cx+depth[0]*.5,C[1]+size*.03,hw*1.02,size*.04,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   // A continuous black incident ray, from the literal left edge.
+   line([[0,rayY],entry],'#22221f',1.25);
+   if(progress<1){const x=entry[0]*progress;line([[Math.max(0,x-45),rayY],[x,rayY]],gradient(Math.max(0,x-45),0,x+.1,0,[[0,'#22222200'],[1,'#080808']]),2);}
+   // Dispersion keeps its color all the way to the literal right edge.
+   const colors=[[227,108,114],[235,163,96],[224,196,101],[126,177,146],[115,168,199],[136,141,192],[178,144,190]];
+   colors.forEach((rgb,i)=>{
+    const top=exitY-spread+(spread*2)*i/7,bottom=exitY-spread+(spread*2)*(i+1)/7;
+    ctx.save();polygon([[exit[0]-.5,exitY-.6],[w+1,top],[w+1,bottom],[exit[0]-.5,exitY+.6]]);
+    ctx.fillStyle=gradient(exit[0],exitY,w,exitY,[[0,`rgba(${rgb},.92)`],[.2,`rgba(${rgb},.78)`],[1,`rgba(${rgb},.64)`]]);
+    ctx.shadowColor=`rgba(${rgb},${.16+pulse*.1})`;ctx.shadowBlur=12+pulse*7;ctx.fill();ctx.restore();
+   });
+   // Three glass faces: translucent body, polished bevel, and rear edge.
+   polygon([A,add(A),add(C),C]);ctx.fillStyle=gradient(A[0],A[1],add(C)[0],C[1],[[0,'#ffffffbd'],[.42,'#9aa6b338'],[.63,'#ffffffdb'],[1,'#8e9aa74a']]);ctx.fill();line([A,add(A),add(C),C],'#737d875c',.7);
+   polygon([B,C,add(C),add(B)]);ctx.fillStyle=gradient(0,C[1]-depth[1],0,C[1],[[0,'#737f901c'],[.6,'#ffffff80'],[1,'#838d9d38']]);ctx.fill();
+   polygon([A,B,C]);ctx.fillStyle=gradient(B[0],A[1],C[0],C[1],[[0,'#ffffffb8'],[.25,'#eef3f646'],[.5,'#b1c1ce24'],[.72,'#ffffffaf'],[1,'#b8c3ce4a']]);ctx.fill();
+   // Refracted ray and geometric internal reflections, clipped to glass.
+   ctx.save();polygon([A,B,C]);ctx.clip();
+   line([entry,[cx+size*.02,rayY+size*.02],exit],gradient(entry[0],0,exit[0],0,[[0,'#42494d8c'],[.7,'#c0c9d471'],[1,'#ffffffd9']]),1);
+   line([[A[0]+size*.025,A[1]],[B[0]+size*.07,B[1]],C],'#ffffffb5',1.4);
+   line([[cx+size*.03,A[1]+size*.15],[cx-size*.1,C[1]],[cx+size*.25,rayY-size*.04]],'#a2afb729',.8);
+   const sweep=cx-size*.65+progress*size*1.4;
+   ctx.fillStyle=gradient(sweep-size*.16,0,sweep+size*.16,0,[[0,'#ffffff00'],[.46,'#ffffff00'],[.5,`rgba(255,255,255,${.3+pulse*.35})`],[.57,'#ffffff00'],[1,'#ffffff00']]);ctx.fillRect(B[0],A[1],hw*2,size);
+   const highlight=ctx.createRadialGradient(cx-hw*.4+light*hw,rayY-size*.28,1,cx,rayY,size*.65);highlight.addColorStop(0,'#ffffffa6');highlight.addColorStop(.45,'#ffffff19');highlight.addColorStop(1,'#ffffff00');ctx.fillStyle=highlight;ctx.fillRect(B[0],A[1],hw*2,size);
+   ctx.restore();
+   line([A,B,C,A],'#64727e7a',.8);line([[A[0]-.1,A[1]+2],[B[0]+1.3,B[1]-.8],[C[0]-1.3,C[1]-.8]],'#ffffffea',1);
+   line([add(A),add(C)],'#ffffffdf',1.4);
+   // A localized flare at the exit face, rather than a floating flat dot.
+   const radius=9+pulse*8,flare=ctx.createRadialGradient(exit[0],exitY,0,exit[0],exitY,radius);flare.addColorStop(0,'#ffffffff');flare.addColorStop(.14,'#ffffffed');flare.addColorStop(.4,'#f4e9ff75');flare.addColorStop(1,'#ffffff00');ctx.fillStyle=flare;ctx.fillRect(exit[0]-radius,exitY-radius,radius*2,radius*2);
+   line([[exit[0]-4,exitY],[exit[0]+4,exitY]],'#ffffffeb',.8);
+  }
+  function resize(){
+   const rect=hero.getBoundingClientRect(),head=heading.getBoundingClientRect(),copy=subcopy.getBoundingClientRect();
+   w=rect.width;h=rect.height;rayY=(head.bottom+copy.top)/2-rect.top;dpr=Math.min(window.devicePixelRatio||1,2);
+   canvas.width=Math.max(1,Math.round(w*dpr));canvas.height=Math.max(1,Math.round(h*dpr));draw(1);
+  }
+  function tick(now){const progress=clamp((now-started)/1800,0,1);draw(progress);frame=progress<1?requestAnimationFrame(tick):0;}
+  function play(){if(reduced.matches){draw(1);return;}cancelAnimationFrame(frame);started=performance.now();frame=requestAnimationFrame(tick);}
+  hero.addEventListener('pointerenter',play);
+  hero.addEventListener('pointermove',e=>{if(reduced.matches||frame)return;const rect=hero.getBoundingClientRect();light=clamp((e.clientX-rect.left)/w,0,1);draw(1);});
+  reduced.addEventListener?.('change',()=>{cancelAnimationFrame(frame);frame=0;draw(1);});
+  if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(resize);observer.observe(hero);observer.observe(heading);observer.observe(subcopy);}else window.addEventListener('resize',resize);
+  document.fonts?.ready.then(resize);
+  resize();play();
+ }
  render();
+ setupHeroOptics();
 })();
 </script>
 
