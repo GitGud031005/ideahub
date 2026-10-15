@@ -9,7 +9,7 @@
   <main class="ih-main">
     <section class="ih-intro" aria-label="Nơi những ý tưởng lớn gặp nhau">
       <canvas class="ih-hero-optics" id="ih-hero-optics" aria-hidden="true"></canvas>
-      <div class="ih-hero-copy"><h1>Nơi những ý tưởng lớn<br><em>gặp nhau</em></h1><div class="ih-hero-subcopy"><p>Nơi những góc nhìn hội tụ, mở ra những khả năng mới</p><p>Cùng nhau biến những ý tưởng của chúng ta thành hiện thực</p></div></div>
+      <div class="ih-hero-copy"><h1>Nơi những ý tưởng lớn<br><em>gặp nhau</em></h1><div class="ih-hero-subcopy"><p>Những góc nhìn hội tụ, mở ra những khả năng mới</p><p>Cùng nhau biến những ý tưởng của chúng ta thành hiện thực</p></div></div>
     </section>
     <section aria-label="Các ý tưởng">
       <div class="ih-toolbar"><div class="ih-tabs" role="group" aria-label="Lọc ý tưởng"><button class="ih-tab ih-active" data-view="all" aria-pressed="true">Tất cả ý tưởng <span id="ih-all-count">6</span></button><button class="ih-tab" data-view="joined" aria-pressed="false">Đã tham gia <span id="ih-joined-count">2</span></button><button class="ih-tab" data-view="mine" aria-pressed="false">Của bạn <span id="ih-mine-count">1</span></button></div><label class="ih-sort-label"><span>Sắp xếp</span><select id="ih-sort" aria-label="Sắp xếp ý tưởng"><option value="new">Mới nhất</option><option value="popular">Nhiều người tham gia</option></select></label></div>
@@ -223,7 +223,7 @@
    if(w<=0||h<=0)return;
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
    const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96);
-   const cx=w*(mobile?.63:.735),hw=size*.44,cy=rayY-(mobile?0:size*.045);
+   const cx=w*(mobile?.60:.70),hw=size*.44,cy=rayY-(mobile?0:size*.045);
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=p=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
