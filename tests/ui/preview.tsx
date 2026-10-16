@@ -12,7 +12,7 @@ const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không
 const comments: Comment[] = Array.from({ length: 13 }, (_, i) => ({ id: `qa-comment-${i}`, ideaId: ideas[0].id, parentId: i ? `qa-comment-${i - 1}` : null, author: i % 2 ? { id: "qa-other", name: "Trần Ngọc Bình", initial: "TB" } : person, text: i ? "Mình đồng ý. Cùng bắt đầu từ một phần nhỏ, rồi xây dựng và hoàn thiện từng bước nhé" : "Mình có thể phụ trách phần thu thập dữ liệu và xây dựng pipeline. Mọi người muốn bắt đầu từ nguồn nào?", createdAt: new Date().toISOString() }));
 let current = window.__qaScene === "guest" ? null : person;
 window.fetch = async (input, init) => {
-  const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, window.location.origin), path = url.pathname;
+  const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
   if (path === "/api/session") return Response.json({ user: current, storage: "postgres" });
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
