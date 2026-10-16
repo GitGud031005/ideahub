@@ -5,7 +5,7 @@ function animatePrism(canvas: HTMLCanvasElement, hero: HTMLElement, heading: HTM
  const ctx: CanvasRenderingContext2D=context;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const prismImage=new Image();let imageLoaded=false;
-  let w=0,h=0,rayY=0,dpr=1,frame=0,started=0,lastPaint=0,inView=true;
+  let w=0,h=0,rayY=0,frameLeft=0,frameWidth=0,dpr=1,frame=0,started=0,lastPaint=0,inView=true;
   const light=.45;
   function polygon(points: readonly (readonly number[])[]){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();}
   function line(points: readonly (readonly number[])[],style: string | CanvasGradient,width=1){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=style;ctx.lineWidth=width;ctx.stroke();}
@@ -13,9 +13,12 @@ function animatePrism(canvas: HTMLCanvasElement, hero: HTMLElement, heading: HTM
   function draw(progress=1){
    if(w<=0||h<=0)return;
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-   const mobile=w<=560,baseSize=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96),size=baseSize*1.08;
+   // Anchor the glass to the same bounded frame as the text, even on ultrawide displays.
+   const mobile=w<=640;
+   const baseSize=mobile?Math.min(160,frameWidth*.44):Math.max(0,Math.min(330,frameWidth*.27,(rayY-26)/.554,(h-rayY-34)/.56));
+   const size=baseSize*1.08;
    const baseEdge=rayY+(mobile?4:8)+baseSize*.49875;
-   const cx=w*(mobile?.60:.70),hw=size*.44,cy=baseEdge-size*.4147;
+   const cx=frameLeft+frameWidth*(mobile?.60:.81),hw=size*.44,cy=baseEdge-size*.4147;
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=(p: readonly number[])=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
@@ -67,6 +70,8 @@ function animatePrism(canvas: HTMLCanvasElement, hero: HTMLElement, heading: HTM
   }
   function resize(){
    const rect=hero.getBoundingClientRect(),head=heading.getBoundingClientRect(),copy=subcopy.getBoundingClientRect();
+   const content=heading.parentElement!.getBoundingClientRect();
+   frameLeft=content.left-rect.left;frameWidth=content.width;
    w=rect.width;h=rect.height;rayY=(head.bottom+copy.top)/2-rect.top;dpr=Math.min(window.devicePixelRatio||1,2);
    canvas.width=Math.max(1,Math.round(w*dpr));canvas.height=Math.max(1,Math.round(h*dpr));draw(1);
   }
