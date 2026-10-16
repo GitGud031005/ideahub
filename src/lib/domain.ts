@@ -1,6 +1,6 @@
 export const CATEGORIES = ["Công nghệ", "Đời sống", "Học tập", "Thiết kế", "Khác"] as const;
 export type Category = (typeof CATEGORIES)[number];
-export type StorageMode = "json" | "memory";
+export type StorageMode = "json" | "memory" | "postgres";
 export interface Author { id: string; name: string; initial: string }
 export interface Idea {
   id: string;

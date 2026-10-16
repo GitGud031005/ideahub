@@ -4,7 +4,7 @@ import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { DataState, IdeaRecord, StateStore } from "./state";
 
-/** Implement this interface with PostgreSQL later; HTTP routes and UI need no storage-specific changes. */
+/** Shared storage contract implemented by state and PostgreSQL repositories. */
 export interface IdeaRepository {
   listIdeas(userId: string, query: IdeaQuery): Promise<IdeasPage>;
   getIdea(id: string, userId: string): Promise<Idea>;

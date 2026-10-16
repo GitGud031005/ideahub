@@ -6,7 +6,7 @@ Trước khi gọi endpoint ý tưởng, gọi `GET /api/session` và giữ cook
 
 | Method | Endpoint | Hành vi |
 | --- | --- | --- |
-| GET | `/health` | `{status, storage, persistent}`; không thay thế kiểm tra session/config |
+| GET | `/health` | `{status, storage, persistent}`; postgres có query kiểm tra DB, lỗi kết nối trả 503; không thay thế kiểm tra session |
 | GET | `/session` | Lấy/tạo phiên khách, cookie HttpOnly + SameSite=Lax; Secure ở production |
 | GET | `/ideas?q=&view=all&sort=new&limit=24&offset=0` | Danh sách và số lượng all/joined/mine |
 | POST | `/ideas` | Tạo idea, creator đồng thời là thành viên; trả 201 |

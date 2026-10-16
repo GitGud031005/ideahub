@@ -14,6 +14,7 @@ CREATE TABLE public.ideas (
   description varchar(240) NOT NULL CHECK (length(trim(description)) > 0),
   category text NOT NULL CHECK (category IN ('Công nghệ','Đời sống','Học tập','Thiết kế','Khác')),
   tags text[] NOT NULL DEFAULT '{}',
+  search_text text NOT NULL,
   creator_id text NOT NULL REFERENCES public.users(id),
   created_at timestamptz NOT NULL DEFAULT now(),
   CHECK (cardinality(tags) <= 12)
@@ -41,7 +42,8 @@ CREATE TABLE public.comments (
   CHECK (parent_id IS NULL OR parent_id <> id)
 );
 CREATE INDEX comments_room_cursor_idx ON public.comments (idea_id, created_at, id);
-CREATE INDEX comments_parent_idx ON public.comments (idea_id, parent_id, created_at);
+CREATE INDEX comments_parent_idx ON public.comments (parent_id, idea_id);
+CREATE INDEX comments_author_idx ON public.comments (author_id);
 
 -- SQL-created tables need explicit RLS. Keep the Data API closed until Auth
 -- and policies are implemented; a publishable key must not expose guest data.

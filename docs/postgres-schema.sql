@@ -1,4 +1,4 @@
 -- The canonical Supabase migration is:
--- ../supabase/migrations/20261016000000_initial_ideahub.sql
+-- ../supabase/migrations/20261016082442_initial_ideahub.sql
 -- Apply it once through the Supabase migration workflow.
 -- See supabase-setup.md for access boundaries and application integration status.

@@ -8,3 +8,5 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 *.log
+supabase/.temp/
+supabase/.branches/

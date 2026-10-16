@@ -44,11 +44,13 @@ npm start      # Cần SESSION_SECRET trong môi trường production
    | Biến | Giá trị |
    | --- | --- |
    | `SESSION_SECRET` | Chuỗi ngẫu nhiên riêng, ít nhất 32 ký tự; dùng `openssl rand -base64 48` |
-   | `IDEAHUB_STORAGE` | `memory` trong giai đoạn thử nghiệm chưa có DB |
+   | `IDEAHUB_STORAGE` | `postgres` để dùng Supabase; `memory` chỉ dùng thử |
+   | `DATABASE_URL` | URI **Transaction pooler** từ Supabase → Connect; chỉ lưu ở server |
+   | `DATABASE_SSL_CA` | Tùy chọn: PEM root certificate nếu DB dùng CA riêng |
 
 4. Deploy. Không cần server Express riêng, API chạy trong cùng ứng dụng. Truy cập `/api/health` để kiểm tra runtime/storage, rồi mở dashboard và thử tạo idea.
 
-**Chưa có database:** chế độ `memory` trên Vercel chỉ dùng thử. Dữ liệu có thể mất khi function khởi động lại, redeploy hoặc chuyển instance; các instance không chia sẻ dữ liệu. Không dùng JSON hoặc `/tmp` làm database trên Vercel. Cấu hình `json` trên Vercel được backend từ chối rõ ràng. Chỉ dùng cho người dùng thật sau khi thêm database và xác thực tài khoản.
+**Chế độ demo:** chế độ `memory` trên Vercel chỉ dùng thử. Dữ liệu có thể mất khi function khởi động lại, redeploy hoặc chuyển instance; các instance không chia sẻ dữ liệu. Không dùng JSON hoặc `/tmp` làm database trên Vercel. Cấu hình `json` trên Vercel được backend từ chối rõ ràng. PostgreSQL adapter đã có; xem [thiết lập Supabase](docs/supabase-setup.md) để nối DB. Hiện vẫn cần thêm xác thực tài khoản trước khi mở ứng dụng cho người dùng thật.
 
 **Phiên khách không phải hệ thống đăng nhập:** hiện chưa có đăng ký, email, OAuth, mật khẩu hoặc khôi phục tài khoản. Cookie HttpOnly có chữ ký ngăn sửa ID tùy ý; xóa cookie hoặc đổi trình duyệt sẽ tạo một danh tính khách khác. Khi tích hợp auth, thay lớp session và giữ nguyên việc lấy author từ server; không nhận `authorId` từ request body.
 
@@ -61,10 +63,13 @@ src/lib/                  Kiểu dữ liệu dùng chung, validation, format và
 src/server/api.ts         Điều phối endpoint, session và validation
 src/server/repository.ts  Interface lưu trữ và các ràng buộc nghiệp vụ
 src/server/stores.ts      Adapter memory/JSON với transaction một process
-src/server/container.ts   Chọn adapter; đây là điểm thay bằng database repository
+src/server/container.ts   Chọn adapter json/memory/postgres
+src/server/postgres-repository.ts  SQL, transaction và nghiệp vụ PostgreSQL
+src/server/database.ts    Pool nhỏ, TLS xác minh chứng chỉ, server-only DATABASE_URL
 src/server/session.ts     Cookie có chữ ký HMAC; secret chỉ chạy trên server
 tests/                    Test repository, JSON, session và API
-docs/                     API contract, hướng tích hợp DB, mock đã duyệt
+docs/                     API contract, cấu hình Supabase/Vercel, mock đã duyệt
+supabase/migrations/      Schema đã áp dụng, phiên bản khớp lịch sử Supabase
 public/assets/            Ảnh prism dùng trong canvas, không có fetch ảnh bên ngoài
 ```
 
@@ -72,16 +77,16 @@ File mock trước đây được giữ tại `docs/approved-mockup.html` làm t
 
 ## API và dữ liệu
 
-Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/architecture.md), [migration Supabase](supabase/migrations/20261016000000_initial_ideahub.sql) và [hướng dẫn thiết lập Supabase](docs/supabase-setup.md).
+Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/architecture.md), [migration Supabase](supabase/migrations/20261016082442_initial_ideahub.sql) và [hướng dẫn thiết lập Supabase](docs/supabase-setup.md).
 
 API có session cookie, giới hạn payload 16 KiB, validation chặt, kiểm tra origin cho mutation, lỗi có mã và giới hạn ghi theo phiên trong mỗi instance. Membership được thêm theo cách idempotent. Parent của bình luận phải thuộc cùng idea; nhánh tối đa 12 cấp trả lời. Các đoạn text được render qua React, không chèn HTML thô. GET dữ liệu phiên có `Cache-Control: no-store`.
 
-Giới hạn hiện tại: chưa có realtime WebSocket, upload file, chỉnh sửa/xóa bài, moderation hay rate limit dùng chung giữa các instance. Polling chỉ là refresh HTTP; backend JSON hỗ trợ một process local, không dùng nhiều process đồng thời trên cùng file. Khi có DB, thay adapter bằng transaction và unique constraints như tài liệu mô tả.
+Giới hạn hiện tại: chưa có realtime WebSocket, upload file, chỉnh sửa/xóa bài, moderation hay rate limit dùng chung giữa các instance. Polling chỉ là refresh HTTP; backend JSON hỗ trợ một process local, không dùng nhiều process đồng thời trên cùng file. PostgreSQL adapter dùng transaction và unique constraints; không tự seed dữ liệu demo lên DB.
 
 ## Kiểm tra
 
-Đã chạy TypeScript strict, 12 kiểm thử cho nghiệp vụ/API và build production. Test bao gồm tạo idea, tìm tiếng Việt không dấu, quyền sở hữu theo session, 30 lượt join đồng thời, parent khác phòng, giới hạn độ sâu, phân trang bình luận, rollback, JSON persistence, cookie bị sửa/hết hạn, lỗi validation/origin/body và rate limit.
+Đã chạy TypeScript strict, 16 kiểm thử cho nghiệp vụ/API/cấu hình DB và SQL adapter và build production. SQL contract của adapter đã đạt trên PostgreSQL nhúng (PGlite), gồm join đồng thời, counts, search tiếng Việt, cursor, depth và rollback. Kiểm thử qua pg driver tới PostgreSQL bên ngoài chỉ chạy khi có `TEST_DATABASE_URL` riêng; hiện chưa chạy vì chưa có credential kết nối của ứng dụng. Schema đã được smoke test qua SQL trên Supabase thật, sau đó rollback toàn bộ fixture; cả bốn bảng cũng đã được kiểm tra quyền truy cập. Test bao gồm tạo idea, tìm tiếng Việt không dấu, quyền sở hữu theo session, 30 lượt join đồng thời, parent khác phòng, giới hạn độ sâu, phân trang bình luận, rollback, JSON persistence, cookie bị sửa/hết hạn, lỗi validation/origin/body và rate limit.
 
-Chưa chạy kiểm tra trực quan bằng browser trong môi trường thực hiện. Không có deployment Vercel nào được tạo tự động; repo đã sẵn sàng để import theo các bước trên.
+Chưa chạy kiểm tra trực quan bằng browser trong môi trường thực hiện. Không có deployment Vercel nào được tạo tự động; cần thêm `DATABASE_URL` và `SESSION_SECRET` trong Vercel trước khi dùng DB từ ứng dụng.
 
 Tài liệu chính thức: [Next.js App Router](https://nextjs.org/docs/app), [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers), [Vercel Functions](https://vercel.com/docs/functions), [Vercel Storage](https://vercel.com/docs/storage).

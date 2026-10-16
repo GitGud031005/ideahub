@@ -2,6 +2,7 @@ import { commentQuerySchema, createCommentSchema, createIdeaSchema, ideaQuerySch
 import type { IdeaRepository } from "./repository";
 import { getRepository, storageMode } from "./container";
 import { AppError } from "./errors";
+import { getDatabasePool } from "./database";
 import { assertSameOrigin, errorResponse, json, rateLimit, readJson } from "./http";
 import { createSessionToken, getSessionUser, requireSession, sessionCookie, verifySessionToken } from "./session";
 
@@ -10,7 +11,14 @@ export async function handleApi(request: Request, path: string[], repository?: I
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
     if (method === "POST") assertSameOrigin(request);
-    if (route === "health" && method === "GET") return json({ status: "ok", storage: storageMode(), persistent: storageMode() === "json" });
+    if (route === "health" && method === "GET") {
+      const storage = storageMode();
+      if (storage === "postgres") {
+        try { await getDatabasePool().query("SELECT id FROM public.ideas LIMIT 0"); }
+        catch { throw new AppError(503, "DATABASE_UNAVAILABLE", "Chưa kết nối được database"); }
+      }
+      return json({ status: "ok", storage, persistent: storage !== "memory" });
+    }
     if (route === "session" && method === "GET") {
       const existing = getSessionUser(request);
       if (existing) return json({ user: existing, storage: storageMode() });
