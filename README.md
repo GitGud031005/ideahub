@@ -12,19 +12,18 @@ Open `index.html` in a modern browser. No installation or build step is required
 - Create an idea with a title, description, category, and tags.
 - Filter all ideas, joined discussions, or your own ideas; sort by newest or participant count.
 - Scroll long tag lists with touch, dragging, the wheel, or the right-arrow control.
-- Click an idea to open its discussion in a popup over the current dashboard, without navigating.
+- Click an idea to open its dedicated full-screen discussion page.
 
-## Discussion popup
+## Discussion page
 
-The popup occupies 90% of the viewport width and height. The dashboard remains visible behind the overlay, retains its filters and scroll position, and is inert while the popup is open. Close with the close button, backdrop, or Escape. Keyboard focus stays inside the popup and returns to the dashboard when it closes.
+Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The header contains “Thảo luận”, a back control, and comment sorting. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
 
-- The right pane contains the idea title, full description, creator, creation time, participant count, joined status, category, and tags. On narrow screens, this pane stacks above the conversation.
-- The main pane contains only the comments, sorting, and comment composer.
-- Reply to any comment, including replies within replies, with a nested hierarchy and connector lines.
+- The right pane contains the idea title, full description, creator, creation time, participant count, and tags. On narrow screens, this pane stacks above the conversation. There is no separate category section or joined-status message under the participant count.
+- The main pane contains only comments and the comment composer.
+- Reply to any comment, including replies within replies, with a nested hierarchy. Connector lines run from the parent avatar down through its full comment, then curve into the child avatar. Sibling trunks continue through the complete reply subtree. Compact nesting keeps the same connected geometry.
 - Only comments that have replies show a “Xem N trả lời” / “Ẩn trả lời” control. Hiding replies keeps the parent comment visible. There are no vote buttons or plus/minus collapse controls.
-- Sort root comments by newest or oldest; replies stay chronological.
+- Sort root comments by newest or oldest from the page header; replies stay chronological.
 - Use Ctrl+Enter (or Cmd+Enter) to post from a comment field.
-- Existing `index.html#/idea/1` links still open the relevant popup over the dashboard. Opening a card does not change the URL.
 
 Older flat demo messages are migrated into comments. Existing user-written messages, nested replies, and ideas are preserved. Comment and reply drafts remain available while switching between ideas in the current session.
 
@@ -36,4 +35,4 @@ The responsive UI supports keyboard controls and reduced motion. Light animation
 
 ## Validation
 
-Validated application logic includes popup opening and closing, unchanged dashboard and URL, scroll locking, keyboard focus containment, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, legacy deep links, and escaped user content. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
+Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
