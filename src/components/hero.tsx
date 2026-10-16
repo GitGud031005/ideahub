@@ -18,7 +18,7 @@ function animatePrism(canvas: HTMLCanvasElement, hero: HTMLElement, heading: HTM
    const baseSize=mobile?Math.min(160,frameWidth*.44):Math.max(0,Math.min(330,frameWidth*.27,(rayY-26)/.554,(h-rayY-34)/.56));
    const size=baseSize*1.08;
    const baseEdge=rayY+(mobile?4:8)+baseSize*.49875;
-   const cx=frameLeft+frameWidth*(mobile?.60:.81),hw=size*.44,cy=baseEdge-size*.4147;
+   const cx=frameLeft+frameWidth*(mobile?.60:w<=1100?.79:.74),hw=size*.44,cy=baseEdge-size*.4147;
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=(p: readonly number[])=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
