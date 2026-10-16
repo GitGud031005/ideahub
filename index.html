@@ -12,7 +12,7 @@
       <div class="ih-hero-copy"><h1>Nơi những ý tưởng lớn<br><em>gặp nhau</em></h1><div class="ih-hero-subcopy"><p>Hội tụ những tia sáng, mở lối cho ý tưởng</p><p>Cùng nhau biến những ý tưởng của chúng ta thành hiện thực</p></div></div>
     </section>
     <section aria-label="Các ý tưởng">
-      <div class="ih-toolbar"><div class="ih-tabs" role="group" aria-label="Lọc ý tưởng"><button class="ih-tab ih-active" data-view="all" aria-pressed="true">Tất cả ý tưởng <span id="ih-all-count">6</span></button><button class="ih-tab" data-view="joined" aria-pressed="false">Đã tham gia <span id="ih-joined-count">2</span></button><button class="ih-tab" data-view="mine" aria-pressed="false">Của bạn <span id="ih-mine-count">1</span></button></div><label class="ih-sort-label"><span>Sắp xếp</span><select id="ih-sort" aria-label="Sắp xếp ý tưởng"><option value="new">Mới nhất</option><option value="popular">Nhiều người tham gia</option></select></label></div>
+      <div class="ih-toolbar"><div class="ih-tabs" role="group" aria-label="Lọc ý tưởng"><button class="ih-tab ih-active" data-view="all" aria-pressed="true">Tất cả ý tưởng <span id="ih-all-count">6</span></button><button class="ih-tab" data-view="joined" aria-pressed="false">Đã tham gia <span id="ih-joined-count">2</span></button><button class="ih-tab" data-view="mine" aria-pressed="false">Của bạn <span id="ih-mine-count">1</span></button></div><div class="ih-sort-label"><span>Sắp xếp</span><div class="ih-picker"><select hidden id="ih-sort" aria-label="Sắp xếp ý tưởng"><option value="new">Mới nhất</option><option value="popular">Nhiều người tham gia</option></select><button type="button" class="ih-picker-trigger" id="ih-sort-trigger" data-picker-trigger="ih-sort" aria-haspopup="listbox" aria-expanded="false" aria-controls="ih-sort-menu"><span id="ih-sort-label">Mới nhất</span><span class="ih-picker-chevron" aria-hidden="true"></span></button><div class="ih-picker-menu" id="ih-sort-menu" role="listbox" aria-label="Sắp xếp" hidden><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-sort" data-value="new" data-label="Mới nhất" aria-selected="true">Mới nhất<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-sort" data-value="popular" data-label="Nhiều người tham gia" aria-selected="false">Nhiều người tham gia<span class="ih-picker-check" aria-hidden="true"></span></button></div></div></div></div>
       <div class="ih-grid" id="ih-grid"></div>
       <div class="ih-empty" id="ih-empty" hidden><span aria-hidden="true">↗</span><h2>Chưa có ý tưởng nào ở đây.</h2><p id="ih-empty-text">Thử một từ khóa khác hoặc bắt đầu với idea của bạn.</p><button class="ih-secondary" id="ih-empty-action">Tạo idea đầu tiên</button></div>
       <span class="ih-sr" id="ih-result-count" role="status" aria-live="polite"></span>
@@ -20,7 +20,7 @@
   </main>
   <main class="ih-discussion" id="ih-discussion" aria-labelledby="ih-discussion-title" hidden>
     <section class="ih-discussion-page">
-      <header class="ih-discussion-header"><div class="ih-discussion-heading"><button type="button" class="ih-thread-back" id="ih-thread-back" aria-label="Quay lại bảng ý tưởng"><span class="ih-back-mark" aria-hidden="true"></span></button><h1 id="ih-discussion-title">Thảo luận <span id="ih-comment-count" aria-label="Số bình luận"></span></h1></div><label class="ih-discussion-sort"><span class="ih-sort-caption">Sắp xếp</span><select id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select></label><button type="button" class="ih-about-toggle" id="ih-about-toggle" aria-controls="ih-idea-panel" aria-expanded="true" hidden>Về ý tưởng</button></header>
+      <header class="ih-discussion-header"><div class="ih-discussion-heading"><button type="button" class="ih-thread-back" id="ih-thread-back" aria-label="Quay lại bảng ý tưởng"><span class="ih-back-mark" aria-hidden="true"></span></button><h1 id="ih-discussion-title">Thảo luận <span id="ih-comment-count" aria-label="Số bình luận"></span></h1></div><div class="ih-discussion-sort"><span class="ih-sort-caption">Sắp xếp</span><div class="ih-picker"><select hidden id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select><button type="button" class="ih-picker-trigger" id="ih-comment-sort-trigger" data-picker-trigger="ih-comment-sort" aria-haspopup="listbox" aria-expanded="false" aria-controls="ih-comment-sort-menu"><span id="ih-comment-sort-label">Cũ nhất</span><span class="ih-picker-chevron" aria-hidden="true"></span></button><div class="ih-picker-menu" id="ih-comment-sort-menu" role="listbox" aria-label="Sắp xếp" hidden><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-comment-sort" data-value="old" data-label="Cũ nhất" aria-selected="true">Cũ nhất<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-comment-sort" data-value="new" data-label="Mới nhất" aria-selected="false">Mới nhất<span class="ih-picker-check" aria-hidden="true"></span></button></div></div></div><button type="button" class="ih-about-toggle" id="ih-about-toggle" aria-controls="ih-idea-panel" aria-expanded="true" aria-label="Mở thanh thông tin ý tưởng" hidden><span class="ih-sidebar-mark" aria-hidden="true"></span></button></header>
       <section id="ih-thread-notfound" class="ih-thread-notfound" hidden><h2>Không tìm thấy ý tưởng</h2><p>Ý tưởng này không tồn tại trong bản demo hiện tại</p><button type="button" class="ih-secondary" data-thread-home>Về bảng ý tưởng</button></section>
       <div class="ih-thread-layout" id="ih-thread-layout">
         <div class="ih-thread-main">
@@ -28,7 +28,7 @@
           <form class="ih-thread-composer" id="ih-thread-form"><label for="ih-thread-text">Thêm góc nhìn của bạn</label><textarea id="ih-thread-text" rows="1" maxlength="2000" placeholder="Một câu hỏi, một góp ý, hay một cách làm khác..." required></textarea><div class="ih-thread-composer-bottom"><span>Shift + Enter để xuống dòng</span><button type="submit" class="ih-reply-submit" id="ih-thread-submit" aria-keyshortcuts="Enter" disabled>Đăng bình luận <kbd aria-hidden="true">↵</kbd></button></div></form>
         </div>
         <aside class="ih-thread-aside" id="ih-idea-panel" aria-labelledby="ih-thread-title">
-          <div class="ih-about-top"><div class="ih-about-label">VỀ Ý TƯỞNG NÀY</div><button type="button" class="ih-about-close" id="ih-about-close" aria-label="Thu gọn thông tin ý tưởng" aria-controls="ih-idea-panel">×</button></div>
+          <div class="ih-about-top"><div class="ih-about-label">VỀ Ý TƯỞNG NÀY</div><button type="button" class="ih-about-close" id="ih-about-close" aria-label="Thu gọn thông tin ý tưởng" aria-controls="ih-idea-panel"><span class="ih-close-mark" aria-hidden="true"></span></button></div>
           <h2 id="ih-thread-title"></h2><p id="ih-thread-description"></p>
           <div class="ih-about-divider"></div>
           <div class="ih-about-label">NGƯỜI KHỞI XƯỚNG</div><div class="ih-post-byline"><span class="ih-avatar" id="ih-thread-owner-avatar" aria-hidden="true"></span><div><span id="ih-thread-owner"></span><time id="ih-thread-age"></time></div></div>
@@ -42,7 +42,7 @@
     </section>
   </main>
   <footer class="ih-footer"><div class="ih-footer-inner"><span class="ih-footer-logo">ideahub.</span></div></footer>
-  <div class="ih-layer" id="ih-new-layer" hidden><div class="ih-shade" data-close="new"></div><section class="ih-modal" role="dialog" aria-modal="true" aria-labelledby="ih-new-title"><div class="ih-dialog-top"><span class="ih-eyebrow">MỘT KHỞI ĐẦU MỚI</span><button class="ih-icon-button" aria-label="Đóng" data-close="new">×</button></div><h2 id="ih-new-title">Bạn đang nghĩ về điều gì?</h2><p>Một vài dòng là đủ để bắt đầu cuộc trò chuyện.</p><form id="ih-create-form"><label for="ih-title">Tên ý tưởng <span>*</span></label><input id="ih-title" name="title" placeholder="Một cái tên ngắn gọn, dễ nhớ" required maxlength="80"><div class="ih-field-meta"><span>Tóm gọn điều bạn muốn làm</span><span id="ih-title-count">0/80</span></div><label for="ih-description">Mô tả ngắn <span>*</span></label><textarea id="ih-description" name="description" placeholder="Ý tưởng này giải quyết điều gì? Bạn muốn tìm ai cùng thảo luận?" required maxlength="240" rows="4"></textarea><div class="ih-field-meta"><span>Để mọi người hiểu idea của bạn</span><span id="ih-desc-count">0/240</span></div><label for="ih-category">Chủ đề</label><select id="ih-category" name="category"><option>Công nghệ</option><option>Đời sống</option><option>Học tập</option><option>Thiết kế</option><option>Khác</option></select><label for="ih-tags-input">Tags</label><input id="ih-tags-input" name="tags" placeholder="Ví dụ: Python, Data crawling, Teamwork" maxlength="240"><div class="ih-field-meta"><span>Ngăn cách bằng dấu phẩy · tối đa 8 tags</span></div><p class="ih-form-error" id="ih-form-error" role="alert" hidden>Nhập tên và mô tả để mọi người hiểu ý tưởng của bạn nhé.</p><div class="ih-form-footer"><button type="button" class="ih-secondary" data-close="new">Để sau</button><button type="submit" class="ih-primary">Đăng ý tưởng <span aria-hidden="true">↗</span></button></div></form></section></div>
+  <div class="ih-layer" id="ih-new-layer" hidden><div class="ih-shade" data-close="new"></div><section class="ih-modal" role="dialog" aria-modal="true" aria-labelledby="ih-new-title"><div class="ih-dialog-top"><span class="ih-eyebrow">MỘT KHỞI ĐẦU MỚI</span><button class="ih-icon-button" aria-label="Đóng" data-close="new">×</button></div><h2 id="ih-new-title">Bạn đang nghĩ về điều gì?</h2><p>Một vài dòng là đủ để bắt đầu cuộc trò chuyện.</p><form id="ih-create-form"><label for="ih-title">Tên ý tưởng <span>*</span></label><input id="ih-title" name="title" placeholder="Một cái tên ngắn gọn, dễ nhớ" required maxlength="80"><div class="ih-field-meta"><span>Tóm gọn điều bạn muốn làm</span><span id="ih-title-count">0/80</span></div><label for="ih-description">Mô tả ngắn <span>*</span></label><textarea id="ih-description" name="description" placeholder="Ý tưởng này giải quyết điều gì? Bạn muốn tìm ai cùng thảo luận?" required maxlength="240" rows="4"></textarea><div class="ih-field-meta"><span>Để mọi người hiểu idea của bạn</span><span id="ih-desc-count">0/240</span></div><label for="ih-category-trigger">Chủ đề</label><div class="ih-picker"><select hidden id="ih-category" name="category"><option>Công nghệ</option><option>Đời sống</option><option>Học tập</option><option>Thiết kế</option><option>Khác</option></select><button type="button" class="ih-picker-trigger" id="ih-category-trigger" data-picker-trigger="ih-category" aria-haspopup="listbox" aria-expanded="false" aria-controls="ih-category-menu"><span id="ih-category-label">Công nghệ</span><span class="ih-picker-chevron" aria-hidden="true"></span></button><div class="ih-picker-menu" id="ih-category-menu" role="listbox" aria-label="Chủ đề" hidden><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-category" data-value="Công nghệ" data-label="Công nghệ" aria-selected="true">Công nghệ<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-category" data-value="Đời sống" data-label="Đời sống" aria-selected="false">Đời sống<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-category" data-value="Học tập" data-label="Học tập" aria-selected="false">Học tập<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-category" data-value="Thiết kế" data-label="Thiết kế" aria-selected="false">Thiết kế<span class="ih-picker-check" aria-hidden="true"></span></button><button type="button" class="ih-picker-option" role="option" data-picker-option="ih-category" data-value="Khác" data-label="Khác" aria-selected="false">Khác<span class="ih-picker-check" aria-hidden="true"></span></button></div></div><label for="ih-tags-input">Tags</label><input id="ih-tags-input" name="tags" placeholder="Ví dụ: Python, Data crawling, Teamwork" maxlength="240"><div class="ih-field-meta"><span>Ngăn cách bằng dấu phẩy · tối đa 8 tags</span></div><p class="ih-form-error" id="ih-form-error" role="alert" hidden>Nhập tên và mô tả để mọi người hiểu ý tưởng của bạn nhé.</p><div class="ih-form-footer"><button type="button" class="ih-secondary" data-close="new">Để sau</button><button type="submit" class="ih-primary">Đăng ý tưởng <span aria-hidden="true">↗</span></button></div></form></section></div>
   <div class="ih-toast" id="ih-toast" role="status" hidden></div>
 </div>
 <style>
@@ -276,6 +276,43 @@
 @media(max-width:680px){#ih-app .ih-discussion-header{height:auto;min-height:64px;flex-wrap:wrap;column-gap:14px;row-gap:8px;padding:12px 16px}#ih-app .ih-discussion-sort{padding-left:12px}#ih-app .ih-about-top{margin-bottom:17px}#ih-app .ih-thread-aside{padding-top:16px}}
 @media(max-width:400px){#ih-app .ih-discussion-header{column-gap:10px;padding:10px 12px}#ih-app .ih-discussion-heading{gap:10px}#ih-app .ih-discussion-sort{padding-left:10px}#ih-app .ih-about-toggle{padding:5px 8px;font-size:10px}}
 @media(pointer:coarse){#ih-app .ih-thread-back,#ih-app .ih-about-toggle,#ih-app .ih-about-close{min-height:44px}#ih-app .ih-thread-back{width:44px}#ih-app .ih-about-close{width:44px}}
+/* Matching chrome for the conversation header and the idea panel. */
+#ih-app .ih-thread-aside{padding-top:0}
+#ih-app .ih-about-top{height:64px;min-height:64px;margin:0 -25px 24px;padding:0 20px 0 25px;border-bottom:1px solid #e5e5dd;display:flex;align-items:center;justify-content:space-between}
+#ih-app .ih-about-top .ih-about-label{display:flex;align-items:center;height:32px;margin:0;font-size:9px;line-height:16px;letter-spacing:1px}
+#ih-app .ih-about-close,#ih-app .ih-about-toggle{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:32px;height:32px;min-height:32px;padding:0;border:1px solid transparent;border-radius:5px;background:transparent;color:#737365}
+#ih-app .ih-about-close:hover,#ih-app .ih-about-toggle:hover{border-color:#ddddd2;background:#eeeee6;color:#292922}
+#ih-app .ih-about-toggle{margin-left:auto;border-color:#e4e4dc;background:#fff}
+#ih-app .ih-close-mark{position:relative;width:12px;height:12px}
+#ih-app .ih-close-mark:before,#ih-app .ih-close-mark:after{content:"";position:absolute;left:0;top:5.5px;width:12px;height:1px;background:currentColor;transform:rotate(45deg)}
+#ih-app .ih-close-mark:after{transform:rotate(-45deg)}
+#ih-app .ih-sidebar-mark{position:relative;width:18px;height:15px;border:1px solid currentColor;border-radius:2px}
+#ih-app .ih-sidebar-mark:before{content:"";position:absolute;right:5px;top:0;bottom:0;border-left:1px solid currentColor}
+#ih-app .ih-sidebar-mark:after{content:"";position:absolute;left:3px;top:4px;width:4px;height:4px;border-left:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg)}
+/* Native selects retain form values; all visible selection controls share this menu. */
+#ih-app .ih-picker{position:relative;display:inline-flex;align-items:center;min-width:0;vertical-align:middle}
+#ih-app .ih-picker-trigger{appearance:none;display:inline-flex;align-items:center;justify-content:space-between;gap:11px;min-height:32px;margin:0;padding:5px 8px;border:1px solid transparent;border-radius:5px;box-shadow:none;background:transparent;color:#55554b;font-size:11px;line-height:20px;white-space:nowrap}
+#ih-app .ih-picker-trigger:hover,#ih-app .ih-picker-trigger[aria-expanded="true"]{background:#f2f2ec;color:#25251f}
+#ih-app .ih-picker-trigger:disabled{color:#a7a79a;cursor:default}
+#ih-app .ih-picker-chevron{width:5px;height:5px;margin:0 2px 3px 0;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg)}
+#ih-app .ih-picker-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:75;min-width:156px;max-width:min(270px,80vw);padding:5px;border:1px solid #dfdfd5;border-radius:7px;background:#fff;box-shadow:0 7px 24px #22221412}
+#ih-app .ih-picker-menu.ih-picker-up{top:auto;bottom:calc(100% + 6px)}
+#ih-app .ih-picker-option{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;min-height:34px;padding:7px 10px;border:0;border-radius:4px;background:transparent;color:#68685b;font-size:11px;line-height:20px;text-align:left;white-space:nowrap}
+#ih-app .ih-picker-option:hover,#ih-app .ih-picker-option:focus-visible{background:#f1f1eb;color:#24241f}
+#ih-app .ih-picker-option[aria-selected="true"]{color:#22221c;font-weight:600}
+#ih-app .ih-picker-check{visibility:hidden;width:5px;height:9px;margin-right:3px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg)}
+#ih-app .ih-picker-option[aria-selected="true"] .ih-picker-check{visibility:visible}
+#ih-app .ih-discussion-sort:after{content:none}
+#ih-app button:focus-visible,#ih-app .ih-picker-trigger:focus-visible{outline:2px solid #626254;outline-offset:2px}
+#ih-app .ih-picker-option:focus-visible{outline:1px solid #b1b1a1;outline-offset:-1px}
+#ih-app .ih-modal .ih-picker{display:flex;width:100%}
+#ih-app .ih-modal .ih-picker-trigger{width:100%;min-height:41px;padding:10px 12px;border-color:#dededa;background:#fafaf9;font-size:13px}
+#ih-app .ih-modal .ih-picker-menu{left:0;right:0;max-width:none}
+#ih-app input[type="search"]{appearance:none}
+#ih-app input[type="search"]::-webkit-search-cancel-button{appearance:none;display:none}
+@media(max-width:1000px){#ih-app .ih-about-top{margin-inline:-20px;padding-inline:20px}}
+@media(max-width:680px){#ih-app .ih-thread-aside{padding-top:0}#ih-app .ih-about-top{margin-bottom:20px}}
+@media(pointer:coarse){#ih-app .ih-about-toggle,#ih-app .ih-about-close,#ih-app .ih-picker-trigger,#ih-app .ih-picker-option{min-height:44px}#ih-app .ih-about-toggle,#ih-app .ih-about-close{width:44px}}
 </style>
 <script>
 (()=>{
@@ -330,7 +367,7 @@
  }
  function toast(text){clearTimeout(toastTimer);$('#ih-toast').textContent=text;$('#ih-toast').hidden=false;toastTimer=setTimeout(()=>$('#ih-toast').hidden=true,2800);}
  function openLayer(type){lastFocus=document.activeElement;root.scrollIntoView?.({block:'start',behavior:'auto'});$('#ih-'+type+'-layer').hidden=false;if(type==='new')$('#ih-title').focus();}
- function closeLayer(type){$('#ih-'+type+'-layer').hidden=true;if(lastFocus&&lastFocus.isConnected)lastFocus.focus();}
+ function closeLayer(type){closePicker();$('#ih-'+type+'-layer').hidden=true;if(lastFocus&&lastFocus.isConnected)lastFocus.focus();}
  $('#ih-create').addEventListener('click',()=>openLayer('new'));
  $('.ih-logo').addEventListener('click',e=>{e.preventDefault();view='all';$('#ih-search').value='';syncTabs();goHome();});
  $('#ih-search').addEventListener('input',()=>{if(!$('#ih-discussion').hidden){view='all';syncTabs();goHome();}render();});$('#ih-sort').addEventListener('change',render);
@@ -348,8 +385,54 @@
  $('#ih-empty-action').addEventListener('click',()=>{if($('#ih-search').value.trim()){$('#ih-search').value='';render();}else if(view==='joined'){view='all';syncTabs();render();}else openLayer('new');});
  $('#ih-title').addEventListener('input',()=>{$('#ih-title-count').textContent=$('#ih-title').value.length+'/80';$('#ih-form-error').hidden=true;});
  $('#ih-description').addEventListener('input',()=>{$('#ih-desc-count').textContent=$('#ih-description').value.length+'/240';$('#ih-form-error').hidden=true;});
- $('#ih-create-form').addEventListener('submit',e=>{e.preventDefault();const title=$('#ih-title').value.trim(),description=$('#ih-description').value.trim();if(!title||!description){$('#ih-form-error').hidden=false;return;}const id=String(Math.max(0,...ideas.map(i=>Number(i.id)||0))+1);ideas.unshift({id,title,description,category:$('#ih-category').value,tags:[...new Set([$('#ih-category').value,...$('#ih-tags-input').value.split(',').map(t=>t.trim().slice(0,28)).filter(Boolean)])].slice(0,8),createdAt:new Date().toISOString(),members:1,initials:['B'],age:'Vừa xong',rank:Math.max(0,...ideas.map(i=>i.rank))+1,joined:true,mine:true});messages[id]=[];comments[id]=[];save();view='all';syncTabs();$('#ih-search').value='';$('#ih-sort').value='new';render();closeLayer('new');e.target.reset();$('#ih-title-count').textContent='0/80';$('#ih-desc-count').textContent='0/240';toast('Ý tưởng đã lên sóng. Cùng bắt đầu cuộc trò chuyện!');openDiscussion(id);});
- root.addEventListener('keydown',e=>{const layer=!$('#ih-new-layer').hidden?$('#ih-new-layer'):null;if(e.key==='Escape'&&layer){closeLayer('new');return;}if(e.key==='/'&&!layer&&$('#ih-discussion').hidden&&!['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)){e.preventDefault();$('#ih-search').focus();}if(e.key==='Tab'&&layer){const focusable=[...layer.querySelectorAll('button:not(:disabled),input,textarea,select')];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+ $('#ih-create-form').addEventListener('submit',e=>{e.preventDefault();const title=$('#ih-title').value.trim(),description=$('#ih-description').value.trim();if(!title||!description){$('#ih-form-error').hidden=false;return;}const id=String(Math.max(0,...ideas.map(i=>Number(i.id)||0))+1);ideas.unshift({id,title,description,category:$('#ih-category').value,tags:[...new Set([$('#ih-category').value,...$('#ih-tags-input').value.split(',').map(t=>t.trim().slice(0,28)).filter(Boolean)])].slice(0,8),createdAt:new Date().toISOString(),members:1,initials:['B'],age:'Vừa xong',rank:Math.max(0,...ideas.map(i=>i.rank))+1,joined:true,mine:true});messages[id]=[];comments[id]=[];save();view='all';syncTabs();$('#ih-search').value='';$('#ih-sort').value='new';render();closeLayer('new');e.target.reset();syncPickers();$('#ih-title-count').textContent='0/80';$('#ih-desc-count').textContent='0/240';toast('Ý tưởng đã lên sóng. Cùng bắt đầu cuộc trò chuyện!');openDiscussion(id);});
+ root.addEventListener('keydown',e=>{const layer=!$('#ih-new-layer').hidden?$('#ih-new-layer'):null;if(e.key==='Escape'&&layer&&!openPicker){closeLayer('new');return;}if(e.key==='/'&&!layer&&!openPicker&&$('#ih-discussion').hidden&&!['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)){e.preventDefault();$('#ih-search').focus();}if(e.key==='Tab'&&layer){const focusable=[...layer.querySelectorAll('button:not(:disabled),input,textarea,select')];const first=focusable[0],last=focusable[focusable.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}});
+ const pickerIds=['ih-sort','ih-comment-sort','ih-category'];
+ let openPicker=null;
+ const pickerChoices=id=>$$('.ih-picker-option').filter(button=>button.dataset.pickerOption===id);
+ function syncPicker(id){
+  const field=$('#'+id),trigger=$('#'+id+'-trigger'),choices=pickerChoices(id),selected=choices.find(button=>button.dataset.value===field.value)||choices[0];
+  if(!selected)return;
+  $('#'+id+'-label').textContent=selected.dataset.label;
+  trigger.disabled=field.disabled;
+  trigger.setAttribute('aria-label',(field.getAttribute('aria-label')||'Chủ đề')+': '+selected.dataset.label);
+  choices.forEach(button=>button.setAttribute('aria-selected',String(button===selected)));
+ }
+ function syncPickers(){pickerIds.forEach(syncPicker);}
+ function closePicker(restoreFocus=false){
+  if(!openPicker)return;
+  const id=openPicker;openPicker=null;$('#'+id+'-menu').hidden=true;$('#'+id+'-trigger').setAttribute('aria-expanded','false');
+  if(restoreFocus)$('#'+id+'-trigger').focus({preventScroll:true});
+ }
+ function showPicker(id,focusChoice=false){
+  if(!pickerIds.includes(id)||$('#'+id).disabled)return;
+  if(openPicker===id){if(focusChoice)(pickerChoices(id).find(button=>button.dataset.value===$('#'+id).value)||pickerChoices(id)[0])?.focus();else closePicker(true);return;}
+  closePicker();syncPicker(id);openPicker=id;
+  const menu=$('#'+id+'-menu'),trigger=$('#'+id+'-trigger');menu.hidden=false;trigger.setAttribute('aria-expanded','true');
+  const bounds=trigger.getBoundingClientRect();menu.classList.toggle('ih-picker-up',bounds.bottom+(menu.scrollHeight||100)+8>window.innerHeight&&bounds.top>(menu.scrollHeight||100));
+  if(focusChoice)(pickerChoices(id).find(button=>button.dataset.value===$('#'+id).value)||pickerChoices(id)[0])?.focus();
+ }
+ function choosePicker(id,value){
+  if(!pickerIds.includes(id)||!pickerChoices(id).some(button=>button.dataset.value===value))return;
+  $('#'+id).value=value;syncPicker(id);closePicker(true);$('#'+id).dispatchEvent(new Event('change',{bubbles:true}));
+ }
+ pickerIds.forEach(id=>$('#'+id).addEventListener('change',()=>syncPicker(id)));
+ root.addEventListener('click',e=>{
+  const option=e.target.closest('[data-picker-option]');if(option){e.preventDefault();choosePicker(option.dataset.pickerOption,option.dataset.value);return;}
+  const trigger=e.target.closest('[data-picker-trigger]');if(trigger){e.preventDefault();showPicker(trigger.dataset.pickerTrigger);return;}
+  if(!e.target.closest('.ih-picker'))closePicker();
+ });
+ document.addEventListener('pointerdown',e=>{if(openPicker&&!e.target.closest?.('.ih-picker'))closePicker();});
+ root.addEventListener('keydown',e=>{
+  const trigger=e.target.closest('[data-picker-trigger]'),option=e.target.closest('[data-picker-option]');
+  if(trigger&&['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();showPicker(trigger.dataset.pickerTrigger,true);return;}
+  if(!openPicker)return;
+  if(e.key==='Escape'){e.preventDefault();closePicker(true);return;}
+  if(e.key==='Tab'){closePicker(true);return;}
+  if(option&&['ArrowDown','ArrowUp','Home','End'].includes(e.key)){
+   e.preventDefault();const choices=pickerChoices(openPicker),index=choices.indexOf(option),next=e.key==='Home'?0:e.key==='End'?choices.length-1:(index+(e.key==='ArrowDown'?1:-1)+choices.length)%choices.length;choices[next]?.focus();
+  }
+ });
  const creators={
   '1':{name:'Minh Anh',initial:'MA'},'2':{name:'Khánh An',initial:'KA'},
   '3':{name:'Thu Hà',initial:'TH'},'4':{name:'Bạn',initial:'B'},
@@ -439,13 +522,14 @@
   if(moveFocus)(ideaPanelOpen?$('#ih-about-close'):$('#ih-about-toggle')).focus({preventScroll:true});
  }
  function showThread(ideaId){
+  closePicker();
   if(activeId===ideaId&&!$('#ih-discussion').hidden)return;
   const wasHome=$('#ih-discussion').hidden,idea=ideas.find(i=>i.id===ideaId);
   if(wasHome){pageFocus=document.activeElement;homeScroll={x:window.scrollX||0,y:window.scrollY||0};}
   root.classList.add('ih-is-discussion');
   ['.ih-header','#ih-dashboard','.ih-footer'].forEach(selector=>$(selector).hidden=true);
   $('#ih-discussion').hidden=false;
-  $('#ih-thread-notfound').hidden=!!idea;$('#ih-thread-layout').hidden=!idea;$('#ih-comment-sort').disabled=!idea;
+  $('#ih-thread-notfound').hidden=!!idea;$('#ih-thread-layout').hidden=!idea;$('#ih-comment-sort').disabled=!idea;syncPicker('ih-comment-sort');
   replyTarget=null;$('#ih-thread-status').textContent='';document.title='Thảo luận — IdeaHub';
   window.scrollTo?.({top:0,left:0,behavior:'instant'});
   if(!idea){activeId=null;$('#ih-about-toggle').hidden=true;$('#ih-thread-back').focus({preventScroll:true});return;}
@@ -462,6 +546,7 @@
   $('#ih-thread-back').focus({preventScroll:true});
  }
  function showDashboard(){
+  closePicker();
   const wasThread=!$('#ih-discussion').hidden,previousId=activeId;
   activeId=null;replyTarget=null;$('#ih-discussion').hidden=true;root.classList.remove('ih-is-discussion');
   ['.ih-header','#ih-dashboard','.ih-footer'].forEach(selector=>$(selector).hidden=false);
@@ -618,6 +703,7 @@
   prismImage.src=PRISM_ASSET_SOURCE;
   resize();play();
  }
+ syncPickers();
  render();
  setupHeroOptics();
  applyRoute(window.location.hash||'');
