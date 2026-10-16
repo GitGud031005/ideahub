@@ -11,7 +11,7 @@ UI không đọc file, không nhận biết SQL và không tin dữ liệu ngư�
 ## Gắn PostgreSQL sau
 
 1. Provision database và thêm secret kết nối chỉ ở server. Không dùng tên biến `NEXT_PUBLIC_*` cho URL hoặc secret DB.
-2. Áp dụng `postgres-schema.sql` như bản khởi đầu; thêm migration tooling tùy provider. Đây là schema đề xuất, chưa được tự áp dụng hoặc kiểm tra với database thực.
+2. Với Supabase, dùng migration `supabase/migrations/20261016000000_initial_ideahub.sql` và hướng dẫn `docs/supabase-setup.md`. Migration đã gồm RLS và thu hồi quyền Data API công khai; chưa được áp dụng hoặc kiểm tra với database thực.
 3. Viết `PostgresIdeaRepository implements IdeaRepository` trong `src/server`. Thay factory ở `container.ts`; frontend và HTTP contract không đổi.
 4. Thay signed guest session bằng auth provider khi cần tài khoản thật. Map ID của tài khoản vào bảng users; không lấy ID từ input create/comment.
 5. Seed/import có chủ ý. Các ID hiện tại là text để chứa cả seed IDs lẫn UUID; không giả định mọi ID là UUID khi migrate.

@@ -72,7 +72,7 @@ File mock trước đây được giữ tại `docs/approved-mockup.html` làm t
 
 ## API và dữ liệu
 
-Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/architecture.md), [schema đề xuất](docs/postgres-schema.sql).
+Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/architecture.md), [migration Supabase](supabase/migrations/20261016000000_initial_ideahub.sql) và [hướng dẫn thiết lập Supabase](docs/supabase-setup.md).
 
 API có session cookie, giới hạn payload 16 KiB, validation chặt, kiểm tra origin cho mutation, lỗi có mã và giới hạn ghi theo phiên trong mỗi instance. Membership được thêm theo cách idempotent. Parent của bình luận phải thuộc cùng idea; nhánh tối đa 12 cấp trả lời. Các đoạn text được render qua React, không chèn HTML thô. GET dữ liệu phiên có `Cache-Control: no-store`.
 
