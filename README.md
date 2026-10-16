@@ -11,12 +11,12 @@ Open `index.html` in a modern browser. No installation or build step is required
 - Search titles, descriptions, and tags, including Vietnamese text without accents.
 - Create an idea with a title, description, category, and tags.
 - Filter all ideas, joined discussions, or your own ideas; sort by newest or participant count.
-- Scroll long tag lists with touch, dragging, the wheel, or the right-arrow control.
+- Scroll long tag lists with touch, dragging, the wheel, or the right-arrow control. Each sample idea includes 8–10 relevant tags, also searchable from the dashboard.
 - Click an idea to open its dedicated full-screen discussion page.
 
 ## Discussion page
 
-Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The left-column header contains “Thảo luận”, the live total comment count, a back control, and adjacent comment sorting. The idea sidebar starts at the very top and spans the full height alongside both header and conversation. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
+Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The left-column header contains “Thảo luận”, the live total comment count, a back control, and adjacent comment sorting. The header uses aligned controls and a compact chevron back button. The idea sidebar starts at the very top and spans the full height alongside both header and conversation. Close it with its top-right control to expand the conversation, then reopen it using “Về ý tưởng” in the header. Collapsing preserves the live conversation, draft, and route; the open/closed state is retained between rooms for the current session. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
 
 - The right pane contains the idea title, full description, creator, creation time, participant count, and tags. On narrow screens, this pane stacks above the conversation. There is no separate category section or joined-status message under the participant count.
 - The main pane contains only comments and the comment composer, without a separate comments heading or counter.
@@ -36,4 +36,4 @@ The responsive UI supports keyboard controls and reduced motion. Light animation
 
 ## Validation
 
-Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Enter submission, Shift+Enter, IME composition guards, Escape cancellation, textarea growth, and the live header count are also verified. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
+Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Enter submission, Shift+Enter, IME composition guards, Escape cancellation, textarea growth, and the live header count are also verified. Sidebar close/reopen, focus transfer, draft preservation, room-switch collapse state, expanded sample tags, and tag search are verified. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
