@@ -16,14 +16,15 @@ Open `index.html` in a modern browser. No installation or build step is required
 
 ## Discussion page
 
-Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The header contains “Thảo luận”, a back control, and comment sorting. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
+Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The left-column header contains “Thảo luận”, the live total comment count, a back control, and adjacent comment sorting. The idea sidebar starts at the very top and spans the full height alongside both header and conversation. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
 
 - The right pane contains the idea title, full description, creator, creation time, participant count, and tags. On narrow screens, this pane stacks above the conversation. There is no separate category section or joined-status message under the participant count.
-- The main pane contains only comments and the comment composer.
+- The main pane contains only comments and the comment composer, without a separate comments heading or counter.
 - Reply to any comment, including replies within replies, with a nested hierarchy. Connector lines run from the parent avatar down through its full comment, then curve into the child avatar. Sibling trunks continue through the complete reply subtree. Compact nesting keeps the same connected geometry.
 - Only comments that have replies show a “Xem N trả lời” / “Ẩn trả lời” control. Hiding replies keeps the parent comment visible. There are no vote buttons or plus/minus collapse controls.
 - Sort root comments by newest or oldest from the page header; replies stay chronological.
-- Use Ctrl+Enter (or Cmd+Enter) to post from a comment field.
+- Type into a minimal underlined field that grows with its content. Press Enter to post, Shift+Enter for a new line, and Escape to cancel an inline reply. Enter and Esc hints appear on the action buttons. IME composition does not accidentally submit. No input icons, resize handles, or rounded focus rings are shown; the focused underline remains visible.
+- Scroll conversation, details, and long text with the scrollbar tracks hidden; scrolling remains enabled.
 
 Older flat demo messages are migrated into comments. Existing user-written messages, nested replies, and ideas are preserved. Comment and reply drafts remain available while switching between ideas in the current session.
 
@@ -35,4 +36,4 @@ The responsive UI supports keyboard controls and reduced motion. Light animation
 
 ## Validation
 
-Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
+Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Enter submission, Shift+Enter, IME composition guards, Escape cancellation, textarea growth, and the live header count are also verified. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
