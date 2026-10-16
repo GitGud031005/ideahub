@@ -18,14 +18,13 @@
       <span class="ih-sr" id="ih-result-count" role="status" aria-live="polite"></span>
     </section>
   </main>
-  <dialog class="ih-discussion" id="ih-discussion" aria-modal="true" aria-labelledby="ih-discussion-title" hidden>
-    <div class="ih-discussion-shade" data-popup-close aria-hidden="true"></div>
-    <section class="ih-discussion-panel">
-      <header class="ih-popup-header"><h2 id="ih-discussion-title">Thảo luận</h2><button type="button" class="ih-popup-close" id="ih-thread-back" aria-label="Đóng thảo luận">×</button></header>
-      <section id="ih-thread-notfound" class="ih-thread-notfound" hidden><h2>Không tìm thấy ý tưởng</h2><p>Ý tưởng này không tồn tại trong bản demo hiện tại</p><button type="button" class="ih-secondary" data-thread-home>Đóng thảo luận</button></section>
+  <main class="ih-discussion" id="ih-discussion" aria-labelledby="ih-discussion-title" hidden>
+    <section class="ih-discussion-page">
+      <header class="ih-discussion-header"><div class="ih-discussion-heading"><button type="button" class="ih-thread-back" id="ih-thread-back" aria-label="Về bảng ý tưởng">←</button><h1 id="ih-discussion-title">Thảo luận</h1></div><label class="ih-discussion-sort"><span>Sắp xếp</span><select id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select></label></header>
+      <section id="ih-thread-notfound" class="ih-thread-notfound" hidden><h2>Không tìm thấy ý tưởng</h2><p>Ý tưởng này không tồn tại trong bản demo hiện tại</p><button type="button" class="ih-secondary" data-thread-home>Về bảng ý tưởng</button></section>
       <div class="ih-thread-layout" id="ih-thread-layout">
         <div class="ih-thread-main">
-          <section class="ih-thread-comments" aria-labelledby="ih-comments-title"><div class="ih-comments-toolbar"><h3 id="ih-comments-title">Bình luận <span id="ih-comment-count"></span></h3><label><span>Sắp xếp</span><select id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select></label></div><p class="ih-sr" id="ih-thread-status" role="status" aria-live="polite"></p><div id="ih-comment-list"></div></section>
+          <section class="ih-thread-comments" aria-labelledby="ih-comments-title"><div class="ih-comments-toolbar"><h3 id="ih-comments-title">Bình luận <span id="ih-comment-count"></span></h3></div><p class="ih-sr" id="ih-thread-status" role="status" aria-live="polite"></p><div id="ih-comment-list"></div></section>
           <form class="ih-thread-composer" id="ih-thread-form"><label for="ih-thread-text">Thêm góc nhìn của bạn</label><textarea id="ih-thread-text" rows="2" maxlength="2000" placeholder="Một câu hỏi, một góp ý, hay một cách làm khác..." required></textarea><div class="ih-thread-composer-bottom"><span>Ctrl / ⌘ + Enter để đăng</span><button type="submit" class="ih-primary" id="ih-thread-submit" disabled>Đăng bình luận <span aria-hidden="true">↗</span></button></div></form>
         </div>
         <aside class="ih-thread-aside" aria-labelledby="ih-thread-title">
@@ -34,15 +33,14 @@
           <div class="ih-about-divider"></div>
           <div class="ih-about-label">NGƯỜI KHỞI XƯỚNG</div><div class="ih-post-byline"><span class="ih-avatar" id="ih-thread-owner-avatar" aria-hidden="true"></span><div><span id="ih-thread-owner"></span><time id="ih-thread-age"></time></div></div>
           <div class="ih-about-divider"></div>
-          <div class="ih-about-members"><strong id="ih-about-members"></strong><span>người tham gia</span></div><span class="ih-thread-joined"><span aria-hidden="true">✓</span> Bạn đã tham gia</span>
+          <div class="ih-about-members"><strong id="ih-about-members"></strong><span>người tham gia</span></div>
           <div class="ih-about-divider"></div>
-          <div class="ih-about-label">CHỦ ĐỀ</div><span class="ih-category" id="ih-thread-category"></span>
-          <div class="ih-about-label ih-tags-label">TAGS</div><div id="ih-about-tags" class="ih-about-tags"></div>
+          <div class="ih-about-label">TAGS</div><div id="ih-about-tags" class="ih-about-tags"></div>
           <span class="ih-thread-side-brand">ideahub.</span>
         </aside>
       </div>
     </section>
-  </dialog>
+  </main>
   <footer class="ih-footer"><div class="ih-footer-inner"><span class="ih-footer-logo">ideahub.</span></div></footer>
   <div class="ih-layer" id="ih-new-layer" hidden><div class="ih-shade" data-close="new"></div><section class="ih-modal" role="dialog" aria-modal="true" aria-labelledby="ih-new-title"><div class="ih-dialog-top"><span class="ih-eyebrow">MỘT KHỞI ĐẦU MỚI</span><button class="ih-icon-button" aria-label="Đóng" data-close="new">×</button></div><h2 id="ih-new-title">Bạn đang nghĩ về điều gì?</h2><p>Một vài dòng là đủ để bắt đầu cuộc trò chuyện.</p><form id="ih-create-form"><label for="ih-title">Tên ý tưởng <span>*</span></label><input id="ih-title" name="title" placeholder="Một cái tên ngắn gọn, dễ nhớ" required maxlength="80"><div class="ih-field-meta"><span>Tóm gọn điều bạn muốn làm</span><span id="ih-title-count">0/80</span></div><label for="ih-description">Mô tả ngắn <span>*</span></label><textarea id="ih-description" name="description" placeholder="Ý tưởng này giải quyết điều gì? Bạn muốn tìm ai cùng thảo luận?" required maxlength="240" rows="4"></textarea><div class="ih-field-meta"><span>Để mọi người hiểu idea của bạn</span><span id="ih-desc-count">0/240</span></div><label for="ih-category">Chủ đề</label><select id="ih-category" name="category"><option>Công nghệ</option><option>Đời sống</option><option>Học tập</option><option>Thiết kế</option><option>Khác</option></select><label for="ih-tags-input">Tags</label><input id="ih-tags-input" name="tags" placeholder="Ví dụ: Python, Data crawling, Teamwork" maxlength="240"><div class="ih-field-meta"><span>Ngăn cách bằng dấu phẩy · tối đa 8 tags</span></div><p class="ih-form-error" id="ih-form-error" role="alert" hidden>Nhập tên và mô tả để mọi người hiểu ý tưởng của bạn nhé.</p><div class="ih-form-footer"><button type="button" class="ih-secondary" data-close="new">Để sau</button><button type="submit" class="ih-primary">Đăng ý tưởng <span aria-hidden="true">↗</span></button></div></form></section></div>
   <div class="ih-toast" id="ih-toast" role="status" hidden></div>
@@ -166,23 +164,23 @@
 #ih-app .ih-tags-next{position:absolute;right:0;top:0;z-index:2;height:25px;width:22px;padding:0;border:0;background:#fff;color:#74746b;font:18px/1 Arial;display:flex;align-items:center;justify-content:center}
 #ih-app .ih-tags-next:hover{background:#fff;color:#171714}
 @media(pointer:coarse){#ih-app .ih-tags-next::before{content:"";position:absolute;inset:-9px -11px}}
-/* Discussion overlay: comments at the center, idea details on the right. */
-#ih-app .ih-discussion{position:fixed;inset:0;z-index:45;display:grid;place-items:center;isolation:isolate;width:100vw;height:100vh;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:transparent;color:inherit}
-#ih-app .ih-discussion::backdrop{background:transparent}
-#ih-app .ih-discussion-shade{position:absolute;inset:0;background:#17171555;backdrop-filter:blur(4px);z-index:-1}
-#ih-app .ih-discussion-panel{width:90vw;height:90vh;height:90dvh;background:#fff;border-radius:12px;box-shadow:0 20px 90px #0003;overflow:hidden;display:flex;flex-direction:column;animation:ih-popup-in .18s ease-out}
-#ih-app .ih-popup-header{height:59px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 26px;border-bottom:1px solid #eaeae5}
-#ih-app .ih-popup-header h2{font-size:15px;font-weight:600;letter-spacing:-.3px;margin:0}
-#ih-app .ih-popup-close{height:36px;width:36px;border:0;border-radius:50%;background:transparent;color:#66665c;font-size:26px;line-height:1;padding:0;display:grid;place-items:center}
-#ih-app .ih-popup-close:hover{background:#f0f0eb;color:#111}
+/* Full-screen discussion page, with comments and a separate idea sidebar. */
+#ih-app.ih-is-discussion{min-height:0;background:#fff}
+#ih-app .ih-discussion{width:100%;margin:0;padding:0;background:#fff}
+#ih-app .ih-discussion-page{width:100%;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column;background:#fff}
+#ih-app .ih-discussion-header{height:64px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 26px;border-bottom:1px solid #eaeae5;background:#fff}
+#ih-app .ih-discussion-heading{display:flex;align-items:center;gap:11px;min-width:0}
+#ih-app .ih-discussion-header h1{font-size:15px;font-weight:600;letter-spacing:-.3px;margin:0;line-height:1.5}
+#ih-app .ih-thread-back{height:36px;width:36px;border:0;border-radius:50%;background:transparent;color:#66665c;font-size:22px;line-height:1;padding:0;display:grid;place-items:center}
+#ih-app .ih-thread-back:hover{background:#f0f0eb;color:#111}
+#ih-app .ih-discussion-sort{display:flex;align-items:center;gap:8px;font-size:11px;color:#8c8c7e}
+#ih-app .ih-discussion-sort select{border:0;background:transparent;font-size:12px;color:#55554c;padding:7px;max-width:140px}
 #ih-app .ih-thread-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;flex:1;min-height:0}
 #ih-app .ih-thread-main{min-width:0;min-height:0;display:flex;flex-direction:column;background:#fff}
 #ih-app .ih-thread-comments{overflow-y:auto;overscroll-behavior:contain;min-height:0;flex:1;padding:25px 30px 8px;scrollbar-width:thin;scrollbar-color:#d5d5ce transparent}
 #ih-app .ih-comments-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:27px}
 #ih-app .ih-comments-toolbar h3{font-size:13px;letter-spacing:-.2px;font-weight:600;margin:0}
 #ih-app #ih-comment-count{color:#949487;font-weight:400;font-size:12px;margin-left:5px}
-#ih-app .ih-comments-toolbar label{display:flex;align-items:center;gap:8px;font-size:10px;color:#929283}
-#ih-app .ih-comments-toolbar select{border:0;background:transparent;font-size:11px;color:#55554c;padding:6px;max-width:140px}
 #ih-app .ih-comment-list,#ih-app .ih-replies{padding:0;list-style:none;margin:0}
 #ih-app .ih-comment-list>.ih-comment-item{margin-bottom:25px}
 #ih-app .ih-comment-item{list-style:none;min-width:0;position:relative}
@@ -199,12 +197,6 @@
 #ih-app .ih-replies-toggle:hover{background:#eeeee7}
 #ih-app .ih-replies-chevron{display:block;transform:rotate(90deg);font-size:16px;font-weight:400;line-height:1;width:12px}
 #ih-app .ih-replies-toggle[aria-expanded="true"] .ih-replies-chevron{transform:rotate(-90deg)}
-#ih-app .ih-replies{margin:0 0 0 15px;padding:1px 0 0 26px}
-#ih-app .ih-replies>.ih-comment-item{padding-bottom:20px}
-#ih-app .ih-replies>.ih-comment-item:before{content:"";position:absolute;left:-27px;top:-18px;height:33px;width:20px;border-left:1px solid #d8d8cf;border-bottom:1px solid #d8d8cf;border-bottom-left-radius:13px}
-#ih-app .ih-replies>.ih-comment-item:not(:last-child):after{content:"";position:absolute;left:-27px;top:0;bottom:0;border-left:1px solid #d8d8cf}
-#ih-app .ih-replies.ih-replies-flat{margin-left:0;padding-left:0}
-#ih-app .ih-replies-flat>.ih-comment-item:before,#ih-app .ih-replies-flat>.ih-comment-item:after{display:none}
 #ih-app .ih-reply-form{margin:10px 0 12px;padding:12px;background:#fafaf7;border:1px solid #dfdfd5;border-radius:7px}
 #ih-app .ih-reply-form>label{display:block;font-size:10px;color:#808072;margin-bottom:7px}
 #ih-app .ih-reply-form textarea{display:block;width:100%;min-height:65px;resize:vertical;border:0;background:transparent;padding:0;color:#46463c;font-size:12px;line-height:1.8}
@@ -232,19 +224,30 @@
 #ih-app .ih-about-members{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
 #ih-app .ih-about-members strong{font-size:27px;line-height:1;font-weight:500;letter-spacing:-.9px;color:#414135}
 #ih-app .ih-about-members>span{font-size:11px;color:#888875}
-#ih-app .ih-thread-joined{display:flex;align-items:center;gap:6px;color:#777766;font-size:10px;margin-top:12px}
-#ih-app .ih-tags-label{margin-top:22px}
 #ih-app .ih-about-tags{display:flex;flex-wrap:wrap;gap:6px}
 #ih-app .ih-about-tags .ih-tag{white-space:normal;overflow-wrap:anywhere;max-width:100%;background:#fcfcf8;border-color:#deded2;color:#80806f}
 #ih-app .ih-thread-side-brand{display:block;font-size:18px;font-weight:700;letter-spacing:-.8px;color:#b2b2a3;margin-top:40px}
 #ih-app .ih-thread-notfound{text-align:center;padding:70px 20px}
 #ih-app .ih-thread-notfound h2{font-size:25px;margin:0 0 12px}
 #ih-app .ih-thread-notfound p{font-size:13px;color:#88887b;margin-bottom:20px}
-@keyframes ih-popup-in{from{opacity:.6;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
 @media(max-width:1000px){#ih-app .ih-thread-layout{grid-template-columns:minmax(0,1fr) 255px}#ih-app .ih-thread-aside{padding:24px 20px}#ih-app .ih-thread-comments{padding:22px 23px 8px}#ih-app .ih-thread-composer{padding:15px 23px}#ih-app #ih-thread-title{font-size:21px}}
-@media(max-width:680px){#ih-app .ih-popup-header{height:53px;padding:0 16px}#ih-app .ih-thread-layout{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}#ih-app .ih-thread-aside{order:-1;overflow:visible;border-left:0;border-bottom:1px solid #e8e8df;padding:20px}#ih-app .ih-thread-main{min-height:420px;flex-shrink:0}#ih-app .ih-thread-comments{overflow:visible;padding:20px;flex:1}#ih-app .ih-thread-composer{padding:16px 20px}#ih-app .ih-thread-aside .ih-about-divider{margin:16px 0}#ih-app .ih-thread-side-brand{display:none}#ih-app .ih-comment{padding-left:35px}#ih-app .ih-comment-avatar{width:25px;height:25px;font-size:8px}#ih-app .ih-replies{margin-left:12px;padding-left:20px}#ih-app .ih-replies>.ih-comment-item:before{left:-21px;width:15px}#ih-app .ih-replies>.ih-comment-item:not(:last-child):after{left:-21px}#ih-app .ih-replies.ih-replies-flat{margin-left:0;padding-left:0}#ih-app .ih-comment-text{font-size:12px}#ih-app .ih-comments-toolbar label>span{display:none}}
+@media(max-width:680px){#ih-app .ih-discussion-header{height:53px;padding:0 16px}#ih-app .ih-thread-layout{display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}#ih-app .ih-thread-aside{order:-1;overflow:visible;border-left:0;border-bottom:1px solid #e8e8df;padding:20px}#ih-app .ih-thread-main{min-height:420px;flex-shrink:0}#ih-app .ih-thread-comments{overflow:visible;padding:20px;flex:1}#ih-app .ih-thread-composer{padding:16px 20px}#ih-app .ih-thread-aside .ih-about-divider{margin:16px 0}#ih-app .ih-thread-side-brand{display:none}#ih-app .ih-comment-text{font-size:12px}}
 @media(max-width:400px){#ih-app .ih-thread-composer-bottom>span{display:none}#ih-app .ih-thread-composer-bottom{justify-content:flex-end}#ih-app .ih-thread-comments{padding:18px 14px}#ih-app .ih-thread-composer{padding:15px 14px}#ih-app .ih-comment-meta{gap:5px}}
-@media(pointer:coarse){#ih-app .ih-popup-close,#ih-app .ih-reply-button,#ih-app .ih-replies-toggle,#ih-app .ih-reply-cancel{min-height:44px}#ih-app .ih-popup-close{width:44px}}
+@media(pointer:coarse){#ih-app .ih-thread-back,#ih-app .ih-reply-button,#ih-app .ih-replies-toggle,#ih-app .ih-reply-cancel{min-height:44px}#ih-app .ih-thread-back{width:44px}}
+/* Every segment shares the avatar center and the exact child-list boundary. */
+#ih-app .ih-thread-comments{--ih-avatar-size:30px;--ih-avatar-radius:15px;--ih-indent:42px;--ih-elbow:calc(var(--ih-indent) - var(--ih-avatar-radius))}
+#ih-app .ih-comment{position:relative;display:flow-root;min-width:0;padding:0 0 8px calc(var(--ih-avatar-size) + 12px)}
+#ih-app .ih-comment-avatar{width:var(--ih-avatar-size);height:var(--ih-avatar-size);z-index:1}
+#ih-app .ih-comment-expanded>.ih-comment:before{content:"";position:absolute;left:var(--ih-avatar-radius);top:var(--ih-avatar-size);bottom:0;border-left:1px solid #d8d8cf;pointer-events:none}
+#ih-app .ih-replies-toggle{margin-bottom:0}
+#ih-app .ih-replies{--ih-elbow:calc(var(--ih-indent) - var(--ih-avatar-radius));margin:0 0 0 var(--ih-avatar-radius);padding:0 0 0 var(--ih-elbow)}
+#ih-app .ih-replies>.ih-comment-item{padding-bottom:18px}
+#ih-app .ih-replies>.ih-comment-item:last-child{padding-bottom:0}
+#ih-app .ih-replies>.ih-comment-item:before{content:"";position:absolute;left:calc(0px - var(--ih-elbow));top:0;height:var(--ih-avatar-radius);width:var(--ih-elbow);border-left:1px solid #d8d8cf;border-bottom:1px solid #d8d8cf;border-bottom-left-radius:12px;pointer-events:none}
+#ih-app .ih-replies>.ih-comment-item:not(:last-child):after{content:"";position:absolute;left:calc(0px - var(--ih-elbow));top:var(--ih-avatar-radius);bottom:0;border-left:1px solid #d8d8cf;pointer-events:none}
+#ih-app .ih-replies.ih-replies-compact{--ih-indent:30px}
+@media(max-width:680px){#ih-app .ih-thread-comments{--ih-avatar-size:25px;--ih-avatar-radius:12.5px;--ih-indent:34px}#ih-app .ih-replies.ih-replies-compact{--ih-indent:26px}#ih-app .ih-comment-avatar{font-size:8px}#ih-app .ih-comment-text{font-size:12px}}
+@media(max-width:400px){#ih-app .ih-discussion-sort>span{display:none}#ih-app .ih-discussion-header{gap:8px;padding:0 12px}}
 </style>
 <script>
 (()=>{
@@ -318,7 +321,7 @@
   '5':{name:'An Nhiên',initial:'AN'},'6':{name:'Hà Phương',initial:'HP'}
  };
  const drafts=new Map(),replyDrafts=new Map(),expandedComments=new Set();
- let replyTarget=null,commentSequence=0,popupFocus=null,scrollState=null;
+ let replyTarget=null,commentSequence=0,pageFocus=null,homeScroll={x:0,y:0};
  function migrateComments(){
   const migrated={};
   for(const [ideaId,list] of Object.entries(messages)){
@@ -381,59 +384,55 @@
     const draft=replyDrafts.get(commentKey(c.id))||'';
     const replyForm=replyTarget===c.id?`<form class="ih-reply-form" data-reply-form="${esc(c.id)}"><label for="reply-${esc(c.id)}">Trả lời ${esc(c.name)}</label><textarea id="reply-${esc(c.id)}" data-reply-text="${esc(c.id)}" maxlength="2000" rows="2" placeholder="Tiếp nối góc nhìn này..." required>${esc(draft)}</textarea><div class="ih-reply-form-footer"><button type="button" class="ih-reply-cancel" data-reply-cancel>Hủy</button><button type="submit" class="ih-primary"${draft.trim()?'':' disabled'}>Gửi trả lời <span aria-hidden="true">↗</span></button></div></form>`:'';
     const disclosure=replyCount?`<button type="button" class="ih-replies-toggle" data-toggle-replies="${esc(c.id)}" aria-expanded="${isExpanded}" aria-controls="ih-children-${esc(c.id)}"><span class="ih-replies-chevron" aria-hidden="true">›</span>${isExpanded?'Ẩn trả lời':`Xem ${replyCount} trả lời`}</button>`:'';
-    return `<li class="ih-comment-item"><article class="ih-comment${c.own?' ih-comment-own':''}" data-comment="${esc(c.id)}"><span class="ih-comment-avatar" aria-hidden="true">${esc(c.initial)}</span><div class="ih-comment-meta"><span class="ih-comment-name">${esc(c.name)}</span>${isAuthor?'<span class="ih-author-badge">Tác giả</span>':''}<span aria-hidden="true">·</span><time>${esc(c.time)}</time></div><p class="ih-comment-text">${esc(c.text)}</p><div class="ih-comment-actions"><button type="button" class="ih-reply-button" data-reply="${esc(c.id)}">Trả lời</button></div>${replyForm}${disclosure}</article>${replyCount?`<div id="ih-children-${esc(c.id)}"${isExpanded?'':' hidden'}>${isExpanded?renderBranch(c.id,depth+1,nextPath):''}</div>`:''}</li>`;
+    return `<li class="ih-comment-item${replyCount&&isExpanded?' ih-comment-expanded':''}"><article class="ih-comment${c.own?' ih-comment-own':''}" data-comment="${esc(c.id)}"><span class="ih-comment-avatar" aria-hidden="true">${esc(c.initial)}</span><div class="ih-comment-meta"><span class="ih-comment-name">${esc(c.name)}</span>${isAuthor?'<span class="ih-author-badge">Tác giả</span>':''}<span aria-hidden="true">·</span><time>${esc(c.time)}</time></div><p class="ih-comment-text">${esc(c.text)}</p><div class="ih-comment-actions"><button type="button" class="ih-reply-button" data-reply="${esc(c.id)}">Trả lời</button></div>${replyForm}${disclosure}</article>${replyCount?`<div id="ih-children-${esc(c.id)}"${isExpanded?'':' hidden'}>${isExpanded?renderBranch(c.id,depth+1,nextPath):''}</div>`:''}</li>`;
    }).join('');
-   return `<ol class="${parentId===null?'ih-comment-list':'ih-replies'+(depth>=3?' ih-replies-flat':'')}">${html}</ol>`;
+   return `<ol class="${parentId===null?'ih-comment-list':'ih-replies'+(depth>=3?' ih-replies-compact':'')}">${html}</ol>`;
   }
   $('#ih-comment-list').innerHTML=list.length?renderBranch(null,0,new Set()):'<p class="ih-thread-empty">Cuộc thảo luận đang chờ góc nhìn đầu tiên của bạn</p>';
   $('#ih-comment-count').textContent=list.length;
  }
- function setBackgroundInert(value){
-  ['.ih-header','#ih-dashboard','.ih-footer'].forEach(selector=>{const element=$(selector);if(!element)return;element.inert=value;if(value)element.setAttribute('aria-hidden','true');else element.removeAttribute('aria-hidden');});
- }
- function lockPage(){
-  if(scrollState)return;
-  scrollState={body:document.body.style.overflow,html:document.documentElement.style.overflow};
-  document.body.style.overflow='hidden';document.documentElement.style.overflow='hidden';
- }
- function unlockPage(){
-  if(!scrollState)return;
-  document.body.style.overflow=scrollState.body;document.documentElement.style.overflow=scrollState.html;scrollState=null;
- }
  function showThread(ideaId){
   if(activeId===ideaId&&!$('#ih-discussion').hidden)return;
-  const wasClosed=$('#ih-discussion').hidden,idea=ideas.find(i=>i.id===ideaId);
-  if(wasClosed){popupFocus=document.activeElement;lockPage();}
-  $('#ih-discussion').hidden=false;const dialog=$('#ih-discussion');if(dialog.showModal&&!dialog.open)dialog.showModal();setBackgroundInert(true);
-  $('#ih-thread-notfound').hidden=!!idea;$('#ih-thread-layout').hidden=!idea;
-  replyTarget=null;$('#ih-thread-status').textContent='';
-  if(!idea){activeId=null;$('#ih-thread-back').focus();return;}
+  const wasHome=$('#ih-discussion').hidden,idea=ideas.find(i=>i.id===ideaId);
+  if(wasHome){pageFocus=document.activeElement;homeScroll={x:window.scrollX||0,y:window.scrollY||0};}
+  root.classList.add('ih-is-discussion');
+  ['.ih-header','#ih-dashboard','.ih-footer'].forEach(selector=>$(selector).hidden=true);
+  $('#ih-discussion').hidden=false;
+  $('#ih-thread-notfound').hidden=!!idea;$('#ih-thread-layout').hidden=!idea;$('#ih-comment-sort').disabled=!idea;
+  replyTarget=null;$('#ih-thread-status').textContent='';document.title='Thảo luận — IdeaHub';
+  window.scrollTo?.({top:0,left:0,behavior:'instant'});
+  if(!idea){activeId=null;$('#ih-thread-back').focus({preventScroll:true});return;}
   if(!idea.joined){idea.joined=true;idea.members++;}
   activeId=ideaId;if(!Array.isArray(comments[ideaId]))comments[ideaId]=[];save();render();
   const owner=ownerFor(idea);
   $('#ih-thread-title').textContent=idea.title;$('#ih-thread-description').textContent=idea.description;
   $('#ih-thread-owner').textContent=owner.name;$('#ih-thread-owner-avatar').textContent=owner.initial;
-  $('#ih-thread-age').textContent=`Tạo ${idea.age}`;$('#ih-thread-category').textContent=idea.category;
-  $('#ih-about-members').textContent=idea.members;
+  $('#ih-thread-age').textContent=`Tạo ${idea.age}`;$('#ih-about-members').textContent=idea.members;
   $('#ih-about-tags').innerHTML=ideaTags(idea).map(t=>`<span class="ih-tag">${esc(t)}</span>`).join('');
   $('#ih-thread-text').value=drafts.get(ideaId)||'';$('#ih-thread-submit').disabled=!$('#ih-thread-text').value.trim();
   renderThreadComments();$('.ih-thread-comments').scrollTop=0;$('.ih-thread-aside').scrollTop=0;$('#ih-thread-layout').scrollTop=0;
   $('#ih-thread-back').focus({preventScroll:true});
  }
  function showDashboard(){
-  const wasOpen=!$('#ih-discussion').hidden,previousId=activeId;
-  activeId=null;replyTarget=null;const dialog=$('#ih-discussion');if(dialog.open)dialog.close();dialog.hidden=true;setBackgroundInert(false);unlockPage();render();
-  if(wasOpen){const target=popupFocus?.isConnected&&popupFocus!==document.body?popupFocus:$(`.ih-join[data-idea="${previousId}"]`)||$('#ih-search');target?.focus({preventScroll:true});popupFocus=null;}
+  const wasThread=!$('#ih-discussion').hidden,previousId=activeId;
+  activeId=null;replyTarget=null;$('#ih-discussion').hidden=true;root.classList.remove('ih-is-discussion');
+  ['.ih-header','#ih-dashboard','.ih-footer'].forEach(selector=>$(selector).hidden=false);
+  document.title='IdeaHub — Nghĩ cùng nhau. Làm cùng nhau.';render();
+  if(wasThread){window.scrollTo?.({top:homeScroll.y,left:homeScroll.x,behavior:'instant'});const target=pageFocus?.isConnected&&pageFocus!==document.body?pageFocus:$(`.ih-join[data-idea="${previousId}"]`)||$('#ih-search');target?.focus({preventScroll:true});pageFocus=null;}
  }
  function applyRoute(hash){
   const match=/^#\/idea\/([^/]+)$/.exec(hash||'');
   if(match){let id;try{id=decodeURIComponent(match[1]);}catch{id='';}showThread(id);}else if(!$('#ih-discussion').hidden)showDashboard();
  }
- function openDiscussion(id){showThread(id);}
- function goHome(){showDashboard();if(/^#\/idea\//.test(window.location.hash)){try{window.history.replaceState(null,'',window.location.pathname+window.location.search);}catch{}}}
+ function navigate(hash){
+  if(window.location.hash!==hash){try{window.history.pushState(null,'',hash);}catch{window.location.hash=hash;}}
+  applyRoute(hash);
+ }
+ function openDiscussion(id){navigate(`#/idea/${encodeURIComponent(id)}`);}
+ function goHome(){navigate('#/');}
+ window.addEventListener('popstate',()=>applyRoute(window.location.hash));
  window.addEventListener('hashchange',()=>applyRoute(window.location.hash));
  $('#ih-thread-back').addEventListener('click',goHome);
- $('#ih-discussion').addEventListener('cancel',e=>{e.preventDefault();goHome();});
  $('#ih-thread-text').addEventListener('input',()=>{drafts.set(activeId,$('#ih-thread-text').value);$('#ih-thread-submit').disabled=!$('#ih-thread-text').value.trim();});
  $('#ih-comment-sort').addEventListener('change',renderThreadComments);
  function postComment(text,parentId=null){
@@ -466,7 +465,7 @@
   $(`[data-comment="${comment.id}"]`)?.scrollIntoView?.({block:'nearest',behavior:'auto'});
  });
  root.addEventListener('click',e=>{
-  if(e.target.closest('[data-thread-home]')||e.target.closest('[data-popup-close]')){goHome();return;}
+  if(e.target.closest('[data-thread-home]')){goHome();return;}
   const toggle=e.target.closest('[data-toggle-replies]');
   if(toggle){const id=toggle.dataset.toggleReplies,key=commentKey(id);if(!commentList().some(c=>c.parentId===id))return;expandedComments.has(key)?expandedComments.delete(key):expandedComments.add(key);renderThreadComments();$(`[data-toggle-replies="${id}"]`)?.focus({preventScroll:true});return;}
   const reply=e.target.closest('[data-reply]');
@@ -475,12 +474,6 @@
  });
  root.addEventListener('keydown',e=>{
   if($('#ih-discussion').hidden||!$('#ih-new-layer').hidden)return;
-  if(e.key==='Escape'){e.preventDefault();goHome();return;}
-  if(e.key==='Tab'){
-   const controls=[...$('.ih-discussion-panel').querySelectorAll('button:not(:disabled),textarea,select')].filter(el=>el.getClientRects().length);
-   const first=controls[0],last=controls[controls.length-1];
-   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
-  }
   if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)&&!e.isComposing){
    const reply=e.target.closest('[data-reply-form]');if(reply){e.preventDefault();reply.requestSubmit();}
    else if(e.target.id==='ih-thread-text'){e.preventDefault();$('#ih-thread-form').requestSubmit();}
