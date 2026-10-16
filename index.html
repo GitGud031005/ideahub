@@ -20,15 +20,15 @@
   </main>
   <main class="ih-discussion" id="ih-discussion" aria-labelledby="ih-discussion-title" hidden>
     <section class="ih-discussion-page">
-      <header class="ih-discussion-header"><div class="ih-discussion-heading"><button type="button" class="ih-thread-back" id="ih-thread-back" aria-label="Về bảng ý tưởng">←</button><h1 id="ih-discussion-title">Thảo luận <span id="ih-comment-count" aria-label="Số bình luận"></span></h1></div><label class="ih-discussion-sort"><span>Sắp xếp</span><select id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select></label></header>
+      <header class="ih-discussion-header"><div class="ih-discussion-heading"><button type="button" class="ih-thread-back" id="ih-thread-back" aria-label="Quay lại bảng ý tưởng"><span class="ih-back-mark" aria-hidden="true"></span></button><h1 id="ih-discussion-title">Thảo luận <span id="ih-comment-count" aria-label="Số bình luận"></span></h1></div><label class="ih-discussion-sort"><span class="ih-sort-caption">Sắp xếp</span><select id="ih-comment-sort" aria-label="Sắp xếp bình luận"><option value="old">Cũ nhất</option><option value="new">Mới nhất</option></select></label><button type="button" class="ih-about-toggle" id="ih-about-toggle" aria-controls="ih-idea-panel" aria-expanded="true" hidden>Về ý tưởng</button></header>
       <section id="ih-thread-notfound" class="ih-thread-notfound" hidden><h2>Không tìm thấy ý tưởng</h2><p>Ý tưởng này không tồn tại trong bản demo hiện tại</p><button type="button" class="ih-secondary" data-thread-home>Về bảng ý tưởng</button></section>
       <div class="ih-thread-layout" id="ih-thread-layout">
         <div class="ih-thread-main">
           <section class="ih-thread-comments" aria-label="Nội dung thảo luận"><p class="ih-sr" id="ih-thread-status" role="status" aria-live="polite"></p><div id="ih-comment-list"></div></section>
           <form class="ih-thread-composer" id="ih-thread-form"><label for="ih-thread-text">Thêm góc nhìn của bạn</label><textarea id="ih-thread-text" rows="1" maxlength="2000" placeholder="Một câu hỏi, một góp ý, hay một cách làm khác..." required></textarea><div class="ih-thread-composer-bottom"><span>Shift + Enter để xuống dòng</span><button type="submit" class="ih-reply-submit" id="ih-thread-submit" aria-keyshortcuts="Enter" disabled>Đăng bình luận <kbd aria-hidden="true">↵</kbd></button></div></form>
         </div>
-        <aside class="ih-thread-aside" aria-labelledby="ih-thread-title">
-          <div class="ih-about-label">VỀ Ý TƯỞNG NÀY</div>
+        <aside class="ih-thread-aside" id="ih-idea-panel" aria-labelledby="ih-thread-title">
+          <div class="ih-about-top"><div class="ih-about-label">VỀ Ý TƯỞNG NÀY</div><button type="button" class="ih-about-close" id="ih-about-close" aria-label="Thu gọn thông tin ý tưởng" aria-controls="ih-idea-panel">×</button></div>
           <h2 id="ih-thread-title"></h2><p id="ih-thread-description"></p>
           <div class="ih-about-divider"></div>
           <div class="ih-about-label">NGƯỜI KHỞI XƯỚNG</div><div class="ih-post-byline"><span class="ih-avatar" id="ih-thread-owner-avatar" aria-hidden="true"></span><div><span id="ih-thread-owner"></span><time id="ih-thread-age"></time></div></div>
@@ -253,7 +253,29 @@
 #ih-app .ih-replies>.ih-comment-item:not(:last-child):after{content:"";position:absolute;left:calc(0px - var(--ih-elbow));top:var(--ih-avatar-radius);bottom:0;border-left:1px solid #d8d8cf;pointer-events:none}
 #ih-app .ih-replies.ih-replies-compact{--ih-indent:30px}
 @media(max-width:680px){#ih-app .ih-thread-comments{--ih-avatar-size:25px;--ih-avatar-radius:12.5px;--ih-indent:34px}#ih-app .ih-replies.ih-replies-compact{--ih-indent:26px}#ih-app .ih-comment-avatar{font-size:8px}#ih-app .ih-comment-text{font-size:12px}}
-@media(max-width:400px){#ih-app .ih-discussion-sort>span{display:none}#ih-app .ih-discussion-header{gap:8px;padding:0 12px}}
+@media(max-width:400px){#ih-app .ih-discussion-sort>.ih-sort-caption{display:none}#ih-app .ih-discussion-header{gap:8px;padding:0 12px}}
+/* Shared control height and optical alignment across the discussion header. */
+#ih-app .ih-discussion-header{gap:20px;padding:0 24px}
+#ih-app .ih-discussion-heading{gap:14px;flex-shrink:0}
+#ih-app .ih-discussion-header h1{display:flex;align-items:center;gap:8px;height:32px;font-size:14px;line-height:20px;letter-spacing:-.2px}
+#ih-app #ih-comment-count{display:inline-flex;align-items:center;height:20px;margin:0;font-size:12px;line-height:20px;font-variant-numeric:tabular-nums;color:#949486}
+#ih-app .ih-thread-back{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:32px;height:32px;min-height:32px;padding:0;border:1px solid #e6e6df;border-radius:6px;background:#fff;color:#55554b}
+#ih-app .ih-thread-back:hover{background:#f4f4ef;border-color:#d4d4c9;color:#20201b}
+#ih-app .ih-back-mark{width:7px;height:7px;margin-left:3px;border-left:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg)}
+#ih-app .ih-discussion-sort{position:relative;display:inline-flex;align-items:center;flex-shrink:0;gap:9px;height:32px;padding-left:18px;border-left:1px solid #e8e8e0;font-size:11px;line-height:20px}
+#ih-app .ih-discussion-sort select{appearance:none;height:32px;line-height:20px;margin:0;padding:0 17px 0 0;font-size:11px;color:#54544a}
+#ih-app .ih-discussion-sort:after{content:"";position:absolute;right:2px;top:12px;width:5px;height:5px;border-right:1px solid #777769;border-bottom:1px solid #777769;transform:rotate(45deg);pointer-events:none}
+#ih-app .ih-about-toggle{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-height:32px;padding:6px 11px;border:1px solid #e2e2d8;border-radius:6px;background:#fafaf7;color:#646456;font-size:11px;line-height:20px;white-space:nowrap}
+#ih-app .ih-about-toggle:hover{background:#efefe7;color:#272721}
+#ih-app .ih-thread-aside{padding-top:16px}
+#ih-app .ih-about-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;margin-bottom:22px}
+#ih-app .ih-about-top .ih-about-label{margin:0;line-height:20px}
+#ih-app .ih-about-close{display:grid;place-items:center;flex-shrink:0;width:28px;height:28px;padding:0;border:0;border-radius:5px;background:transparent;color:#929281;font-size:21px;line-height:1}
+#ih-app .ih-about-close:hover{background:#eaeae0;color:#33332a}
+#ih-app .ih-discussion-page.ih-aside-collapsed{grid-template-columns:minmax(0,1fr)}
+@media(max-width:680px){#ih-app .ih-discussion-header{height:auto;min-height:64px;flex-wrap:wrap;column-gap:14px;row-gap:8px;padding:12px 16px}#ih-app .ih-discussion-sort{padding-left:12px}#ih-app .ih-about-top{margin-bottom:17px}#ih-app .ih-thread-aside{padding-top:16px}}
+@media(max-width:400px){#ih-app .ih-discussion-header{column-gap:10px;padding:10px 12px}#ih-app .ih-discussion-heading{gap:10px}#ih-app .ih-discussion-sort{padding-left:10px}#ih-app .ih-about-toggle{padding:5px 8px;font-size:10px}}
+@media(pointer:coarse){#ih-app .ih-thread-back,#ih-app .ih-about-toggle,#ih-app .ih-about-close{min-height:44px}#ih-app .ih-thread-back{width:44px}#ih-app .ih-about-close{width:44px}}
 </style>
 <script>
 (()=>{
@@ -276,7 +298,14 @@
  '6':[{name:'Hà Phương',initial:'HP',text:'Chào mọi người! Cứ chia sẻ thiết kế và nói rõ phần bạn muốn nhận góp ý nhé.',time:'07:30'}]
  };
  const legacyDescriptions={"1": "Cùng khám phá cách thu thập dữ liệu sản phẩm, giao thông và biến dữ liệu thô thành những điều hữu ích.", "2": "Một bản đồ nhỏ lưu lại những quán cà phê, thư viện và góc ngồi lý tưởng để tập trung học tập.", "3": "Để những cuốn sách đã đọc tìm được người đọc tiếp theo. Một không gian trao đổi sách trong trường.", "4": "Gom deadline, chia việc và theo dõi tiến độ của cả nhóm trong một giao diện thật đơn giản.", "5": "Mỗi ngày một thử thách nhỏ. Cùng học một kỹ năng, giữ động lực và chia sẻ hành trình với nhau.", "6": "Bạn có một thiết kế đang làm dở? Mang vào đây để cùng góp ý, thử nghiệm và làm nó tốt hơn."};
- const demoTags={'1':['Công nghệ','Data crawling','Python','Data engineering'],'2':['Đời sống','Không gian học','Cộng đồng'],'3':['Đời sống','Sách','Trao đổi'],'4':['Học tập','Productivity','Teamwork','Web app'],'5':['Học tập','Thói quen','Phát triển bản thân'],'6':['Thiết kế','UI/UX','Feedback','Cộng đồng']};
+ const demoTags={
+  '1':['Công nghệ','Data crawling','Python','Data engineering','Web scraping','BeautifulSoup','Scrapy','Playwright','ETL','Open data'],
+  '2':['Đời sống','Không gian học','Cộng đồng','Bản đồ','Cà phê','Thư viện','Wifi','Review địa điểm'],
+  '3':['Đời sống','Sách','Trao đổi','Kết nối','Đọc sách','Sinh viên','Sống xanh','Book club'],
+  '4':['Học tập','Productivity','Teamwork','Web app','Quản lý dự án','Deadline','UI/UX','Open source','Sinh viên'],
+  '5':['Học tập','Thói quen','Phát triển bản thân','Thử thách','Kỹ năng mới','Tiếng Anh','Sáng tạo','Đồng hành'],
+  '6':['Thiết kế','UI/UX','Feedback','Cộng đồng','Portfolio','Figma','Typography','Trải nghiệm','Product design']
+ };
  const ideaTags=i=>[...new Set((Array.isArray(i.tags)&&i.tags.length?i.tags:demoTags[i.id]||[i.category]).filter(t=>typeof t==='string'&&t.trim()).map(t=>t.trim()))];
  function tagsMarkup(i){return `<div class="ih-tags-wrap"><div class="ih-tags" aria-label="Tags của ${esc(i.title)}">${ideaTags(i).map(t=>`<span class="ih-tag">${esc(t)}</span>`).join('')}</div><button type="button" class="ih-tags-next" aria-label="Cuộn tags sang phải" hidden>&gt;</button></div>`;}
  function updateTagOverflow(strip){const wrap=strip.closest('.ih-tags-wrap');if(!wrap)return;const more=strip.scrollWidth-strip.clientWidth-strip.scrollLeft>2;wrap.classList.toggle('ih-has-more',more);const next=wrap.querySelector('.ih-tags-next');if(next){next.hidden=!more;next.disabled=!more;}}
@@ -327,7 +356,7 @@
   '5':{name:'An Nhiên',initial:'AN'},'6':{name:'Hà Phương',initial:'HP'}
  };
  const drafts=new Map(),replyDrafts=new Map(),expandedComments=new Set();
- let replyTarget=null,commentSequence=0,pageFocus=null,homeScroll={x:0,y:0};
+ let replyTarget=null,commentSequence=0,pageFocus=null,homeScroll={x:0,y:0},ideaPanelOpen=true;
  function migrateComments(){
   const migrated={};
   for(const [ideaId,list] of Object.entries(messages)){
@@ -400,6 +429,15 @@
   $('#ih-comment-count').textContent=list.length;
   $$('[data-reply-text]').forEach(fitCommentField);
  }
+ function setIdeaPanel(open,moveFocus=false){
+  ideaPanelOpen=!!open;
+  $('.ih-discussion-page').classList.toggle('ih-aside-collapsed',!ideaPanelOpen);
+  $('#ih-idea-panel').hidden=!ideaPanelOpen;
+  $('#ih-about-toggle').hidden=ideaPanelOpen;
+  $('#ih-about-toggle').setAttribute('aria-expanded',String(ideaPanelOpen));
+  if(ideaPanelOpen){$('#ih-thread-layout').scrollTop=0;$('#ih-idea-panel').scrollTop=0;}
+  if(moveFocus)(ideaPanelOpen?$('#ih-about-close'):$('#ih-about-toggle')).focus({preventScroll:true});
+ }
  function showThread(ideaId){
   if(activeId===ideaId&&!$('#ih-discussion').hidden)return;
   const wasHome=$('#ih-discussion').hidden,idea=ideas.find(i=>i.id===ideaId);
@@ -410,7 +448,8 @@
   $('#ih-thread-notfound').hidden=!!idea;$('#ih-thread-layout').hidden=!idea;$('#ih-comment-sort').disabled=!idea;
   replyTarget=null;$('#ih-thread-status').textContent='';document.title='Thảo luận — IdeaHub';
   window.scrollTo?.({top:0,left:0,behavior:'instant'});
-  if(!idea){activeId=null;$('#ih-thread-back').focus({preventScroll:true});return;}
+  if(!idea){activeId=null;$('#ih-about-toggle').hidden=true;$('#ih-thread-back').focus({preventScroll:true});return;}
+  setIdeaPanel(ideaPanelOpen);
   if(!idea.joined){idea.joined=true;idea.members++;}
   activeId=ideaId;if(!Array.isArray(comments[ideaId]))comments[ideaId]=[];save();render();
   const owner=ownerFor(idea);
@@ -442,6 +481,8 @@
  window.addEventListener('popstate',()=>applyRoute(window.location.hash));
  window.addEventListener('hashchange',()=>applyRoute(window.location.hash));
  $('#ih-thread-back').addEventListener('click',goHome);
+ $('#ih-about-close').addEventListener('click',()=>setIdeaPanel(false,true));
+ $('#ih-about-toggle').addEventListener('click',()=>setIdeaPanel(true,true));
  $('#ih-thread-text').addEventListener('input',()=>{drafts.set(activeId,$('#ih-thread-text').value);$('#ih-thread-submit').disabled=!$('#ih-thread-text').value.trim();fitCommentField($('#ih-thread-text'));});
  $('#ih-comment-sort').addEventListener('change',renderThreadComments);
  function postComment(text,parentId=null){
