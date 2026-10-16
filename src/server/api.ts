@@ -4,9 +4,11 @@ import { getRepository, storageMode } from "./container";
 import { AppError } from "./errors";
 import { getDatabasePool } from "./database";
 import { assertSameOrigin, errorResponse, json, rateLimit, readJson } from "./http";
-import { createSessionToken, getSessionUser, requireSession, sessionCookie, verifySessionToken } from "./session";
+import { getSessionToken, sessionCookie } from "./session";
+import { AuthService, getAuthService } from "./auth";
+import { loginSchema, registerSchema } from "@/lib/auth-validation";
 
-export async function handleApi(request: Request, path: string[], repository?: IdeaRepository): Promise<Response> {
+export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService): Promise<Response> {
   try {
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
@@ -14,31 +16,53 @@ export async function handleApi(request: Request, path: string[], repository?: I
     if (route === "health" && method === "GET") {
       const storage = storageMode();
       if (storage === "postgres") {
-        try { await getDatabasePool().query("SELECT id FROM public.ideas LIMIT 0"); }
+        try { await getDatabasePool().query("SELECT i.id FROM public.ideas i LEFT JOIN ideahub_private.accounts a ON false LIMIT 0"); }
         catch { throw new AppError(503, "DATABASE_UNAVAILABLE", "Chưa kết nối được database"); }
       }
       return json({ status: "ok", storage, persistent: storage !== "memory" });
     }
+    const auth = authentication ?? getAuthService(), token = getSessionToken(request);
     if (route === "session" && method === "GET") {
-      const existing = getSessionUser(request);
-      if (existing) return json({ user: existing, storage: storageMode() });
-      const token = createSessionToken();
-      return json({ user: verifySessionToken(token), storage: storageMode() }, 200, { "Set-Cookie": sessionCookie(token) });
+      const user = await auth.user(token);
+      return json({ user, storage: storageMode() }, 200, !user && token ? { "Set-Cookie": sessionCookie("", true) } : undefined);
+    }
+    if (route === "auth/logout" && method === "POST") {
+      await auth.logout(token);
+      return json({ user: null, storage: storageMode() }, 200, { "Set-Cookie": sessionCookie("", true) });
+    }
+    if ((route === "auth/login" || route === "auth/register") && method === "POST") {
+      const ip = process.env.VERCEL ? request.headers.get("x-vercel-forwarded-for")?.split(",")[0].trim() || "unknown" : "local";
+      await auth.limit(`${route}:ip:${ip}`, route.endsWith("register") ? 10 : 60, 900);
+      // A shared database bucket also limits attempts across serverless instances.
+      await auth.limit(`${route}:global`, route.endsWith("register") ? 200 : 1000, 900);
+      let result: Awaited<ReturnType<AuthService["login"]>>;
+      if (route.endsWith("register")) {
+        const input = await readJson(request, registerSchema);
+        await auth.limit(`${route}:username:${input.username}`, 12, 900);
+        result = await auth.register(input, token);
+      } else {
+        const input = await readJson(request, loginSchema);
+        await auth.limit(`${route}:username:${input.username}`, 12, 900);
+        result = await auth.login(input, token);
+      }
+      return json({ user: result.user, storage: storageMode() }, route.endsWith("register") ? 201 : 200, { "Set-Cookie": sessionCookie(result.token) });
     }
     if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
-    const user = requireSession(request), repo = repository ?? getRepository(), url = new URL(request.url);
-    if (method === "POST") rateLimit(`${user.id}:write`);
+    const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
+    if ((method === "POST" || path[2] === "comments") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
+    const viewerId = user?.id ?? "__anonymous__";
+    if (method === "POST") rateLimit(`${user!.id}:write`);
     if (path.length === 1) {
-      if (method === "GET") return json(await repo.listIdeas(user.id, ideaQuerySchema.parse(Object.fromEntries(url.searchParams))));
-      return json(await repo.createIdea(user, await readJson(request, createIdeaSchema)), 201);
+      if (method === "GET") return json(await repo.listIdeas(viewerId, ideaQuerySchema.parse(Object.fromEntries(url.searchParams))));
+      return json(await repo.createIdea(user!, await readJson(request, createIdeaSchema)), 201);
     }
     const id = path[1];
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new AppError(400, "INVALID_ID", "Mã ý tưởng không hợp lệ");
-    if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, user.id));
-    if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user.id));
+    if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
+    if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));
     if (path[2] === "comments") {
       if (method === "GET") { const query = commentQuerySchema.parse(Object.fromEntries(url.searchParams)); return json(await repo.listComments(id, query.cursor, query.limit)); }
-      return json(await repo.createComment(id, user, await readJson(request, createCommentSchema)), 201);
+      return json(await repo.createComment(id, user!, await readJson(request, createCommentSchema)), 201);
     }
     return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: path[2] === "join" ? "POST" : "GET" });
   } catch (error) { return errorResponse(error); }

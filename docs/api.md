@@ -2,12 +2,15 @@
 
 Base URL: `/api`. JSON UTF-8. Tất cả dữ liệu cá nhân hóa trả `Cache-Control: no-store`.
 
-Trước khi gọi endpoint ý tưởng, gọi `GET /api/session` và giữ cookie trả về. Client web sử dụng fetch cùng domain. Author luôn lấy từ session trên server; body có field không được khai báo sẽ bị từ chối.
+Khách có thể đọc idea mà không có cookie. `GET /api/session` trả user hoặc null; không tạo danh tính khách. Đăng ký/đăng nhập mới cấp cookie phiên. Client web sử dụng fetch cùng domain. Author luôn lấy từ session trên server; body có field không được khai báo sẽ bị từ chối.
 
 | Method | Endpoint | Hành vi |
 | --- | --- | --- |
 | GET | `/health` | `{status, storage, persistent}`; postgres có query kiểm tra DB, lỗi kết nối trả 503; không thay thế kiểm tra session |
-| GET | `/session` | Lấy/tạo phiên khách, cookie HttpOnly + SameSite=Lax; Secure ở production |
+| GET | `/session` | Lấy tài khoản hiện tại hoặc null; không tự tạo phiên |
+| POST | `/auth/register` | `{username,fullName,password}`; tạo tài khoản và phiên, 201 |
+| POST | `/auth/login` | `{username,password}`; cấp phiên mới, thu hồi cookie cũ, 200 |
+| POST | `/auth/logout` | Thu hồi phiên và xóa cookie, 200 |
 | GET | `/ideas?q=&view=all&sort=new&limit=24&offset=0` | Danh sách và số lượng all/joined/mine |
 | POST | `/ideas` | Tạo idea, creator đồng thời là thành viên; trả 201 |
 | GET | `/ideas/:id` | Thông tin đầy đủ, `joined`/`mine` của phiên hiện tại |
@@ -52,6 +55,8 @@ List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cur
 }
 ```
 
-Status: 400 JSON/cursor/parent sai; 401 thiếu hoặc hết phiên; 403 origin không hợp lệ; 404 không tồn tại; 405 sai method; 413 body lớn hơn 16 KiB; 415 sai content type; 422 validation/depth; 429 quá số ghi; 503 cấu hình secret/storage chưa hợp lệ.
+Các POST tạo/join/comment và GET bình luận yêu cầu tài khoản thật. Username 3–24 ký tự `a-z0-9_`, không phân biệt hoa thường; họ tên 2–80 ký tự; mật khẩu đăng ký 15–128 ký tự. Cookie HttpOnly, Secure production, SameSite=Lax, hết hạn 30 ngày; không trả token/hash mật khẩu trong JSON. Auth có limiter dùng chung PostgreSQL.
+
+Status: 400 JSON/cursor/parent sai; 401 thiếu/hết phiên hoặc sai credentials; 409 username đã dùng; 403 origin không hợp lệ; 404 không tồn tại; 405 sai method; 413 body lớn hơn 16 KiB; 415 sai content type; 422 validation/depth; 429 quá số ghi; 503 cấu hình secret/storage chưa hợp lệ.
 
 Mutation JSON phải có `Content-Type: application/json`. Request có Origin từ domain khác hoặc `Sec-Fetch-Site: cross-site` bị từ chối. Rate limit tạm thời 30 lần ghi/phút/phiên/instance; đây không phải giới hạn phân tán cho production.

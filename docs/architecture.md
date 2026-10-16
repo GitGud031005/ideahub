@@ -16,13 +16,13 @@ UI không đọc file, không nhận biết SQL và không tin dữ liệu ngư�
 - Parent phải thuộc cùng idea nhờ kiểm tra nghiệp vụ và composite foreign key. Recursive query kiểm tra tối đa 12 cấp trả lời; ứng dụng không cho sửa parent sau khi tạo.
 - List ideas/comments đọc trong repeatable-read transaction để counts, cursor và items dùng cùng snapshot. Cursor bình luận nằm trong cùng idea, dựa trên timestamp và ID tại DB.
 - `search_text` được adapter chuẩn hóa tiếng Việt từ title/description/tags, tìm chuỗi literal bằng parameter. Với dữ liệu lớn cần benchmark và bổ sung index tìm kiếm phù hợp; hiện không phụ thuộc extension.
-- Backend lấy danh tính từ signed guest session, không nhận author ID từ input. Bảng `public.users` chưa tích hợp Supabase Auth. RLS bật nhưng không có policy frontend; quyền `anon`/`authenticated` đã bị thu hồi. Next.js truy cập bằng credential DB phía server.
+- Backend lấy danh tính từ token ngẫu nhiên đã hash trong bảng session, không nhận author ID từ input. Tài khoản username/password được quản lý trong schema `ideahub_private`, không sử dụng Supabase Auth email/OAuth. RLS bật nhưng không có policy frontend; quyền `anon`/`authenticated` đã bị thu hồi. Next.js truy cập bằng credential DB phía server.
 - Không tự seed hoặc import dữ liệu JSON/localStorage vào DB. Cả hai chế độ demo vẫn có để phát triển local.
 - `/api/health` thực sự thử query bảng ideas khi dùng postgres và trả 503 nếu DB không truy cập được. `persistent` mô tả storage mode; không thay cho kiểm tra backup hay độ bền vận hành.
 
 Migration và cấu hình cụ thể nằm trong [hướng dẫn Supabase](supabase-setup.md). Vẫn cần `DATABASE_URL` trong môi trường chạy ứng dụng. Không hardcode secret trong source hoặc dùng `NEXT_PUBLIC_*` cho credential.
 
-Bước tiếp theo khi có tài khoản thật: thay guest session bằng auth provider, map ID của tài khoản, bổ sung chính sách quyền và rate limiter phân tán. Integration test của adapter dùng `TEST_DATABASE_URL` riêng, không tự dùng credential production.
+Auth hiện có credentials scrypt, phiên có thể thu hồi và limiter PostgreSQL. Google OAuth và recovery chưa thuộc bản này. Integration test của adapter dùng `TEST_DATABASE_URL` riêng, không tự dùng credential production.
 
 ## Frontend
 
@@ -36,4 +36,4 @@ Bước tiếp theo khi có tài khoản thật: thay guest session bằng auth 
 
 ## Môi trường và phạm vi kiểm tra
 
-Next build/typecheck và tests chạy local. SQL adapter đã qua contract test trên PostgreSQL nhúng (PGlite). Schema đã áp dụng và smoke test trên Supabase; toàn bộ fixture được rollback. Chưa chạy integration test qua pg driver vì chưa có DATABASE_URL của ứng dụng. Không tạo Vercel project/deployment, không có secret thật trong repo. Browser QA chưa chạy trong môi trường thực hiện; cần rà desktop/mobile và keyboard sau khi import Vercel.
+Typecheck, production build và kiểm thử chạy trong workspace. SQL adapter và auth store được kiểm tra trên PGlite với toàn bộ migration; schema thật đã áp dụng trên Supabase và xác minh quyền server-only. Tài khoản local memory dành cho phát triển; production bắt buộc PostgreSQL. Kiểm thử pg driver ngoài vẫn cần `TEST_DATABASE_URL` riêng. Tài liệu kiểm tra giao diện nằm ở `tests/ui/` và sử dụng fixture tách khỏi production API.

@@ -53,3 +53,83 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 @media(max-width:400px){.ih-discussion-page{--gutter:12px}.ih-discussion-header{gap:8px}.ih-discussion-heading{gap:8px}.ih-discussion-actions{gap:8px}.ih-discussion-header h1{font-size:13px;gap:6px}.ih-thread-composer-bottom>span{display:none}.ih-thread-composer-bottom{justify-content:flex-end}.ih-comment-meta{gap:5px}}
 @media(pointer:coarse){.ih-discussion-page{--control-height:44px}.ih-picker-trigger,.ih-picker-option,.ih-reply-submit,.ih-reply-cancel,.ih-reply-button,.ih-replies-toggle,.ih-icon-button{min-height:44px}.ih-icon-button{width:44px}.ih-tags-next:before{content:"";position:absolute;inset:-9px -11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+/* Account controls and authentication use the same field system as idea creation. */
+.ih-header-actions{gap:16px}
+.ih-account{position:relative;min-width:0}
+.ih-account-trigger{display:flex;align-items:center;gap:9px;max-width:190px;padding:5px;border:0;border-radius:7px;background:transparent}
+.ih-account-trigger:hover,.ih-account-trigger[aria-expanded=true]{background:#efefea}
+.ih-account-trigger .ih-avatar{width:34px;height:34px;font-weight:600;font-size:11px}
+.ih-account-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:125px;font-size:12px}
+.ih-account-panel{position:absolute;z-index:50;right:0;top:calc(100% + 10px);width:248px;max-width:calc(100vw - 32px);padding:17px;border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 9px 28px #0000000c}
+.ih-account-panel>strong{display:block;overflow-wrap:anywhere;font-size:13px;font-weight:600}
+.ih-account-panel>span{display:block;margin-top:4px;color:#86867b;font-size:11px;overflow-wrap:anywhere}
+.ih-account-panel>button{display:flex;align-items:center;gap:9px;width:100%;margin-top:15px;padding:10px 0 0;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;font-size:12px;color:#626258}
+.ih-account-panel>button:hover:enabled{color:var(--ink)}
+.ih-auth-dialog{width:470px;scrollbar-width:none}
+.ih-auth-dialog::-webkit-scrollbar{display:none}
+.ih-auth-dialog .ih-eyebrow{font-size:9px;letter-spacing:1px}
+.ih-auth-dialog .ih-dialog-subtitle{margin-bottom:24px}
+.ih-auth-dialog .ih-field-label,.ih-auth-dialog form>label{font-size:12px}
+.ih-password{position:relative}
+.ih-password input{padding-right:48px}
+.ih-password-toggle{position:absolute;top:3px;right:3px;bottom:3px;display:grid;place-items:center;width:38px;border:0;border-radius:4px;background:transparent;color:#8b8b80}
+.ih-password-toggle:hover:enabled{color:#222;background:#eeeee8}
+.ih-auth-submit{width:100%;margin-top:27px;min-height:44px}
+.ih-auth-switch{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin-top:23px;color:#88887c;font-size:12px}
+.ih-auth-switch button{padding:4px;border:0;border-radius:3px;background:transparent;color:#30302b;font-size:12px;font-weight:600}
+.ih-auth-switch button:hover:enabled{text-decoration:underline;text-underline-offset:3px}
+.ih-thread-login{text-align:center;padding:clamp(40px,12vh,120px) 16px}
+.ih-thread-login h2{font-size:22px;line-height:1.5;font-weight:600;letter-spacing:-.6px}
+.ih-thread-login p{font-size:13px;color:#8a8a7e;margin:10px 0 24px}
+.ih-aside-scrim{display:none}
+.ih-tags>.ih-tag{flex:0 0 auto}
+.ih-thread-composer{padding-bottom:max(22px,env(safe-area-inset-bottom))}
+@media(max-width:1000px){.ih-account-name{display:none}.ih-account-trigger{padding:3px}.ih-header-actions{gap:12px}}
+@media(max-width:760px){
+  .ih-discussion-page{--gutter:16px;--header-height:64px;display:flex;flex-direction:column}
+  .ih-discussion-header{flex-shrink:0;gap:8px}
+  .ih-thread-layout{display:flex;flex:1;min-height:0;flex-direction:column;overflow:hidden}
+  .ih-thread-main{flex:1;min-height:0;flex-shrink:1}
+  .ih-thread-comments{--avatar-size:26px;--avatar-radius:13px;--indent:30px;flex:1;min-height:0;overflow-y:auto;padding-top:24px}
+  .ih-thread-aside{position:fixed;top:0;right:0;bottom:0;z-index:45;width:min(360px,calc(100% - 24px));height:100dvh;overflow-y:auto;order:0;border-left:1px solid var(--line);box-shadow:-12px 0 40px #0000000a;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  .ih-aside-scrim{display:block;position:fixed;inset:0;z-index:40;width:100%;height:100%;padding:0;border:0;background:#15151545}
+  .ih-about-top{position:sticky;top:0;z-index:2;background:#f7f7f2}
+  .ih-comment-text{font-size:13px;line-height:1.8}
+  /* Deep replies keep a readable width while preserving an avatar-to-avatar line. */
+  .ih-replies-compact{margin-left:0;padding-left:0;--elbow:0px}
+  .ih-replies-compact>.ih-comment-item:before{left:var(--avatar-radius);width:0;border-bottom:0;border-bottom-left-radius:0}
+  .ih-replies-compact>.ih-comment-item:not(:last-child):after{left:var(--avatar-radius)}
+  .ih-thread-composer{padding-top:12px}
+  .ih-thread-composer-bottom{flex-wrap:wrap}
+  .ih-thread-composer-bottom>span{font-size:10px}
+}
+@media(max-width:560px){
+  .ih-header{gap:14px;grid-template-columns:minmax(0,1fr) auto;padding-top:max(16px,env(safe-area-inset-top))}
+  .ih-header-actions{min-width:0;gap:9px}
+  .ih-header-actions .ih-primary,.ih-login-button{min-height:40px}
+  .ih-search{padding-block:4px}
+  .ih-search input{padding-block:7px}
+  .ih-create-dialog{max-width:calc(100vw - 28px);max-height:calc(100dvh - 28px);padding:22px;scrollbar-width:none}
+  .ih-create-dialog h2{font-size:22px;line-height:1.4}
+  .ih-dialog-subtitle{font-size:12px;line-height:1.8}
+  .ih-field-meta{gap:8px;font-size:10px}
+  .ih-field-meta>span:first-child{min-width:0}
+  .ih-field-meta>span:last-child{flex-shrink:0}
+  .ih-toolbar{margin-top:0}
+  .ih-tab{font-size:10px;gap:5px}
+  .ih-tab span{font-size:9px}
+  .ih-idea{padding-inline:19px}
+  .ih-join{min-height:46px}
+  .ih-auth-dialog .ih-eyebrow{font-size:8px;letter-spacing:.65px}
+  .ih-auth-submit{min-height:46px;font-size:12px}
+  .ih-password-toggle{width:40px}
+  .ih-thread-composer>textarea,.ih-reply-form textarea{font-size:16px}
+}
+@media(max-width:480px){
+  .ih-create-label{display:none}
+  .ih-header-actions .ih-primary{width:40px;padding:0}
+  .ih-header-actions .ih-primary svg{width:17px;height:17px}
+  .ih-login-button{font-size:11px;padding-inline:11px}
+}
+@media(pointer:coarse){.ih-password-toggle{min-width:40px}.ih-account-panel>button{min-height:44px}.ih-account-trigger{min-width:44px;min-height:44px}}
+@media(forced-colors:active){.ih-search:focus-within,.ih-field:focus,.ih-picker-trigger:focus-visible{outline:2px solid Highlight;outline-offset:2px}.ih-reply-form textarea:focus,.ih-thread-composer>textarea:focus{outline:2px solid Highlight}}

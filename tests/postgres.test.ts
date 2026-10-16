@@ -1,34 +1,9 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
-import { PGlite } from "@electric-sql/pglite";
-import type { QueryResultRow } from "pg";
-import { PostgresIdeaRepository, type DatabasePool } from "../src/server/postgres-repository";
+import { PostgresIdeaRepository } from "../src/server/postgres-repository";
+import { embeddedPool } from "./helpers/postgres";
 import { AppError } from "../src/server/errors";
 
-// Embedded PostgreSQL exercises the actual SQL without network credentials.
-// The lease serializes transactions like the production one-connection pg pool.
-async function embeddedPool() {
-  const db = new PGlite();
-  await db.exec("CREATE ROLE anon; CREATE ROLE authenticated;");
-  await db.exec(await readFile(new URL("../supabase/migrations/20261016082442_initial_ideahub.sql", import.meta.url), "utf8"));
-  let tail: Promise<void> = Promise.resolve();
-  async function acquire() {
-    const prior = tail; let release!: () => void;
-    tail = new Promise<void>(resolve => { release = resolve; });
-    await prior;
-    return release;
-  }
-  const query = async <Row extends QueryResultRow = QueryResultRow>(sql: string, values?: unknown[]) => {
-    const result = await db.query<Row>(sql, values);
-    return { rows: result.rows, rowCount: result.rows.length || result.affectedRows || 0 };
-  };
-  const pool: DatabasePool = {
-    async connect() { const release = await acquire(); return { query, release }; },
-    async query(sql, values) { const release = await acquire(); try { return await query(sql, values); } finally { release(); } },
-  };
-  return { pool, close: () => db.close() };
-}
 
 test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and rollback", async () => {
   const embedded = await embeddedPool(), repository = new PostgresIdeaRepository(embedded.pool);

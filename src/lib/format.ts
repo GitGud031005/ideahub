@@ -1,3 +1,7 @@
+export function initials(name: string) {
+  const parts = name.trim().normalize("NFC").split(/\s+/).filter(Boolean);
+  return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : parts[0]?.[0] || "?").toLocaleUpperCase("vi");
+}
 export function normalize(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
 }

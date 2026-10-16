@@ -7,6 +7,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     const error = (body as ApiErrorPayload | null)?.error;
+    if (response.status === 401 && error?.code === "AUTH_REQUIRED" && typeof window !== "undefined") window.dispatchEvent(new Event("ideahub:auth-required"));
     throw new ApiError(response.status, error?.code || "REQUEST_FAILED", error?.message || "Không thể kết nối máy chủ", error?.fields);
   }
   return body as T;
