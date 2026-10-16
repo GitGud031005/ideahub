@@ -127,14 +127,21 @@
 #ih-app{container-type:inline-size}
 #ih-app .ih-intro{position:relative;isolation:isolate;display:block;width:100cqw;margin-inline:calc((100% - 100cqw)/2);padding:44px 0 28px;min-height:328px;overflow:hidden}
 #ih-app .ih-hero-copy{position:relative;z-index:1;width:90%;max-width:1230px;margin-inline:auto;pointer-events:none}
-#ih-app .ih-intro h1{max-width:68%;margin:0 0 58px}
+#ih-app .ih-intro h1{max-width:68%;margin:0 0 42px}
 #ih-app .ih-hero-subcopy{max-width:67%;display:flex;flex-direction:column;gap:5px}
 #ih-app .ih-hero-subcopy p{font-size:12px;line-height:1.8;color:#77776e;overflow-wrap:break-word}
 #ih-app .ih-hero-subcopy p:first-child{color:#48483f}
 #ih-app .ih-hero-optics{position:absolute;inset:0;display:block;width:100%;height:100%;pointer-events:none;z-index:0}
 @media(min-width:1250px){#ih-app .ih-hero-copy{width:calc(100% - 80px)}}
-@media(max-width:850px){#ih-app .ih-intro{display:block;padding:36px 0 24px;min-height:288px}#ih-app .ih-hero-copy{width:92%}#ih-app .ih-intro h1{font-size:35px;max-width:69%;margin-bottom:58px}#ih-app .ih-hero-subcopy{max-width:67%}#ih-app .ih-hero-subcopy p{font-size:11px}}
-@media(max-width:560px){#ih-app .ih-intro{display:block;padding:30px 0 18px;min-height:0}#ih-app .ih-hero-copy{width:90%}#ih-app .ih-intro h1{font-size:36px;max-width:100%;margin-bottom:184px}#ih-app .ih-hero-subcopy{max-width:100%;gap:7px}#ih-app .ih-hero-subcopy p{font-size:12px}}
+@media(max-width:850px){#ih-app .ih-intro{display:block;padding:36px 0 24px;min-height:288px}#ih-app .ih-hero-copy{width:92%}#ih-app .ih-intro h1{font-size:35px;max-width:69%;margin-bottom:42px}#ih-app .ih-hero-subcopy{max-width:67%}#ih-app .ih-hero-subcopy p{font-size:11px}}
+@media(max-width:560px){#ih-app .ih-intro{display:block;padding:30px 0 18px;min-height:0}#ih-app .ih-hero-copy{width:90%}#ih-app .ih-intro h1{font-size:36px;max-width:100%;margin-bottom:176px}#ih-app .ih-hero-subcopy{max-width:100%;gap:7px}#ih-app .ih-hero-subcopy p{font-size:12px}}
+#ih-app .ih-tags-wrap{position:relative;min-width:0;width:100%;height:25px}
+#ih-app .ih-tags-wrap::after{content:"";position:absolute;right:19px;top:0;width:30px;height:25px;opacity:0;pointer-events:none;background:linear-gradient(90deg,#ffffff00,#ffffffd9);backdrop-filter:blur(1.3px);-webkit-backdrop-filter:blur(1.3px);mask-image:linear-gradient(90deg,transparent,#000);-webkit-mask-image:linear-gradient(90deg,transparent,#000)}
+#ih-app .ih-tags-wrap.ih-has-more::after{opacity:1}
+#ih-app .ih-tags-wrap.ih-has-more .ih-tags{mask-image:linear-gradient(90deg,#000 calc(100% - 46px),transparent calc(100% - 17px));-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 46px),transparent calc(100% - 17px))}
+#ih-app .ih-tags-next{position:absolute;right:0;top:0;z-index:2;height:25px;width:22px;padding:0;border:0;background:#fff;color:#74746b;font:18px/1 Arial;display:flex;align-items:center;justify-content:center}
+#ih-app .ih-tags-next:hover{background:#fff;color:#171714}
+@media(pointer:coarse){#ih-app .ih-tags-next::before{content:"";position:absolute;inset:-9px -11px}}
 </style>
 <script>
 (()=>{
@@ -159,7 +166,9 @@
  const legacyDescriptions={"1": "Cùng khám phá cách thu thập dữ liệu sản phẩm, giao thông và biến dữ liệu thô thành những điều hữu ích.", "2": "Một bản đồ nhỏ lưu lại những quán cà phê, thư viện và góc ngồi lý tưởng để tập trung học tập.", "3": "Để những cuốn sách đã đọc tìm được người đọc tiếp theo. Một không gian trao đổi sách trong trường.", "4": "Gom deadline, chia việc và theo dõi tiến độ của cả nhóm trong một giao diện thật đơn giản.", "5": "Mỗi ngày một thử thách nhỏ. Cùng học một kỹ năng, giữ động lực và chia sẻ hành trình với nhau.", "6": "Bạn có một thiết kế đang làm dở? Mang vào đây để cùng góp ý, thử nghiệm và làm nó tốt hơn."};
  const demoTags={'1':['Công nghệ','Data crawling','Python','Data engineering'],'2':['Đời sống','Không gian học','Cộng đồng'],'3':['Đời sống','Sách','Trao đổi'],'4':['Học tập','Productivity','Teamwork','Web app'],'5':['Học tập','Thói quen','Phát triển bản thân'],'6':['Thiết kế','UI/UX','Feedback','Cộng đồng']};
  const ideaTags=i=>[...new Set((Array.isArray(i.tags)&&i.tags.length?i.tags:demoTags[i.id]||[i.category]).filter(t=>typeof t==='string'&&t.trim()).map(t=>t.trim()))];
- function tagsMarkup(i){return `<div class="ih-tags" aria-label="Tags của ${esc(i.title)}">${ideaTags(i).map(t=>`<span class="ih-tag">${esc(t)}</span>`).join('')}</div>`;}
+ function tagsMarkup(i){return `<div class="ih-tags-wrap"><div class="ih-tags" aria-label="Tags của ${esc(i.title)}">${ideaTags(i).map(t=>`<span class="ih-tag">${esc(t)}</span>`).join('')}</div><button type="button" class="ih-tags-next" aria-label="Cuộn tags sang phải" hidden>&gt;</button></div>`;}
+ function updateTagOverflow(strip){const wrap=strip.closest('.ih-tags-wrap');if(!wrap)return;const more=strip.scrollWidth-strip.clientWidth-strip.scrollLeft>2;wrap.classList.toggle('ih-has-more',more);const next=wrap.querySelector('.ih-tags-next');if(next){next.hidden=!more;next.disabled=!more;}}
+ function refreshTagOverflow(){$$('.ih-tags').forEach(updateTagOverflow);}
  let ideas=seeds.map(i=>({...i})),messages=JSON.parse(JSON.stringify(defaultMessages)),view='all',activeId=null,lastFocus=null,toastTimer;
  const key='ideahub-ui-v1';
  try{const saved=JSON.parse(localStorage.getItem(key)||'null');if(saved&&Array.isArray(saved.ideas)&&saved.messages&&saved.ideas.every(i=>i&&typeof i.id==='string'&&typeof i.title==='string'&&typeof i.description==='string'&&Array.isArray(i.initials))){ideas=saved.ideas;messages=saved.messages;}}catch{}
@@ -176,6 +185,7 @@
  $('#ih-empty').hidden=!!items.length;$('#ih-result-count').textContent=query?`${items.length} kết quả cho “${$('#ih-search').value.trim()}”`:`${items.length} ý tưởng ${view==='all'?'đang chờ bạn khám phá':view==='joined'?'bạn đã tham gia':'do bạn khởi xướng'}`;
  $('#ih-empty-text').textContent=query?'Thử một từ khóa khác để tìm điều bạn quan tâm.':view==='joined'?'Khám phá các idea và tham gia một cuộc trò chuyện.':'Bắt đầu một cuộc trò chuyện bằng ý tưởng của bạn.';
  $('#ih-empty-action').textContent=query?'Xóa tìm kiếm':view==='joined'?'Khám phá ý tưởng':'Tạo idea đầu tiên';
+ refreshTagOverflow();
  }
  function toast(text){clearTimeout(toastTimer);$('#ih-toast').textContent=text;$('#ih-toast').hidden=false;toastTimer=setTimeout(()=>$('#ih-toast').hidden=true,2800);}
  function openLayer(type){lastFocus=document.activeElement;root.scrollIntoView?.({block:'start',behavior:'auto'});$('#ih-'+type+'-layer').hidden=false;if(type==='new')$('#ih-title').focus();else $('#ih-message').focus();}
@@ -197,7 +207,9 @@
  function endTagDrag(){if(!tagDrag)return;if(tagDrag.moved){suppressCardClick=true;setTimeout(()=>{suppressCardClick=false;},0);}tagDrag.element.classList.remove('ih-dragging');tagDrag=null;}
  root.addEventListener('pointerup',endTagDrag);root.addEventListener('pointercancel',endTagDrag);
  root.addEventListener('wheel',e=>{const tags=e.target.closest('.ih-tags');if(!tags||tags.scrollWidth<=tags.clientWidth||Math.abs(e.deltaX)>=Math.abs(e.deltaY)||e.shiftKey)return;const before=tags.scrollLeft,max=tags.scrollWidth-tags.clientWidth,next=Math.max(0,Math.min(max,before+e.deltaY));if(next!==before){e.preventDefault();tags.scrollLeft=next;}},{passive:false});
- root.addEventListener('click',e=>{if(suppressCardClick){suppressCardClick=false;return;}const close=e.target.closest('[data-close]');if(close){closeLayer(close.dataset.close);return;}const join=e.target.closest('[data-idea]');if(join)openChat(join.dataset.idea);});
+ root.addEventListener('scroll',e=>{if(e.target.matches?.('.ih-tags'))updateTagOverflow(e.target);},true);
+ root.addEventListener('click',e=>{if(suppressCardClick){suppressCardClick=false;return;}const next=e.target.closest('.ih-tags-next');if(next){e.preventDefault();const strip=next.closest('.ih-tags-wrap').querySelector('.ih-tags');strip.scrollBy({left:Math.max(80,Math.round(strip.clientWidth*.65)),behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});updateTagOverflow(strip);return;}const close=e.target.closest('[data-close]');if(close){closeLayer(close.dataset.close);return;}const join=e.target.closest('[data-idea]');if(join)openChat(join.dataset.idea);});
+ if(typeof ResizeObserver!=='undefined'){const tagObserver=new ResizeObserver(refreshTagOverflow);tagObserver.observe($('#ih-grid'));}else window.addEventListener('resize',refreshTagOverflow);
  $('#ih-empty-action').addEventListener('click',()=>{if($('#ih-search').value.trim()){$('#ih-search').value='';render();}else if(view==='joined'){view='all';syncTabs();render();}else openLayer('new');});
  $('#ih-title').addEventListener('input',()=>{$('#ih-title-count').textContent=$('#ih-title').value.length+'/80';$('#ih-form-error').hidden=true;});
  $('#ih-description').addEventListener('input',()=>{$('#ih-desc-count').textContent=$('#ih-description').value.length+'/240';$('#ih-form-error').hidden=true;});
@@ -214,16 +226,17 @@
   const hero=$('.ih-intro'),heading=$('.ih-hero-copy h1'),subcopy=$('.ih-hero-subcopy');
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   const prismImage=new Image();let imageLoaded=false;
-  let w=0,h=0,rayY=0,dpr=1,frame=0,started=0,light=.45;
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  let w=0,h=0,rayY=0,dpr=1,frame=0,started=0,lastPaint=0,inView=true;
+  const light=.45;
   function polygon(points){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();}
   function line(points,style,width=1){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=style;ctx.lineWidth=width;ctx.stroke();}
   function gradient(x0,y0,x1,y1,stops){const g=ctx.createLinearGradient(x0,y0,x1,y1);stops.forEach(s=>g.addColorStop(s[0],s[1]));return g;}
   function draw(progress=1){
    if(w<=0||h<=0)return;
    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
-   const mobile=w<=560,size=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96);
-   const cx=w*(mobile?.60:.70),hw=size*.44,cy=rayY+size*.08405;
+   const mobile=w<=560,baseSize=mobile?Math.min(160,w*.42):Math.min(330,w*.26,h*.96),size=baseSize*1.08;
+   const baseEdge=rayY+(mobile?4:8)+baseSize*.49875;
+   const cx=w*(mobile?.60:.70),hw=size*.44,cy=baseEdge-size*.4147;
    const A=[cx,cy-size*.56],B=[cx-hw,cy+size*.44],C=[cx+hw,cy+size*.44];
    const depth=[size*.11,-size*.075],add=p=>[p[0]+depth[0],p[1]+depth[1]];
    const photoSize=size*1.14,photoX=cx-photoSize*.47,photoY=cy-size*.56-photoSize*.075;
@@ -278,11 +291,12 @@
    w=rect.width;h=rect.height;rayY=(head.bottom+copy.top)/2-rect.top;dpr=Math.min(window.devicePixelRatio||1,2);
    canvas.width=Math.max(1,Math.round(w*dpr));canvas.height=Math.max(1,Math.round(h*dpr));draw(1);
   }
-  function tick(now){const progress=clamp((now-started)/1800,0,1);draw(progress);frame=progress<1?requestAnimationFrame(tick):0;}
-  function play(){if(reduced.matches){draw(1);return;}cancelAnimationFrame(frame);started=performance.now();frame=requestAnimationFrame(tick);}
-  hero.addEventListener('pointerenter',play);
-  hero.addEventListener('pointermove',e=>{if(reduced.matches||frame)return;const rect=hero.getBoundingClientRect();light=clamp((e.clientX-rect.left)/w,0,1);draw(1);});
-  reduced.addEventListener?.('change',()=>{cancelAnimationFrame(frame);frame=0;draw(1);});
+  function stop(){cancelAnimationFrame(frame);frame=0;}
+  function tick(now){if(reduced.matches||document.hidden||!inView){frame=0;return;}const progress=((now-started)%6200)/6200;if(now-lastPaint>=33){draw(progress);lastPaint=now;}frame=requestAnimationFrame(tick);}
+  function play(){stop();if(reduced.matches||document.hidden||!inView){draw(1);return;}started=performance.now();lastPaint=0;frame=requestAnimationFrame(tick);}
+  reduced.addEventListener?.('change',play);
+  document.addEventListener?.('visibilitychange',()=>{if(document.hidden)stop();else play();});
+  if(typeof IntersectionObserver!=='undefined'){const visibilityObserver=new IntersectionObserver(entries=>{inView=entries[0].isIntersecting;if(inView)play();else stop();},{threshold:.01});visibilityObserver.observe(hero);}
   if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(resize);observer.observe(hero);observer.observe(heading);observer.observe(subcopy);}else window.addEventListener('resize',resize);
   document.fonts?.ready.then(resize);
   prismImage.onload=()=>{imageLoaded=true;resize();};
