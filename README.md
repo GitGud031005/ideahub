@@ -12,27 +12,28 @@ Open `index.html` in a modern browser. No installation or build step is required
 - Create an idea with a title, description, category, and tags.
 - Filter all ideas, joined discussions, or your own ideas; sort by newest or participant count.
 - Scroll long tag lists with touch, dragging, the wheel, or the right-arrow control.
-- Click an idea to open its dedicated discussion page.
+- Click an idea to open its discussion in a popup over the current dashboard, without navigating.
 
-## Discussion pages
+## Discussion popup
 
-Each idea has a separate frontend route, for example `index.html#/idea/1`. The route can be opened directly or refreshed. The back control returns to the dashboard, and browser Back/Forward follows route changes.
+The popup occupies 90% of the viewport width and height. The dashboard remains visible behind the overlay, retains its filters and scroll position, and is inert while the popup is open. Close with the close button, backdrop, or Escape. Keyboard focus stays inside the popup and returns to the dashboard when it closes.
 
-- Read the idea and its full description at the top of the page.
-- Post a comment or reply to any comment, including replies within replies.
-- Collapse and reopen a comment branch.
-- Upvote or downvote a comment; click the same vote again to clear it.
-- Sort root comments by score, newest, or oldest; replies stay in chronological order.
+- The right pane contains the idea title, full description, creator, creation time, participant count, joined status, category, and tags. On narrow screens, this pane stacks above the conversation.
+- The main pane contains only the comments, sorting, and comment composer.
+- Reply to any comment, including replies within replies, with a nested hierarchy and connector lines.
+- Only comments that have replies show a “Xem N trả lời” / “Ẩn trả lời” control. Hiding replies keeps the parent comment visible. There are no vote buttons or plus/minus collapse controls.
+- Sort root comments by newest or oldest; replies stay chronological.
 - Use Ctrl+Enter (or Cmd+Enter) to post from a comment field.
+- Existing `index.html#/idea/1` links still open the relevant popup over the dashboard. Opening a card does not change the URL.
 
-Older flat demo messages are migrated into comments. Existing user-written messages and ideas are preserved. Comment drafts remain available while navigating between ideas in the current session.
+Older flat demo messages are migrated into comments. Existing user-written messages, nested replies, and ideas are preserved. Comment and reply drafts remain available while switching between ideas in the current session.
 
 ## Demo data and limitations
 
-This is a frontend prototype with fictional seed data and one demo user. Ideas, membership, nested comments, and votes are stored in this browser's localStorage when available. It does not yet have a shared database, authentication, or realtime synchronization. Clearing the `ideahub-ui-v1` localStorage entry resets the demo.
+This is a frontend prototype with fictional seed data and one demo user. Ideas, membership, and nested comments are stored in this browser's localStorage when available. It does not yet have a shared database, authentication, or realtime synchronization. Clearing the `ideahub-ui-v1` localStorage entry resets the demo.
 
 The responsive UI supports keyboard controls and reduced motion. Light animation runs continuously while the hero is visible, pauses in background tabs or offscreen, and stays static when reduced motion is enabled.
 
 ## Validation
 
-Validated application logic includes routing and deep-link reloads, membership deduplication, nested replies, branch collapse/expand, voting, comment persistence, legacy migration, room isolation, and escaped user content. Browser visual verification has not been performed in this environment.
+Validated application logic includes popup opening and closing, unchanged dashboard and URL, scroll locking, keyboard focus containment, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, legacy deep links, and escaped user content. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
