@@ -1,39 +1,87 @@
 # IdeaHub
 
-A minimal black-and-white dashboard for sharing ideas and building on them together.
+Ứng dụng full-stack chuyển từ mock đã chốt: dashboard chung, prism và tia sáng liên tục, tags cuộn ngang, trang thảo luận toàn màn hình, bình luận lồng nhau và sidebar đóng/mở được.
 
-## Run the frontend
+## Stack
 
-Open `index.html` in a modern browser. No installation or build step is required. The prism image is embedded in the page, so the app has no network dependency.
+- Next.js 16 App Router + React 19 + TypeScript strict.
+- CSS thuần với các token và component rõ ràng, giữ ngôn ngữ thiết kế trắng đen của mock.
+- TanStack Query: cache, tải thêm idea, hủy request tìm kiếm cũ, mutation và cập nhật thảo luận mỗi 15 giây khi tab hoạt động.
+- Lucide React: icon đồng bộ, không phụ thuộc glyph của hệ điều hành.
+- Next.js Route Handlers chạy Node.js: API cùng domain, phù hợp deploy Vercel.
+- Zod: validation phía client và server. Repository interface tách khỏi HTTP/UI để thay storage sau.
 
-## Dashboard
+## Chạy local
 
-- Search titles, descriptions, and tags, including Vietnamese text without accents.
-- Create an idea with a title, description, category, and tags.
-- Filter all ideas, joined discussions, or your own ideas; sort by newest or participant count.
-- Scroll long tag lists with touch, dragging, the wheel, or the right-arrow control. Each sample idea includes 8–10 relevant tags, also searchable from the dashboard.
-- Click an idea to open its dedicated full-screen discussion page.
+Yêu cầu Node.js 22 hoặc 24 và npm. Các phiên bản dependency được khóa trong `package-lock.json`.
 
-## Discussion page
+```bash
+npm ci
+cp .env.example .env.local
+openssl rand -base64 48
+```
 
-Click an idea to open its dedicated route, such as `index.html#/idea/1`. The page fills the viewport, with no popup, backdrop, rounded frame, or dashboard header. The left-column header contains “Thảo luận”, the live total comment count, a back control, and adjacent comment sorting. The header uses aligned controls and a compact chevron back button. All visible sorting and category selectors use the same custom monochrome menu instead of native operating-system popups. Menus support arrow keys, Home/End, Escape, Tab, and outside-click dismissal; the underlying form values remain native selects. Escape dismisses an open category menu before the enclosing create dialog. The idea sidebar starts at the very top and spans the full height alongside both header and conversation. Close it with its top-right control to expand the conversation, then reopen it using the sidebar-reveal icon at the right edge of the header. The sidebar title and close icon share a 64px header row aligned to the conversation header. Collapsing preserves the live conversation, draft, and route; the open/closed state is retained between rooms for the current session. Browser Back/Forward and direct-link refresh work. Returning to the dashboard restores its filters and scroll position.
+Copy chuỗi vừa tạo vào `SESSION_SECRET` trong `.env.local`. Giữ `IDEAHUB_STORAGE=json` để dữ liệu local được ghi vào `data/ideahub.json`.
 
-- The right pane contains the idea title, full description, creator, creation time, participant count, and tags. On narrow screens, this pane stacks above the conversation. There is no separate category section or joined-status message under the participant count.
-- The main pane contains only comments and the comment composer, without a separate comments heading or counter.
-- Reply to any comment, including replies within replies, with a nested hierarchy. Connector lines run from the parent avatar down through its full comment, then curve into the child avatar. Sibling trunks continue through the complete reply subtree. Compact nesting keeps the same connected geometry.
-- Only comments that have replies show a “Xem N trả lời” / “Ẩn trả lời” control. Hiding replies keeps the parent comment visible. There are no vote buttons or plus/minus collapse controls.
-- Sort root comments by newest or oldest from the page header; replies stay chronological.
-- Type into a minimal underlined field that grows with its content. Press Enter to post, Shift+Enter for a new line, and Escape to cancel an inline reply. Enter and Esc hints appear on the action buttons. IME composition does not accidentally submit. No input icons, resize handles, or rounded focus rings are shown; the focused underline remains visible.
-- Scroll conversation, details, and long text with the scrollbar tracks hidden; scrolling remains enabled.
+```bash
+npm run dev
+```
 
-Older flat demo messages are migrated into comments. Existing user-written messages, nested replies, and ideas are preserved. Comment and reply drafts remain available while switching between ideas in the current session.
+Mở http://localhost:3000. Lần đầu backend tạo 6 idea và bình luận mẫu. Mỗi trình duyệt có một danh tính khách riêng được xác định bằng cookie có chữ ký; “Của bạn” chỉ chứa idea do phiên khách đó tạo. Dữ liệu local được giữ qua lần khởi động tiếp theo; xóa thư mục `data/` để reset có chủ ý. Không commit dữ liệu runtime hoặc file `.env`.
 
-## Demo data and limitations
+```bash
+npm run check   # TypeScript và kiểm thử backend
+npm run build   # Build production
+npm start      # Cần SESSION_SECRET trong môi trường production
+```
 
-This is a frontend prototype with fictional seed data and one demo user. Ideas, membership, and nested comments are stored in this browser's localStorage when available. It does not yet have a shared database, authentication, or realtime synchronization. Clearing the `ideahub-ui-v1` localStorage entry resets the demo.
+## Deploy Vercel
 
-The responsive UI supports keyboard controls and reduced motion. Light animation runs continuously while the hero is visible, pauses in background tabs or offscreen, and stays static when reduced motion is enabled.
+1. Import repo `GitGud031005/ideahub` trong Vercel.
+2. Chọn framework **Next.js**, Root Directory là root repo; Install Command `npm ci`, Build Command `npm run build`. Không đặt Output Directory thành `dist` và không chọn Static HTML.
+3. Thêm biến môi trường cho Preview/Production:
 
-## Validation
+   | Biến | Giá trị |
+   | --- | --- |
+   | `SESSION_SECRET` | Chuỗi ngẫu nhiên riêng, ít nhất 32 ký tự; dùng `openssl rand -base64 48` |
+   | `IDEAHUB_STORAGE` | `memory` trong giai đoạn thử nghiệm chưa có DB |
 
-Validated application logic includes dedicated routes, browser Back/Forward, direct-link reloads, dashboard scroll restoration, membership deduplication, nested replies, child-only disclosure, comment persistence, draft isolation, escaped user content, header sorting, and simplified sidebar content. Enter submission, Shift+Enter, IME composition guards, Escape cancellation, textarea growth, and the live header count are also verified. Sidebar close/reopen, focus transfer, draft preservation, room-switch collapse state, expanded sample tags, and tag search are verified. All three custom selection menus are checked for value updates, sorting, keyboard navigation, outside-click dismissal, disabled state, and Escape priority. Connector structure and shared alignment variables were checked. JavaScript syntax checks pass. Browser visual verification has not been performed in this environment.
+4. Deploy. Không cần server Express riêng, API chạy trong cùng ứng dụng. Truy cập `/api/health` để kiểm tra runtime/storage, rồi mở dashboard và thử tạo idea.
+
+**Chưa có database:** chế độ `memory` trên Vercel chỉ dùng thử. Dữ liệu có thể mất khi function khởi động lại, redeploy hoặc chuyển instance; các instance không chia sẻ dữ liệu. Không dùng JSON hoặc `/tmp` làm database trên Vercel. Cấu hình `json` trên Vercel được backend từ chối rõ ràng. Chỉ dùng cho người dùng thật sau khi thêm database và xác thực tài khoản.
+
+**Phiên khách không phải hệ thống đăng nhập:** hiện chưa có đăng ký, email, OAuth, mật khẩu hoặc khôi phục tài khoản. Cookie HttpOnly có chữ ký ngăn sửa ID tùy ý; xóa cookie hoặc đổi trình duyệt sẽ tạo một danh tính khách khác. Khi tích hợp auth, thay lớp session và giữ nguyên việc lấy author từ server; không nhận `authorId` từ request body.
+
+## Cấu trúc code
+
+```text
+src/app/                  Routes, layout, stylesheet và API entry point
+src/components/           Dashboard, hero, dialog, picker, discussion, comment tree/editor
+src/lib/                  Kiểu dữ liệu dùng chung, validation, format và API client
+src/server/api.ts         Điều phối endpoint, session và validation
+src/server/repository.ts  Interface lưu trữ và các ràng buộc nghiệp vụ
+src/server/stores.ts      Adapter memory/JSON với transaction một process
+src/server/container.ts   Chọn adapter; đây là điểm thay bằng database repository
+src/server/session.ts     Cookie có chữ ký HMAC; secret chỉ chạy trên server
+tests/                    Test repository, JSON, session và API
+docs/                     API contract, hướng tích hợp DB, mock đã duyệt
+public/assets/            Ảnh prism dùng trong canvas, không có fetch ảnh bên ngoài
+```
+
+File mock trước đây được giữ tại `docs/approved-mockup.html` làm tài liệu tham chiếu; không dùng nó làm entry point khi deploy. Dữ liệu localStorage của mock không tự động đưa lên backend. Dữ liệu chính của ứng dụng mới đi qua API; bản nháp và trạng thái UI giữ trong React khi chuyển trang.
+
+## API và dữ liệu
+
+Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/architecture.md), [schema đề xuất](docs/postgres-schema.sql).
+
+API có session cookie, giới hạn payload 16 KiB, validation chặt, kiểm tra origin cho mutation, lỗi có mã và giới hạn ghi theo phiên trong mỗi instance. Membership được thêm theo cách idempotent. Parent của bình luận phải thuộc cùng idea; nhánh tối đa 12 cấp trả lời. Các đoạn text được render qua React, không chèn HTML thô. GET dữ liệu phiên có `Cache-Control: no-store`.
+
+Giới hạn hiện tại: chưa có realtime WebSocket, upload file, chỉnh sửa/xóa bài, moderation hay rate limit dùng chung giữa các instance. Polling chỉ là refresh HTTP; backend JSON hỗ trợ một process local, không dùng nhiều process đồng thời trên cùng file. Khi có DB, thay adapter bằng transaction và unique constraints như tài liệu mô tả.
+
+## Kiểm tra
+
+Đã chạy TypeScript strict, 12 kiểm thử cho nghiệp vụ/API và build production. Test bao gồm tạo idea, tìm tiếng Việt không dấu, quyền sở hữu theo session, 30 lượt join đồng thời, parent khác phòng, giới hạn độ sâu, phân trang bình luận, rollback, JSON persistence, cookie bị sửa/hết hạn, lỗi validation/origin/body và rate limit.
+
+Chưa chạy kiểm tra trực quan bằng browser trong môi trường thực hiện. Không có deployment Vercel nào được tạo tự động; repo đã sẵn sàng để import theo các bước trên.
+
+Tài liệu chính thức: [Next.js App Router](https://nextjs.org/docs/app), [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers), [Vercel Functions](https://vercel.com/docs/functions), [Vercel Storage](https://vercel.com/docs/storage).
