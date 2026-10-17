@@ -2,6 +2,17 @@
 
 Verified on 2026-10-17.
 
+## Google, avatars, and model fallback update
+
+- Production commit `31517c34866f08bd02d46cafadc57e01c7ad68b6` deployed successfully on Vercel.
+- `npm run check`: 30 passed, one optional external PostgreSQL test skipped. `npm run build` passed.
+- Google tests cover state/nonce/PKCE, callback replay, stable subject identities, session rotation, and preservation of custom avatars. Cloudinary tests cover authenticated same-origin writes, signed fixed transformations, byte/type/size validation, and profile persistence.
+- Gemini tests now exercise stateless `generateContent`, the user-supplied model catalog, runtime availability filtering, quota fallback, and immediate failure for invalid credentials.
+- Applied `google_profiles`; read-back confirmed avatar columns, private OAuth-state RLS, and no anon SELECT. Security advisors returned only the expected deny-by-default RLS-without-policy informational notices.
+- The user saved Production `GEMINI_API_KEY` and `CRON_SECRET`; their values were not inspected. Redeployment was requested through Vercel and subsequent source deployment succeeded.
+- Real AI generation has not yet been verified. The browser-control connection timed out when opening the setup tab and again while attempting documented recovery, preventing the Vercel Cron “Run” action. Database read-back still showed the five hand-authored sample documents with no winning model.
+- Google OAuth and Cloudinary live validation still require their separate server-side credentials. No production Google account was created or avatar uploaded during automated checks.
+
 ## AI recap update
 
 - `npm run check`: 26 passed, one optional external-database test skipped. `npm run build` passed.
