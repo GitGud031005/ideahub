@@ -54,6 +54,7 @@ npm start      # Production auth cần PostgreSQL
 - Vercel Git integration đang nối repo này và tự deploy `main` lên production, nhánh/PR lên preview. `vercel.json` chạy `npm run check && npm run build` để test lỗi sẽ dừng deployment trước khi bản mới được đưa lên. Không cần Vercel token hoặc secrets deploy trong GitHub, không chạy thêm CLI deploy trùng với Git integration.
 - Sau khi Vercel báo production deploy thành công, `.github/workflows/deployment.yml` kiểm tra trang chủ, kết nối PostgreSQL và endpoint bình luận SSE yêu cầu đăng nhập. Đây là kiểm tra chỉ đọc, không tạo tài khoản/bình luận trên production; khi lỗi, workflow báo đỏ để xử lý hoặc rollback qua Vercel. Không tự rollback.
 - Có thể kiểm tra thủ công: `DEPLOYMENT_URL=https://ideahub-umber.vercel.app npm run check:deployment` (PowerShell: `$env:DEPLOYMENT_URL='https://ideahub-umber.vercel.app'; npm run check:deployment`). Workflow smoke cũng có nút Run workflow và ô URL.
+- Smoke mặc định kiểm tra domain production công khai `https://ideahub-umber.vercel.app`; đổi qua repository variable `PRODUCTION_URL` nếu đổi domain. Không dùng URL riêng của deployment vì Vercel có thể bảo vệ URL đó bằng đăng nhập dù domain production công khai.
 - Các biến `DATABASE_URL`, Google, Cloudinary và Gemini tiếp tục được lưu trên Vercel. Test SQL mặc định dùng PostgreSQL nhúng; kiểm thử driver ngoài chỉ dùng `TEST_DATABASE_URL` riêng khi được cấu hình, không dùng database production.
 
 ## Tài khoản và phiên đăng nhập

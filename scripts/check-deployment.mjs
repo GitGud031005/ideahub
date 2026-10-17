@@ -11,6 +11,7 @@ async function verify() {
   const request = path => fetch(new URL(path, base), { cache: "no-store", signal: AbortSignal.timeout(15000) });
   const health = await request("/api/health");
   assert.equal(health.status, 200, "Database health endpoint must return 200");
+  assert.match(health.headers.get("content-type") ?? "", /application\/json/, "Health endpoint must return JSON, not a hosting login page; use the public production domain");
   const data = await health.json();
   assert.equal(data.status, "ok");
   assert.equal(data.storage, "postgres", "Production must use PostgreSQL");
@@ -25,6 +26,7 @@ async function verify() {
   // Old builds return 404 here, so this also verifies that the SSE route was shipped.
   const live = await request("/api/ideas/__deployment_probe__/comments/stream");
   assert.equal(live.status, 401, "Live comments endpoint must exist and reject anonymous access");
+  assert.match(live.headers.get("content-type") ?? "", /application\/json/);
   assert.equal((await live.json()).error?.code, "AUTH_REQUIRED");
 }
 

@@ -28,4 +28,5 @@ jobs:
       - name: Verify page, database health and authenticated live endpoint
         run: npm run check:deployment
         env:
-          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || inputs.url }}
+          # Immutable deployment URLs can require Vercel login even when production is public.
+          DEPLOYMENT_URL: ${{ inputs.url || vars.PRODUCTION_URL || 'https://ideahub-umber.vercel.app' }}
