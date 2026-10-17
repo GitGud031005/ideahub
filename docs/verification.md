@@ -2,6 +2,20 @@
 
 Verified on 2026-10-17.
 
+## UI component audit, 2026-10-17
+
+- Fixed the account menu's file-input lifecycle: opening the native file chooser no longer unmounts the input or treats window blur as moving focus to another control.
+- Fixed dialog backdrop dismissal so clicks in the dialog padding do not discard the form. Closed creation dialogs are explicitly hidden.
+- Dropdowns use viewport-bounded positioning, close on external scrolling/resizing, and retain keyboard navigation. The recap date control now uses a Vietnamese calendar with bounded dates, month/year controls and keyboard day navigation.
+- Removed the obsolete mobile discussion layout rule. Mobile drawers contain focus, close with Escape, and make the background inert. Tag strips allow vertical touch scrolling and keyboard access.
+- Card hover now covers the complete footer width; secondary text, fields and disabled controls use consistent monochrome styling and stronger contrast.
+- Real-component fixtures with embedded Montserrat fonts confirmed dashboard document widths of exactly 320, 390, 768 and 1440 CSS pixels, with 1/1/2/3 card columns and no horizontal overflow.
+- At 320 px the registration dialog is 292 px wide and its long content scrolls internally. Empty-form errors focus the first invalid field. The creation dialog's category dropdown remains inside the viewport and selecting an option updates its trigger.
+- At 320 px the discussion header fits, the information drawer is 296 px wide, and opening all 13 nested comments retains a 320 x 844 document with the discussion scrolling internally. The deepest reply editor remains 190 px wide, transparent and underlined.
+- The recap calendar's month menu remains inside the 320 x 844 viewport; selecting a month/day updates the Vietnamese date. The recap reader is 296 px wide, has no horizontal overflow, and scrolls its body internally.
+- `npm run check`: 30 passed, one optional external PostgreSQL integration test skipped; `npm run build` passed. UI verification used Chromium and isolated API fixtures for mobile form interactions; production dashboard, discussion and recap controls were also inspected. Native iOS/Android keyboards were not available.
+- Generated public QA HTML/JS are removed in the final commit; reproducible fixture source remains in `tests/ui`.
+
 ## Google, avatars, and model fallback update
 
 - Production commit `31517c34866f08bd02d46cafadc57e01c7ad68b6` deployed successfully on Vercel.
