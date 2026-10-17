@@ -24,7 +24,7 @@ export interface Comment {
   createdAt: string;
 }
 export interface CreateIdeaInput { title: string; description: string; category: Category; tags: string[] }
-export interface CreateCommentInput { text: string; parentId?: string | null }
+export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string }
 export type IdeaView = "all" | "joined" | "mine";
 export type IdeaSort = "new" | "popular";
 export type CommentSort = "old" | "new";

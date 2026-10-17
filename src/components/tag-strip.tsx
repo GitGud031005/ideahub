@@ -1,18 +1,19 @@
 "use client";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 export function TagStrip({ tags }: { tags: string[] }) {
   const ref = useRef<HTMLDivElement>(null), drag = useRef<{ start: number; left: number; moved: boolean } | null>(null);
-  const suppress = useRef(false), [more, setMore] = useState(false);
+  const suppress = useRef(false), [more, setMore] = useState(false), [previous,setPrevious]=useState(false);
   useEffect(() => {
     const el = ref.current; if (!el) return;
-    const update = () => setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 2);
+    const update = () => {setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 2);setPrevious(el.scrollLeft>2);};
     const wheel = (event: WheelEvent) => { if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return; const next = Math.max(0, Math.min(el.scrollWidth - el.clientWidth, el.scrollLeft + event.deltaY)); if (next !== el.scrollLeft) { event.preventDefault(); el.scrollLeft = next; } };
     const observer = new ResizeObserver(update); observer.observe(el); el.addEventListener("scroll", update); el.addEventListener("wheel", wheel, { passive: false }); update();
     return () => { observer.disconnect(); el.removeEventListener("scroll", update); el.removeEventListener("wheel", wheel); };
   }, [tags]);
-  return <div className={`ih-tags-wrap${more ? " ih-has-more" : ""}`} data-tags onClick={event => { event.stopPropagation(); if (suppress.current) { event.preventDefault(); suppress.current = false; } }}>
-    <div ref={ref} className="ih-tags" tabIndex={0} role="region" aria-label="Tags của ý tưởng" onPointerDown={event => { if (event.pointerType === "mouse" && event.button === 0) drag.current = { start: event.clientX, left: event.currentTarget.scrollLeft, moved: false }; }} onPointerMove={event => { const current = drag.current; if (!current) return; const delta = event.clientX - current.start; if (Math.abs(delta) > 5) { current.moved = true; event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); event.currentTarget.scrollLeft = current.left - delta; } }} onPointerUp={() => { suppress.current = !!drag.current?.moved; drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>{tags.map(tag => <span key={tag} className="ih-tag">{tag}</span>)}</div>
+  return <div className={`ih-tags-wrap${more ? " ih-has-more" : ""}${previous ? " ih-has-prev" : ""}`} data-tags onClick={event => { event.stopPropagation(); if (suppress.current) { event.preventDefault(); suppress.current = false; } }}>
+    <div ref={ref} className="ih-tags" style={{maskImage:`linear-gradient(90deg,${previous ? "transparent,#000 40px" : "#000,#000 0px"},#000 calc(100% - ${more ? 40 : 0}px),${more ? "transparent" : "#000"})`,WebkitMaskImage:`linear-gradient(90deg,${previous ? "transparent,#000 40px" : "#000,#000 0px"},#000 calc(100% - ${more ? 40 : 0}px),${more ? "transparent" : "#000"})`}} tabIndex={0} role="region" aria-label="Tags của ý tưởng" onPointerDown={event => { if (event.pointerType === "mouse" && event.button === 0) drag.current = { start: event.clientX, left: event.currentTarget.scrollLeft, moved: false }; }} onPointerMove={event => { const current = drag.current; if (!current) return; const delta = event.clientX - current.start; if (Math.abs(delta) > 5) { current.moved = true; event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); event.currentTarget.scrollLeft = current.left - delta; } }} onPointerUp={() => { suppress.current = !!drag.current?.moved; drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>{tags.map(tag => <span key={tag} className="ih-tag">{tag}</span>)}</div>
+    {previous && <button className="ih-tags-next ih-tags-prev" type="button" aria-label="Cuộn tags sang trái" onClick={() => ref.current?.scrollBy({ left: -Math.max(80, ref.current.clientWidth * .65), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}><ChevronLeft size={14} aria-hidden="true" /></button>}
     {more && <button className="ih-tags-next" type="button" aria-label="Cuộn tags sang phải" onClick={() => ref.current?.scrollBy({ left: Math.max(80, ref.current.clientWidth * .65), behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}><ChevronRight size={14} aria-hidden="true" /></button>}
   </div>;
 }

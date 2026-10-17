@@ -133,9 +133,11 @@ export class PostgresIdeaRepository implements IdeaRepository {
         if (!ancestors.rowCount) throw new AppError(400, "INVALID_PARENT", "Bình luận gốc không thuộc cuộc thảo luận này");
         if (ancestors.rows.some(a => a.depth > 12)) throw new AppError(422, "MAX_DEPTH", "Nhánh trả lời đã quá sâu, hãy trả lời một bình luận gần hơn");
       }
-      const id = randomUUID();
+      const id = input.clientId ?? randomUUID();
       await upsertUser(db, user);
-      await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body) VALUES ($1, $2, $3, $4, $5)", [id, ideaId, parentId, user.id, input.text]);
+      await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text]);
+      const existing=(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`,[id])).rows[0];
+      if(!existing||existing.idea_id!==ideaId||existing.author_id!==user.id||existing.parent_id!==parentId||existing.body!==input.text)throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");
       await db.query("INSERT INTO public.memberships (idea_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [ideaId, user.id]);
       const result = await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`, [id]);
       return comment(result.rows[0]);

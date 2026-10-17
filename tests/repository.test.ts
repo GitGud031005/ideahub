@@ -29,6 +29,12 @@ test("concurrent joins are atomic and idempotent", async () => {
   await Promise.all(Array.from({ length: 30 }, () => repository.joinIdea("1", user.id)));
   assert.equal((await repository.getIdea("1", user.id)).memberCount, before.memberCount + 1);
 });
+test("retrying an optimistic comment ID creates one message and rejects conflicting reuse",async()=>{
+  const repository=repo(),clientId="72fc48c3-2277-412d-a07d-897597516dad",before=(await repository.getIdea("1",user.id)).commentCount;
+  const sent=await Promise.all(Array.from({length:5},()=>repository.createComment("1",user,{text:"One message",clientId})));
+  assert(sent.every(c=>c.id===clientId));assert.equal((await repository.getIdea("1",user.id)).commentCount,before+1);
+  for(const [room,actor,text] of [["1",user,"Changed"],["2",user,"One message"],["1",other,"One message"]] as const)await assert.rejects(repository.createComment(room,actor,{text,clientId}),{code:"COMMENT_CONFLICT"});
+});
 test("nested replies validate room ownership, cap depth and join on comment", async () => {
   const repository = repo();
   await assert.rejects(repository.createComment("2", user, { text: "wrong room", parentId: "m-1-0" }), (error: unknown) => error instanceof AppError && error.code === "INVALID_PARENT");

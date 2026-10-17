@@ -23,9 +23,9 @@ export function buildCommentForest<T extends { id: string; parentId: string | nu
     const branch = children.get(parent) ?? [];
     branch.push(item); children.set(parent, branch);
   }
-  for (const [parent, branch] of children) branch.sort((a, b) => {
+  for (const branch of children.values()) branch.sort((a, b) => {
     const delta = Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id);
-    return parent === null && sort === "new" ? -delta : delta;
+    return sort === "new" ? -delta : delta;
   });
   return children;
 }

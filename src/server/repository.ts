@@ -58,6 +58,10 @@ export class StateIdeaRepository implements IdeaRepository {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === ideaId); if (!idea) throw notFound();
       const parentId = input.parentId ?? null;
+      if(input.clientId){
+        const existing=state.comments.find(c=>c.id===input.clientId);
+        if(existing){if(existing.ideaId!==ideaId||existing.author.id!==user.id||existing.parentId!==parentId||existing.text!==input.text)throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");return existing;}
+      }
       let parent = parentId, depth = 0;
       const seen = new Set<string>();
       while (parent) {
@@ -66,7 +70,7 @@ export class StateIdeaRepository implements IdeaRepository {
         if (seen.has(parent) || ++depth > 12) throw new AppError(422, "MAX_DEPTH", "Nhánh trả lời đã quá sâu, hãy trả lời một bình luận gần hơn");
         seen.add(parent); parent = entry.parentId;
       }
-      const comment: Comment = { id: randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString() };
+      const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString() };
       if (!idea.members.includes(user.id)) idea.members.push(user.id);
       state.comments.push(comment); return comment;
     });

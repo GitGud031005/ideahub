@@ -10,6 +10,7 @@ export const createIdeaSchema = z.object({
 }).strict();
 export const createCommentSchema = z.object({
   text: z.string().trim().min(1, "Nội dung không được để trống").max(2000, "Bình luận tối đa 2000 ký tự"),
+  clientId: z.string().uuid().optional(),
   parentId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).nullable().optional(),
 }).strict();
 export const ideaQuerySchema = z.object({

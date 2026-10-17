@@ -38,6 +38,11 @@ test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and 
     } while (cursor);
     assert.equal(ids.size, 13);
     assert.equal((await repository.getIdea(idea.id, user.id)).commentCount, 13);
+    const clientId="72fc48c3-2277-412d-a07d-897597516dad";
+    const repeated=await Promise.all(Array.from({length:5},()=>repository.createComment(idea.id,other,{text:"Optimistic retry",clientId,parentId:root.id})));
+    assert(repeated.every(c=>c.id===clientId));assert.equal((await repository.getIdea(idea.id,user.id)).commentCount,14);
+    for(const [room,actor,text,parentId] of [[idea.id,other,"Changed",root.id],[second.id,other,"Optimistic retry",null],[idea.id,user,"Optimistic retry",root.id],[idea.id,other,"Optimistic retry",null]] as const)await assert.rejects(repository.createComment(room,actor,{text,parentId,clientId}),{code:"COMMENT_CONFLICT"});
+    assert.equal((await repository.getIdea(idea.id,user.id)).commentCount,14);
     await assert.rejects(repository.listComments(second.id, root.id), (e: unknown) => e instanceof AppError && e.code === "INVALID_CURSOR");
     await assert.rejects(repository.createIdea({ id: "must-rollback", name: "Rollback", initial: "R" }, { ...input, title: "" }));
     assert.equal((await embedded.pool.query("SELECT id FROM public.users WHERE id = 'must-rollback'")).rowCount, 0);
