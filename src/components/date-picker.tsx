@@ -56,7 +56,7 @@ export function DatePicker({ id, label, value, min, max, disabled, onChange }: {
       <div className="ih-date-weekdays" aria-hidden="true">{["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map(d => <span key={d}>{d}</span>)}</div>
       <div className="ih-date-grid" role="group" aria-label={`Ngày trong tháng ${month.slice(5)}/${month.slice(0, 4)}`}>
         {days.map(day => <button type="button" key={day} data-day={day} className={day.slice(0, 7) !== month ? "ih-date-outside" : ""}
-          disabled={!allowed(day)} tabIndex={day === focused ? 0 : -1} aria-label={displayDay(day)} aria-pressed={day === value}
+          disabled={!allowed(day)} tabIndex={day === (focused.startsWith(month) ? focused : days.find(d => d.startsWith(month) && allowed(d))) ? 0 : -1} aria-label={displayDay(day)} aria-pressed={day === value}
           aria-current={day === max ? "date" : undefined} onFocus={() => setFocused(day)} onClick={() => { onChange(day); close(); }}>{Number(day.slice(8))}</button>)}
       </div>
       <button type="button" className="ih-date-today" onClick={() => { onChange(max); close(); }}>Hôm nay · {displayDay(max)}</button>
