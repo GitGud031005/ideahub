@@ -5,18 +5,26 @@ import { Providers } from "../../src/components/providers";
 import { Dashboard } from "../../src/components/dashboard";
 import { Discussion } from "../../src/components/discussion";
 import type { Account, Comment, Idea } from "../../src/lib/domain";
+import type { Recap } from "../../src/lib/recaps";
 declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
 const tags = ["Công nghệ", "Data engineering", "Python", "Open source", "Thiết kế", "Teamwork", "PostgreSQL", "Tìm đồng đội", "Mobile", "Product", "Frontend", "Backend"];
 const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: false, joined: false }));
 const comments: Comment[] = Array.from({ length: 13 }, (_, i) => ({ id: `qa-comment-${i}`, ideaId: ideas[0].id, parentId: i ? `qa-comment-${i - 1}` : null, author: i % 2 ? { id: "qa-other", name: "Trần Ngọc Bình", initial: "TB" } : person, text: i ? "Mình đồng ý. Cùng bắt đầu từ một phần nhỏ, rồi xây dựng và hoàn thiện từng bước nhé" : "Mình có thể phụ trách phần thu thập dữ liệu và xây dựng pipeline. Mọi người muốn bắt đầu từ nguồn nào?", createdAt: new Date().toISOString() }));
+const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
 let current = window.__qaScene === "guest" ? null : person;
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
   if (path === "/api/session") return Response.json({ user: current, storage: "postgres" });
+  if (path === "/api/auth/config") return Response.json({google:true,avatarUpload:true});
+  if (path === "/api/auth/register" || path === "/api/auth/login") { current=person;return Response.json({user:current,storage:"postgres"}); }
+  if (path === "/api/auth/avatar") return Response.json({user:current,storage:"postgres"});
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
   if (path === "/api/ideas") return Response.json({ items: ideas, total: 3, counts: { all: 3, joined: 1, mine: 1 } });
+  if (path.endsWith("/recaps/qa-recap")) return Response.json(recap);
+  if (path.endsWith("/recaps")) return Response.json(init?.method==="POST" ? recap : {items:[recap],nextOffset:null,aiConfigured:true});
+  if (path.endsWith("/comments") && init?.method === "POST") {const input=JSON.parse(String(init.body));const comment={...comments[0],id:`qa-added-${comments.length}`,parentId:input.parentId||null,text:input.text,author:person};comments.push(comment);return Response.json(comment);}
   if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
   if (path.endsWith("/join") && init?.method === "POST") return Response.json({ ...ideas[0], joined: true });
   if (path.startsWith("/api/ideas/")) return Response.json(ideas[0]);

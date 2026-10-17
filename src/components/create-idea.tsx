@@ -45,7 +45,7 @@ export function CreateIdea({ onClose }: { onClose: () => void }) {
     mutation.mutate(result.data);
   }
 
-  return <dialog ref={ref} className="ih-create-dialog" aria-labelledby="create-title" onCancel={event => { event.preventDefault(); if (!mutation.isPending) onClose(); }} onClick={event => { if (event.target === event.currentTarget && !mutation.isPending) onClose(); }}>
+  return <dialog ref={ref} className="ih-create-dialog" aria-labelledby="create-title" onCancel={event => { event.preventDefault(); if (!mutation.isPending) onClose(); }} onClick={event => { const rect=event.currentTarget.getBoundingClientRect(); if (event.target === event.currentTarget && !mutation.isPending && (event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom)) onClose(); }}>
     <div className="ih-dialog-top"><span className="ih-eyebrow">MỘT KHỞI ĐẦU MỚI</span><button type="button" className="ih-icon-button" aria-label="Đóng" disabled={mutation.isPending} onClick={onClose}><X size={17} aria-hidden="true" /></button></div>
     <h2 id="create-title">Bạn đang nghĩ về điều gì?</h2><p className="ih-dialog-subtitle">Một vài dòng là đủ để bắt đầu cuộc trò chuyện</p>
     <form noValidate aria-busy={mutation.isPending} onSubmit={submit}>

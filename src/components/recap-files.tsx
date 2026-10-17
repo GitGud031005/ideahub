@@ -6,6 +6,7 @@ import { api } from "@/lib/api-client";
 import { addDays, displayDay, localDay, periodFor, validDay, weekStart, type Recap, type RecapFile, type RecapKind, type RecapPage } from "@/lib/recaps";
 import { useAuth } from "./providers";
 import { Select } from "./select";
+import { DatePicker } from "./date-picker";
 import { geminiModelLabel } from "@/lib/gemini-models";
 import { ErrorState, LoadingState } from "./status";
 
@@ -17,7 +18,7 @@ function RecapDialog({ children, title, onClose, className = "" }: { children: R
     return () => { dialog?.close(); document.body.style.overflow = previous; };
   }, []);
   return <dialog ref={ref} className={`ih-recap-dialog ${className}`} aria-label={title}
-    onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { const rect=e.currentTarget.getBoundingClientRect(); if (e.target === e.currentTarget && (e.clientX<rect.left || e.clientX>rect.right || e.clientY<rect.top || e.clientY>rect.bottom)) onClose(); }}>
     <div className="ih-recap-dialog-top"><span><Sparkles size={13} aria-hidden="true"/>AI RECAP</span><button ref={close} type="button" className="ih-icon-button" aria-label="Đóng recap" onClick={onClose}><X size={18} aria-hidden="true"/></button></div>
     {children}
   </dialog>;
@@ -48,9 +49,9 @@ function CreateRecap({ ideaId, onClose, onCreated }: { ideaId: string; onClose: 
   const period = validDay(date) ? periodFor(kind, date) : null;
   return <RecapDialog title="Tạo bản recap" onClose={() => { if (!mutation.isPending) onClose(); }} className="ih-recap-create">
     <h2>Tóm lại những điều quan trọng</h2><p className="ih-recap-create-intro">Giữ lại ý tưởng, quyết định và bước đi tiếp theo từ cuộc thảo luận</p>
-    <form onSubmit={e => { e.preventDefault(); if (date && !mutation.isPending) mutation.mutate(); }}>
-      <label>Loại recap</label><Select label="Loại recap" value={kind} onChange={value => { setKind(value); mutation.reset(); }} wide disabled={mutation.isPending} options={[{ value: "daily", label: "Theo ngày" }, { value: "weekly", label: "Theo tuần" }]}/>
-      <label htmlFor="recap-date">{kind === "daily" ? "Ngày thảo luận" : "Chọn một ngày trong tuần"}</label><input id="recap-date" className="ih-field" type="date" value={date} min="2020-01-01" max={localDay()} required disabled={mutation.isPending} onChange={e => { setDate(e.target.value); mutation.reset(); }}/>
+    <form noValidate onSubmit={e => { e.preventDefault(); if (validDay(date) && !mutation.isPending) mutation.mutate(); }}>
+      <div className="ih-field-label">Loại recap</div><Select label="Loại recap" value={kind} onChange={value => { setKind(value); mutation.reset(); }} wide disabled={mutation.isPending} options={[{ value: "daily", label: "Theo ngày" }, { value: "weekly", label: "Theo tuần" }]}/>
+      <label htmlFor="recap-date">{kind === "daily" ? "Ngày thảo luận" : "Chọn một ngày trong tuần"}</label><DatePicker id="recap-date" label={kind === "daily" ? "Ngày thảo luận" : "Ngày trong tuần"} value={date} min="2020-01-01" max={localDay()} disabled={mutation.isPending} onChange={value => { setDate(value); mutation.reset(); }}/>
       {period && <p className="ih-recap-period">{displayDay(period.start)}{kind === "weekly" && ` — ${displayDay(addDays(period.end, -1))}`} · Giờ Việt Nam</p>}
       {mutation.error && <p className="ih-form-error" role="alert">{mutation.error.message}</p>}
       <div className="ih-form-footer"><button type="button" className="ih-secondary" disabled={mutation.isPending} onClick={onClose}>Để sau</button><button type="submit" className="ih-primary" disabled={!date || mutation.isPending}>{mutation.isPending ? "Đang tổng hợp..." : "Tạo recap"}</button></div>
