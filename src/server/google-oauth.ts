@@ -18,7 +18,7 @@ export class PostgresOAuthFlows implements OAuthFlows {
   async consume(hash:string){const row=(await this.pool.query<{verifier:string;nonce_hash:string;return_to:string}>("DELETE FROM ideahub_private.oauth_states WHERE state_hash=$1 AND expires_at>now() RETURNING verifier,nonce_hash,return_to",[hash])).rows[0];return row?{verifier:row.verifier,nonceHash:row.nonce_hash,returnTo:row.return_to}:null;}
 }
 export function safeReturnTo(value:string|null) {
-  if(value==="/?new=1")return value;
+  if(value==="/?new=1"||value==="/profile")return value;
   return value && /^\/ideas\/[a-zA-Z0-9_-]{1,100}$/.test(value) ? value : "/";
 }
 export function googleSettings(){return {clientId:process.env.GOOGLE_CLIENT_ID,clientSecret:process.env.GOOGLE_CLIENT_SECRET,origin:process.env.APP_URL||"https://ideahub-umber.vercel.app"};}

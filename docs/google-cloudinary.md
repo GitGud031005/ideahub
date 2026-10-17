@@ -29,9 +29,9 @@ Enter secret values directly in the hosting provider, without committing them. N
 
 - Users can choose a 2 MB JPG, PNG or WebP while registering. A local preview is shown; the file is uploaded only after account creation, using the new authenticated session. Choosing a photo is optional.
 - If that upload fails, the account remains created and the user can retry the photo or continue and change it later. Retrying does not create another account.
-- The account menu can replace the avatar. Comments and idea author profiles use the saved image, with initials if no image exists or it fails to load.
+- The account menu links to `/profile`, where the user can change their display name and upload a replacement avatar. Comments and idea author profiles use the saved image, with initials if no image exists or it fails to load.
 - Google login imports the Google name and photo. If Cloudinary is configured, the photo is copied into Cloudinary. Otherwise a validated Google-hosted picture remains available as a fallback. An avatar chosen manually is preserved on later Google logins.
-- Google return destinations are restricted to the dashboard, creating an idea, or a specific discussion. Arbitrary external redirect destinations are rejected.
+- Google return destinations are restricted to the dashboard, creating an idea, the profile page, or a specific discussion. Arbitrary external redirect destinations are rejected.
 
 ## Security and verification
 
@@ -42,3 +42,11 @@ Avatar writes require the app session and same-origin POST, have shared user/glo
 Automated PostgreSQL and mocked-provider tests cover callback state binding and replay, nonce mismatch, stable Google identities, password rejection for Google-only accounts, custom-avatar preservation, upload authorization, signatures, type/size validation and sanitized provider failures. Real Google sign-in and Cloudinary uploads require the credentials above and a user-led Google account selection.
 
 References: [Google OIDC](https://developers.google.com/identity/openid-connect/openid-connect), [Cloudinary signatures](https://cloudinary.com/documentation/authentication_signatures), [Cloudinary uploads](https://cloudinary.com/documentation/upload_images).
+
+## Profile and password changes
+
+`/profile` edits only the display name and avatar. Username/provider/Google identity cannot be changed through profile payloads. The Google name and picture are imported on first login; subsequent logins preserve the edited display name and any custom avatar.
+
+POST `/api/auth/profile` accepts only `{name}`. The existing authenticated avatar endpoint remains the only image upload endpoint. Both use same-origin checks, session ownership and shared rate limits.
+
+Only password-created accounts see the password form. POST `/api/auth/password` accepts `{currentPassword,newPassword}`, verifies the current scrypt hash and requires at least eight characters. Google accounts are rejected server-side even if they call this endpoint directly. The password update uses a hash compare-and-swap in a transaction with revocation of all old sessions; the response rotates the current session cookie. Password login checks the verified hash again when committing its session, so a stale login cannot mint a session after a concurrent password change. No password is returned to the browser or stored in plaintext.

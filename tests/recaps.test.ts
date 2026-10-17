@@ -105,7 +105,7 @@ test("Gemini requests are server-side structured and stateless; invalid citation
   await assert.rejects(generator.generate(source), error => !String(error).includes("unit-test-key") && !String(error).includes("private chat"));
   await assert.rejects(new GeminiRecapGenerator({}).generate(source), { code: "AI_NOT_CONFIGURED" });
 });
-test("recap routes require sessions and membership; samples remain readable without a Google key", async () => {
+test("recap routes are read-only; samples remain readable without a Google key", async () => {
   const { store, repo, close } = await fixture(), auth = new AuthService(new MemoryAuthStore());
   const service = new RecapService(store, repo, new GeminiRecapGenerator({}));
   const base = "https://ideahub.test/api/";
@@ -119,11 +119,12 @@ test("recap routes require sessions and membership; samples remain readable with
     const data = await list.json(); assert.equal(data.aiConfigured, false); assert.equal(data.items.length, 5);
     assert.equal((await call(`ideas/${demoId}/recaps/${data.items[0].id}`, login.token)).status, 200);
     assert.equal((await call(`ideas/${demoId}/recaps?bad=1`, login.token)).status, 422);
-    assert.equal((await call(`ideas/${demoId}/recaps`, login.token, { kind: "daily", date: "2026-02-30" })).status, 422);
-    assert.equal((await call(`ideas/${demoId}/recaps`, login.token, { kind: "daily", date: "2026-10-16" })).status, 403);
+    for (const date of ["2026-02-30", "2026-10-16"]) {
+      const response=await call(`ideas/${demoId}/recaps`,login.token,{kind:"daily",date});
+      assert.equal(response.status,405);assert.equal(response.headers.get("Allow"),"GET");
+    }
     await repo.joinIdea(demoId, login.user.id);
-    const generation = await call(`ideas/${demoId}/recaps`, login.token, { kind: "daily", date: "2026-10-16" });
-    assert.equal(generation.status, 503); assert.equal((await generation.json()).error.code, "AI_NOT_CONFIGURED");
+    assert.equal((await call(`ideas/${demoId}/recaps`,login.token,{kind:"weekly",date:"2026-10-05"})).status,405);
   } finally { await close(); }
 });
 test("cron is closed without a strong secret and missing AI configuration performs no work", async () => {
@@ -151,4 +152,18 @@ test("scheduled recap catch-up is bounded, resumes remaining files, and does not
     assert.deepEqual(await service.runDaily(now), { completed: 0, failed: 0, hasMore: false });
     assert.equal(calls, 5); assert.equal(budget, 5);
   } finally { await close(); }
+});
+
+test("automatic recap skips inactive days and weeks without calling the provider",async()=>{
+  const {pool,store,repo,close}=await fixture();let calls=0;
+  const service=new RecapService(store,repo,{configured:()=>true,generate:async source=>{calls++;return {content:summary(source),model:"test-model"};}},async()=>{});
+  try{
+    const pending=await store.pending("2026-10-17",100);
+    assert.equal(pending.filter(c=>c.kind==="daily").length,4);
+    assert.equal(pending.filter(c=>c.kind==="weekly").length,1);
+    assert(!pending.some(c=>c.date==="2026-10-10"||c.date==="2026-09-28"));
+    await pool.query("DELETE FROM public.comments WHERE idea_id=$1",[demoId]);
+    assert.deepEqual(await service.runDaily(new Date("2026-10-17T02:00:00Z")),{completed:0,failed:0,hasMore:false});
+    assert.equal(calls,0);
+  }finally{await close();}
 });

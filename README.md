@@ -56,7 +56,7 @@ npm start      # Production auth cần PostgreSQL
 - Phiên khách cũ không cấp quyền ghi. Tên tác giả và avatar lấy từ tài khoản trên server. Không nhận ID/name tác giả từ body.
 - Auth có giới hạn đăng nhập/đăng ký theo username, IP do Vercel cung cấp và budget toàn ứng dụng, dùng bucket PostgreSQL chia sẻ giữa instance. Wrong-password và username không tồn tại trả cùng lỗi.
 - UI yêu cầu đăng nhập trước khi tạo/tham gia, tiếp tục thao tác sau đăng nhập, xóa cache/draft khi đổi tài khoản. API kiểm tra độc lập, kể cả mở URL trực tiếp.
-- Đăng nhập bằng username/password hoặc Google OAuth sau khi cấu hình client ID/secret. Có chọn avatar lúc đăng ký và đổi avatar trong menu tài khoản; ảnh lưu bằng Cloudinary. Nếu không có ảnh, dùng chữ cái đầu họ tên. Xem [thiết lập Google và Cloudinary](docs/google-cloudinary.md). Chưa có reset mật khẩu qua email.
+- Đăng nhập bằng username/password hoặc Google OAuth sau khi cấu hình client ID/secret. Có chọn avatar lúc đăng ký và đổi avatar/tên hiển thị ở trang hồ sơ cá nhân; ảnh lưu bằng Cloudinary. Nếu không có ảnh, dùng chữ cái đầu họ tên. Xem [thiết lập Google và Cloudinary](docs/google-cloudinary.md). Chưa có reset mật khẩu qua email.
 
 ## AI daily / weekly recap
 
@@ -107,3 +107,9 @@ Giới hạn hiện tại: chưa có realtime WebSocket, upload file, chỉnh s�
 Responsive dùng khung nội dung giới hạn trên desktop, header/search hai hàng trên điện thoại, card một cột, form cuộn theo viewport, touch targets, safe area và sidebar thảo luận dạng drawer. Nhánh bình luận sâu thu gọn phần thụt lề trên điện thoại để giữ chiều rộng đọc.
 
 Tài liệu chính thức: [Next.js App Router](https://nextjs.org/docs/app), [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers), [Vercel Functions](https://vercel.com/docs/functions), [Vercel Storage](https://vercel.com/docs/storage).
+
+### Profile and automatic recaps
+
+- Account menu → **Chỉnh sửa hồ sơ** opens `/profile` for avatar and display-name changes. Username and sign-in provider are fixed.
+- Password-created accounts can change their password after verifying the current password; Google accounts have no IdeaHub password form. Old sessions are revoked on password change.
+- Daily/weekly recaps run automatically after closed active periods (Vietnam time). Empty periods are skipped. The sidebar only opens existing files; manual generation is disabled server-side.

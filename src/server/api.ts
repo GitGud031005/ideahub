@@ -6,8 +6,7 @@ import { getDatabasePool } from "./database";
 import { assertSameOrigin, errorResponse, json, rateLimit, readJson } from "./http";
 import { getSessionToken, sessionCookie } from "./session";
 import { AuthService, getAuthService } from "./auth";
-import { loginSchema, registerSchema } from "@/lib/auth-validation";
-import { recapInputSchema } from "@/lib/recaps";
+import { loginSchema, registerSchema, profileSchema, passwordChangeSchema } from "@/lib/auth-validation";
 import { getRecapService, type RecapService } from "./recaps";
 import { z } from "zod";
 import { CloudinaryAvatars, readAvatar } from "./cloudinary";
@@ -34,6 +33,17 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(!avatars.configured())throw new AppError(503,"AVATAR_CONFIG","Chức năng ảnh đại diện chưa kết nối Cloudinary");
       const image=await readAvatar(request),url=await avatars.upload(user.id,image);
       return json({user:await auth.setAvatar(user.id,url),storage:storageMode()});
+    }
+    if ((route === "auth/profile" || route === "auth/password") && method === "POST") {
+      const user=await auth.user(token);
+      if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để chỉnh sửa hồ sơ");
+      await auth.limit(`${route}:${user.id}`,route.endsWith("password")?5:20,900);
+      if(route.endsWith("profile")){
+        const input=await readJson(request,profileSchema);
+        return json({user:await auth.updateName(user.id,input.name),storage:storageMode()});
+      }
+      const result=await auth.changePassword(user,await readJson(request,passwordChangeSchema));
+      return json({user:result.user,storage:storageMode()},200,{"Set-Cookie":sessionCookie(result.token)});
     }
     if (route === "session" && method === "GET") {
       const user = await auth.user(token);
@@ -82,10 +92,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
         const query = z.object({ offset: z.coerce.number().int().min(0).max(100000).default(0) }).strict().parse(Object.fromEntries(url.searchParams));
         return json(await service.list(id, user!.id, query.offset));
       }
-      const input = await readJson(request, recapInputSchema);
-      await auth.limit(`recap:user:${user!.id}`, 10, 900);
-      await auth.limit("recap:global", 100, 86400);
-      return json(await service.generate(id, input, user!.id));
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Recap được tạo tự động theo ngày và tuần có thảo luận" } }, 405, { Allow: "GET" });
     }
     if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
     if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));

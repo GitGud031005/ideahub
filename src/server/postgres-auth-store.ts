@@ -1,6 +1,7 @@
 import type { Account } from "@/lib/domain";
 import type { AuthStore } from "./auth";
 import type { DatabasePool } from "./postgres-repository";
+import { AppError } from "./errors";
 interface UserRow { id: string; username: string; display_name: string; initial: string; avatar_url:string|null;avatar_source:Account["avatarSource"];google_subject:string|null }
 const account = (row: UserRow): Account => ({ id: row.id, username: row.username, name: row.display_name, initial: row.initial,avatarUrl:row.avatar_url,avatarSource:row.avatar_source,provider:row.google_subject ? "google" : "password" });
 const userSelect="SELECT u.id,u.display_name,u.initial,u.avatar_url,u.avatar_source,a.username,a.google_subject FROM ideahub_private.accounts a JOIN public.users u ON u.id=a.user_id";
@@ -23,8 +24,12 @@ export class PostgresAuthStore implements AuthStore {
     const row = (await this.pool.query<UserRow & { password_hash: string|null }>(`SELECT u.id,u.display_name,u.initial,u.avatar_url,u.avatar_source,a.username,a.google_subject,a.password_hash FROM ideahub_private.accounts a JOIN public.users u ON u.id=a.user_id WHERE a.username=$1`, [username])).rows[0];
     return row ? { user: account(row), passwordHash: row.password_hash } : null;
   }
-  async saveSession(hash: string, userId: string, expires: Date) {
-    await this.pool.query("INSERT INTO ideahub_private.sessions (token_hash,user_id,expires_at) VALUES ($1,$2,$3)", [hash,userId,expires]);
+  async saveSession(hash: string, userId: string, expires: Date, expectedPasswordHash?:string) {
+    if(expectedPasswordHash){
+      const result=await this.pool.query(`INSERT INTO ideahub_private.sessions(token_hash,user_id,expires_at)
+        SELECT $1,user_id,$3 FROM ideahub_private.accounts WHERE user_id=$2 AND password_hash=$4 AND google_subject IS NULL FOR SHARE RETURNING token_hash`,[hash,userId,expires,expectedPasswordHash]);
+      if(!result.rowCount)throw new AppError(401,"INVALID_CREDENTIALS","Mật khẩu đã thay đổi, hãy đăng nhập lại");
+    }else await this.pool.query("INSERT INTO ideahub_private.sessions (token_hash,user_id,expires_at) VALUES ($1,$2,$3)", [hash,userId,expires]);
     // Bounded cleanup keeps expired sessions from accumulating indefinitely.
     await this.pool.query("DELETE FROM ideahub_private.sessions WHERE token_hash IN (SELECT token_hash FROM ideahub_private.sessions WHERE expires_at <= now() LIMIT 100)");
   }
@@ -36,7 +41,7 @@ export class PostgresAuthStore implements AuthStore {
   async upsertGoogle(user:Account,subject:string):Promise<Account> {
     const existing=(await this.pool.query<UserRow>(`${userSelect} WHERE a.google_subject=$1`,[subject])).rows[0];
     if(existing){
-      await this.pool.query(`UPDATE public.users SET display_name=$2,initial=$3,avatar_url=CASE WHEN avatar_source='custom' THEN avatar_url ELSE COALESCE($4,avatar_url) END,avatar_source=CASE WHEN avatar_source='custom' OR $4::text IS NULL THEN avatar_source ELSE 'google' END WHERE id=$1`,[existing.id,user.name,user.initial,user.avatarUrl]);
+      await this.pool.query(`UPDATE public.users SET avatar_url=CASE WHEN avatar_source='custom' THEN avatar_url ELSE COALESCE($2,avatar_url) END,avatar_source=CASE WHEN avatar_source='custom' OR $2::text IS NULL THEN avatar_source ELSE 'google' END WHERE id=$1`,[existing.id,user.avatarUrl]);
       return account((await this.pool.query<UserRow>(`${userSelect} WHERE a.user_id=$1`,[existing.id])).rows[0]);
     }
     const db=await this.pool.connect();let winner=false,broken=false;
@@ -53,6 +58,21 @@ export class PostgresAuthStore implements AuthStore {
   async setAvatar(id:string,url:string,source:"google"|"custom") {
     await this.pool.query("UPDATE public.users SET avatar_url=$2,avatar_source=$3 WHERE id=$1 AND ($3='custom' OR avatar_source<>'custom')",[id,url,source]);
     const row=(await this.pool.query<UserRow>(`${userSelect} WHERE a.user_id=$1`,[id])).rows[0];if(!row)throw new Error("Account not found");return account(row);
+  }
+  async updateName(id:string,name:string,initial:string) {
+    await this.pool.query("UPDATE public.users SET display_name=$2,initial=$3 WHERE id=$1",[id,name,initial]);
+    const row=(await this.pool.query<UserRow>(`${userSelect} WHERE a.user_id=$1`,[id])).rows[0];
+    if(!row)throw new AppError(404,"ACCOUNT_NOT_FOUND","Không tìm thấy tài khoản");return account(row);
+  }
+  async changePassword(id:string,expectedHash:string,nextHash:string) {
+    const db=await this.pool.connect();let broken=false;
+    try{
+      await db.query("BEGIN");
+      const result=await db.query(`UPDATE ideahub_private.accounts SET password_hash=$3 WHERE user_id=$1 AND password_hash=$2 AND google_subject IS NULL RETURNING user_id`,[id,expectedHash,nextHash]);
+      if(!result.rowCount){await db.query("ROLLBACK");return false;}
+      await db.query("DELETE FROM ideahub_private.sessions WHERE user_id=$1",[id]);
+      await db.query("COMMIT");return true;
+    }catch(error){try{await db.query("ROLLBACK");}catch{broken=true;}throw error;}finally{db.release(broken);}
   }
   async consume(key: string, seconds: number, now: Date) {
     const row = (await this.pool.query<{ attempts: number }>(`INSERT INTO ideahub_private.auth_limits (key_hash,started_at,attempts) VALUES ($1,$2,1)

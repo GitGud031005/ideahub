@@ -12,8 +12,10 @@ export interface AuthStore {
   createAccount(user: Account, passwordHash: string): Promise<boolean>;
   upsertGoogle(user: Account, subject: string): Promise<Account>;
   setAvatar(userId: string, url: string, source: "google" | "custom"): Promise<Account>;
+  updateName(userId: string, name: string, initial: string): Promise<Account>;
+  changePassword(userId: string, expectedHash: string, nextHash: string): Promise<boolean>;
   findAccount(username: string): Promise<Credential | null>;
-  saveSession(hash: string, userId: string, expires: Date): Promise<void>;
+  saveSession(hash: string, userId: string, expires: Date, expectedPasswordHash?: string): Promise<void>;
   findSession(hash: string, now: Date): Promise<Account | null>;
   deleteSession(hash: string): Promise<void>;
   consume(key: string, windowSeconds: number, now: Date): Promise<number>;
@@ -25,9 +27,9 @@ export class AuthService {
     if (await this.store.consume(digest(key), seconds, new Date()) > count) throw new AppError(429, "AUTH_RATE_LIMIT", "Bạn thử quá nhiều lần, hãy đợi một lúc rồi thử lại");
   }
   async user(token: string | null, now = new Date()): Promise<Account | null> { return token ? this.store.findSession(digest(token), now) : null; }
-  private async issue(user: Account, previous: string | null) {
+  private async issue(user: Account, previous: string | null, expectedPasswordHash?: string) {
     const token = randomBytes(32).toString("base64url");
-    await this.store.saveSession(digest(token), user.id, new Date(Date.now() + SESSION_MAX_AGE * 1000));
+    await this.store.saveSession(digest(token), user.id, new Date(Date.now() + SESSION_MAX_AGE * 1000), expectedPasswordHash);
     if (previous) await this.logout(previous);
     return { user, token };
   }
@@ -39,9 +41,10 @@ export class AuthService {
   }
   async login(input: { username: string; password: string }, previous: string | null) {
     const credential = await this.store.findAccount(input.username);
-    const valid = await verifyPassword(input.password, credential?.passwordHash ?? DUMMY_PASSWORD_HASH);
+    const verifiedHash=credential?.passwordHash;
+    const valid = await verifyPassword(input.password, verifiedHash ?? DUMMY_PASSWORD_HASH);
     if (!credential || !valid) throw new AppError(401, "INVALID_CREDENTIALS", "Username hoặc mật khẩu chưa đúng");
-    return this.issue(credential.user, previous);
+    return this.issue(credential.user, previous, verifiedHash!);
   }
   async logout(token: string | null) { if (token) await this.store.deleteSession(digest(token)); }
   async google(identity: { subject: string; name: string; avatarUrl: string | null }) {
@@ -49,6 +52,19 @@ export class AuthService {
     return { user };
   }
   setAvatar(userId:string,url:string,source:"google"|"custom"="custom") {return this.store.setAvatar(userId,url,source);}
+  updateName(userId:string,name:string) {return this.store.updateName(userId,name,initials(name));}
+  async changePassword(user:Account,input:{currentPassword:string;newPassword:string}) {
+    const credential=await this.store.findAccount(user.username);
+    if(!credential || credential.user.id!==user.id || credential.user.provider==="google" || !credential.passwordHash)
+      throw new AppError(403,"PASSWORD_UNAVAILABLE","Tài khoản Google không sử dụng mật khẩu IdeaHub");
+    const expectedHash=credential.passwordHash;
+    if(!await verifyPassword(input.currentPassword,expectedHash))
+      throw new AppError(422,"CURRENT_PASSWORD","Mật khẩu hiện tại chưa đúng");
+    const nextHash=await hashPassword(input.newPassword);
+    if(!await this.store.changePassword(user.id,expectedHash,nextHash))
+      throw new AppError(409,"PASSWORD_CHANGED","Mật khẩu vừa được thay đổi, hãy đăng nhập lại");
+    return this.issue(credential.user,null,nextHash);
+  }
   issueSession(user:Account,previous:string|null) {return this.issue(user,previous);}
 }
 /** Local development/test adapter; production accounts always require PostgreSQL. */
@@ -61,14 +77,29 @@ export class MemoryAuthStore implements AuthStore {
   async findAccount(username: string) { return this.accounts.get(username) ?? null; }
   async upsertGoogle(user: Account, subject:string) {
     const username = this.googleIds.get(subject), existing = username ? this.accounts.get(username) : undefined;
-    if (existing) { existing.user.name=user.name;existing.user.initial=user.initial;if(existing.user.avatarSource!=="custom"){existing.user.avatarUrl=user.avatarUrl;existing.user.avatarSource=user.avatarSource;}return existing.user; }
+    if (existing) { if(existing.user.avatarSource!=="custom"){existing.user.avatarUrl=user.avatarUrl;existing.user.avatarSource=user.avatarSource;}return existing.user; }
     this.googleIds.set(subject,user.username);this.accounts.set(user.username,{user,passwordHash:null});return user;
   }
   async setAvatar(id:string,url:string,source:"google"|"custom") {
     const item=[...this.accounts.values()].find(a=>a.user.id===id);if(!item)throw new AppError(404,"ACCOUNT_NOT_FOUND","Không tìm thấy tài khoản");
     if(source!=="google"||item.user.avatarSource!=="custom"){item.user.avatarUrl=url;item.user.avatarSource=source;}return item.user;
   }
-  async saveSession(hash: string, userId: string, expires: Date) { this.sessions.set(hash, { userId, expires }); }
+  async updateName(userId:string,name:string,initial:string) {
+    const credential=[...this.accounts.values()].find(a=>a.user.id===userId);
+    if(!credential)throw new AppError(404,"ACCOUNT_NOT_FOUND","Không tìm thấy tài khoản");
+    credential.user.name=name;credential.user.initial=initial;return credential.user;
+  }
+  async changePassword(userId:string,expectedHash:string,nextHash:string) {
+    const credential=[...this.accounts.values()].find(a=>a.user.id===userId);
+    if(!credential || credential.user.provider==="google" || credential.passwordHash!==expectedHash)return false;
+    credential.passwordHash=nextHash;
+    for(const [key,session] of this.sessions)if(session.userId===userId)this.sessions.delete(key);
+    return true;
+  }
+  async saveSession(hash: string, userId: string, expires: Date, expectedPasswordHash?:string) {
+    if(expectedPasswordHash){const credential=[...this.accounts.values()].find(a=>a.user.id===userId);if(credential?.passwordHash!==expectedPasswordHash)throw new AppError(401,"INVALID_CREDENTIALS","Mật khẩu đã thay đổi, hãy đăng nhập lại");}
+    this.sessions.set(hash, { userId, expires });
+  }
   async findSession(hash: string, now: Date) { const s = this.sessions.get(hash); if (!s || s.expires <= now) return null; return [...this.accounts.values()].find(a => a.user.id === s.userId)?.user ?? null; }
   async deleteSession(hash: string) { this.sessions.delete(hash); }
   async consume(key: string, seconds: number, now: Date) { const b = this.limits.get(key); if (!b || now.getTime() - b.since >= seconds * 1000) { this.limits.set(key, { since: now.getTime(), count: 1 }); return 1; } return ++b.count; }
