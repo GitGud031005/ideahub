@@ -22,7 +22,7 @@ UI không đọc file, không nhận biết SQL và không tin dữ liệu ngư�
 
 Migration và cấu hình cụ thể nằm trong [hướng dẫn Supabase](supabase-setup.md). Vẫn cần `DATABASE_URL` trong môi trường chạy ứng dụng. Không hardcode secret trong source hoặc dùng `NEXT_PUBLIC_*` cho credential.
 
-Auth hiện có credentials scrypt, phiên có thể thu hồi và limiter PostgreSQL. Google OAuth và recovery chưa thuộc bản này. Integration test của adapter dùng `TEST_DATABASE_URL` riêng, không tự dùng credential production.
+Auth hiện có credentials scrypt, phiên có thể thu hồi và limiter PostgreSQL. Google OIDC dùng authorization code + PKCE/state/nonce, xác thực JWT bằng jose và lưu tài khoản theo Google subject; không tự liên kết bằng email. Avatar dùng signed Cloudinary upload phía server. Recovery chưa thuộc bản này. Integration test của adapter dùng `TEST_DATABASE_URL` riêng, không tự dùng credential production.
 
 ## Frontend
 

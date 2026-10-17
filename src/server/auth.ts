@@ -7,9 +7,11 @@ import { DUMMY_PASSWORD_HASH, hashPassword, verifyPassword } from "./password";
 import { SESSION_MAX_AGE } from "./session";
 import { PostgresAuthStore } from "./postgres-auth-store";
 
-export interface Credential { user: Account; passwordHash: string }
+export interface Credential { user: Account; passwordHash: string | null }
 export interface AuthStore {
   createAccount(user: Account, passwordHash: string): Promise<boolean>;
+  upsertGoogle(user: Account, subject: string): Promise<Account>;
+  setAvatar(userId: string, url: string, source: "google" | "custom"): Promise<Account>;
   findAccount(username: string): Promise<Credential | null>;
   saveSession(hash: string, userId: string, expires: Date): Promise<void>;
   findSession(hash: string, now: Date): Promise<Account | null>;
@@ -42,14 +44,30 @@ export class AuthService {
     return this.issue(credential.user, previous);
   }
   async logout(token: string | null) { if (token) await this.store.deleteSession(digest(token)); }
+  async google(identity: { subject: string; name: string; avatarUrl: string | null }) {
+    const user = await this.store.upsertGoogle({ id: randomUUID(), username: `g_${randomBytes(10).toString("hex")}`, name: identity.name, initial: initials(identity.name), avatarUrl: identity.avatarUrl, provider:"google",avatarSource:identity.avatarUrl ? "google" : "initials" },identity.subject);
+    return { user };
+  }
+  setAvatar(userId:string,url:string,source:"google"|"custom"="custom") {return this.store.setAvatar(userId,url,source);}
+  issueSession(user:Account,previous:string|null) {return this.issue(user,previous);}
 }
 /** Local development/test adapter; production accounts always require PostgreSQL. */
 export class MemoryAuthStore implements AuthStore {
   private accounts = new Map<string, Credential>();
   private sessions = new Map<string, { userId: string; expires: Date }>();
   private limits = new Map<string, { since: number; count: number }>();
+  private googleIds = new Map<string,string>();
   async createAccount(user: Account, passwordHash: string) { if (this.accounts.has(user.username)) return false; this.accounts.set(user.username, { user, passwordHash }); return true; }
   async findAccount(username: string) { return this.accounts.get(username) ?? null; }
+  async upsertGoogle(user: Account, subject:string) {
+    const username = this.googleIds.get(subject), existing = username ? this.accounts.get(username) : undefined;
+    if (existing) { existing.user.name=user.name;existing.user.initial=user.initial;if(existing.user.avatarSource!=="custom"){existing.user.avatarUrl=user.avatarUrl;existing.user.avatarSource=user.avatarSource;}return existing.user; }
+    this.googleIds.set(subject,user.username);this.accounts.set(user.username,{user,passwordHash:null});return user;
+  }
+  async setAvatar(id:string,url:string,source:"google"|"custom") {
+    const item=[...this.accounts.values()].find(a=>a.user.id===id);if(!item)throw new AppError(404,"ACCOUNT_NOT_FOUND","Không tìm thấy tài khoản");
+    if(source!=="google"||item.user.avatarSource!=="custom"){item.user.avatarUrl=url;item.user.avatarSource=source;}return item.user;
+  }
   async saveSession(hash: string, userId: string, expires: Date) { this.sessions.set(hash, { userId, expires }); }
   async findSession(hash: string, now: Date) { const s = this.sessions.get(hash); if (!s || s.expires <= now) return null; return [...this.accounts.values()].find(a => a.user.id === s.userId)?.user ?? null; }
   async deleteSession(hash: string) { this.sessions.delete(hash); }

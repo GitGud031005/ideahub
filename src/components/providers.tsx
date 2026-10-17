@@ -27,15 +27,16 @@ export function useDraft(key: string) {
   return [drafts[key] || "", set] as const;
 }
 
-interface AuthContextValue { user: Account | null; ready: boolean; requestLogin: (action?: () => void) => void; logout: () => Promise<void> }
+interface AuthContextValue { user: Account | null; ready: boolean; requestLogin: (action?: () => void,returnTo?:string) => void; logout: () => Promise<void>;updateProfile:(session:Session)=>Promise<void> }
 const AuthContext = createContext<AuthContextValue | null>(null);
 function AuthProvider({ children }: { children: ReactNode }) {
   const session = useSession(), client = useQueryClient(), { setDrafts, setDashboard } = useUi();
   const [open, setOpen] = useState(false);
+  const [oauthNext,setOauthNext]=useState("/"),[authError,setAuthError]=useState("");
   const continuation = useRef<(() => void) | undefined>(undefined), opener = useRef<HTMLElement | null>(null);
-  function requestLogin(action?: () => void) {
+  function requestLogin(action?: () => void,returnTo?:string) {
     if (session.data?.user) { action?.(); return; }
-    continuation.current = action; opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setOpen(true);
+    continuation.current = action; setOauthNext(returnTo||window.location.pathname);setAuthError("");opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setOpen(true);
   }
   function close() { setOpen(false); continuation.current = undefined; requestAnimationFrame(() => { if (opener.current?.isConnected) opener.current.focus(); }); }
   async function update(next: Session) {
@@ -46,10 +47,12 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }
   async function success(next: Session) { await update(next); const action = continuation.current; continuation.current = undefined; setOpen(false); action?.(); }
   async function logout() { const next = await api<Session>("/auth/logout", { method: "POST" }); await update(next); }
+  async function updateProfile(next:Session){await client.cancelQueries({queryKey:["session"]});client.setQueryData(["session"],next);await client.invalidateQueries({predicate:q=>["ideas","idea","comments"].includes(String(q.queryKey[0]))});}
+  useEffect(()=>{const url=new URL(window.location.href),error=url.searchParams.get("authError");if(!error)return;url.searchParams.delete("authError");window.history.replaceState(null,"",url.pathname+url.search+url.hash);setAuthError(error==="cancelled"?"Bạn đã hủy đăng nhập Google":"Chưa đăng nhập được bằng Google. Vui lòng thử lại");setOpen(true);},[]);
   useEffect(() => {
     const expired = () => { client.setQueryData<Session>(["session"], current => ({ storage: current?.storage ?? "postgres", user: null })); continuation.current = undefined; setOpen(true); };
     window.addEventListener("ideahub:auth-required", expired); return () => window.removeEventListener("ideahub:auth-required", expired);
   }, [client]);
-  return <AuthContext value={{ user: session.data?.user ?? null, ready: session.isSuccess, requestLogin, logout }}>{children}{open && <AuthDialog onClose={close} onSuccess={success}/>}</AuthContext>;
+  return <AuthContext value={{ user: session.data?.user ?? null, ready: session.isSuccess, requestLogin, logout,updateProfile }}>{children}{open && <AuthDialog onClose={close} onSuccess={success} oauthNext={oauthNext} initialError={authError}/>}</AuthContext>;
 }
 export function useAuth() { const value = useContext(AuthContext); if (!value) throw new Error("Missing AuthContext"); return value; }

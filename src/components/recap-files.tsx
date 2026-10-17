@@ -6,6 +6,7 @@ import { api } from "@/lib/api-client";
 import { addDays, displayDay, localDay, periodFor, validDay, weekStart, type Recap, type RecapFile, type RecapKind, type RecapPage } from "@/lib/recaps";
 import { useAuth } from "./providers";
 import { Select } from "./select";
+import { geminiModelLabel } from "@/lib/gemini-models";
 import { ErrorState, LoadingState } from "./status";
 
 function RecapDialog({ children, title, onClose, className = "" }: { children: ReactNode; title: string; onClose: () => void; className?: string }) {
@@ -38,7 +39,7 @@ function RecapReader({ ideaId, file, onClose, onReveal }: { ideaId: string; file
         {query.data.content[section.key].length ? <ul>{query.data.content[section.key].map((bullet, i) => <li key={i}><p>{bullet.text}</p><button type="button" className="ih-recap-evidence" onClick={() => { onClose(); onReveal(bullet.commentIds[0]); }}>{bullet.commentIds.length} bình luận nguồn</button></li>)}</ul> : <p className="ih-recap-empty-section">{section.empty}</p>}
       </section>)}
     </div>
-    <footer className="ih-recap-reader-footer"><span>{file.source === "sample" ? "Bản mẫu để xem trước bố cục recap" : "AI tổng hợp · đối chiếu bình luận nguồn khi cần"}</span><time dateTime={file.updatedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(file.updatedAt))}</time></footer>
+    <footer className="ih-recap-reader-footer"><span>{file.source === "sample" ? "Bản mẫu để xem trước bố cục recap" : `${file.model?geminiModelLabel(file.model):"AI tổng hợp"} · đối chiếu bình luận nguồn khi cần`}</span><time dateTime={file.updatedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(file.updatedAt))}</time></footer>
   </RecapDialog>;
 }
 function CreateRecap({ ideaId, onClose, onCreated }: { ideaId: string; onClose: () => void; onCreated: (file: RecapFile) => void }) {

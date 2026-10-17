@@ -25,8 +25,8 @@ test("PostgreSQL auth: atomic username uniqueness, persistence, expiry, revocati
     assert.equal((await store.findAccount("minhan"))!.user.name, user.name);
     const token = randomBytes(32).toString("base64url");
     await store.saveSession(digest(token), user.id, new Date(Date.now() + 60000));
-    assert.deepEqual(await service.user(token), user);
-    assert.deepEqual(await new AuthService(new PostgresAuthStore(db.pool)).user(token), user);
+    assert.deepEqual(await service.user(token), { ...user,avatarUrl:null,avatarSource:"initials",provider:"password" });
+    assert.deepEqual(await new AuthService(new PostgresAuthStore(db.pool)).user(token), { ...user,avatarUrl:null,avatarSource:"initials",provider:"password" });
     assert.equal(await service.user(token, new Date(Date.now() + 120000)), null);
     assert.equal(await service.user(randomBytes(32).toString("base64url")), null);
     await service.logout(token); assert.equal(await service.user(token), null);

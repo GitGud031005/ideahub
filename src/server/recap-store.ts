@@ -8,12 +8,12 @@ import { AppError } from "./errors";
 interface RecapRow {
   id: string; idea_id: string; kind: RecapKind; period_start: string; period_end: string;
   source: "sample" | "gemini"; source_count: number; created_at: Date; updated_at: Date;
-  content: RecapContent | null; status: string; source_hash: string | null;
+  content: RecapContent | null; status: string; source_hash: string | null;model:string|null;
 }
-const columns = "id, idea_id, kind, period_start::text, period_end::text, source, source_count, created_at, updated_at, content, status, source_hash";
+const columns = "id, idea_id, kind, period_start::text, period_end::text, source, source_count, created_at, updated_at, content, status, source_hash, model";
 function file(row: RecapRow): RecapFile {
   return { id: row.id, ideaId: row.idea_id, kind: row.kind, periodStart: row.period_start, periodEnd: row.period_end,
-    source: row.source, sourceCount: row.source_count, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(), fileName: recapFileName(row.kind, row.period_start) };
+    source: row.source, sourceCount: row.source_count, createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(), model:row.model,fileName: recapFileName(row.kind, row.period_start) };
 }
 export interface RecapCandidate { ideaId: string; kind: RecapKind; date: string }
 export class RecapStore {

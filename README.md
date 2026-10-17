@@ -53,10 +53,10 @@ npm start      # Production auth cần PostgreSQL
 - Đăng ký bằng username (3–24 chữ cái không dấu/số/gạch dưới), họ tên và mật khẩu 8–128 ký tự. Username không phân biệt hoa thường; không trim mật khẩu.
 - Mật khẩu dùng scrypt (N=131072, r=8, p=1), salt riêng 16 byte; chỉ hash được lưu trong schema `ideahub_private`.
 - Cookie `ideahub_auth` chứa token ngẫu nhiên 256 bit, HttpOnly + Secure ở production + SameSite=Lax; DB chỉ lưu SHA-256 của token. Phiên hết hạn sau 30 ngày. Đăng xuất thu hồi phiên trên server; đăng nhập đổi token và thu hồi token cũ của trình duyệt.
-- Phiên khách cũ không cấp quyền ghi. Tên tác giả và avatar chữ cái đầu lấy từ tài khoản trên server. Không nhận ID/name tác giả từ body.
+- Phiên khách cũ không cấp quyền ghi. Tên tác giả và avatar lấy từ tài khoản trên server. Không nhận ID/name tác giả từ body.
 - Auth có giới hạn đăng nhập/đăng ký theo username, IP do Vercel cung cấp và budget toàn ứng dụng, dùng bucket PostgreSQL chia sẻ giữa instance. Wrong-password và username không tồn tại trả cùng lỗi.
 - UI yêu cầu đăng nhập trước khi tạo/tham gia, tiếp tục thao tác sau đăng nhập, xóa cache/draft khi đổi tài khoản. API kiểm tra độc lập, kể cả mở URL trực tiếp.
-- Bản này dùng username/password; chưa tích hợp Google OAuth, reset mật khẩu qua email hoặc tải ảnh avatar. Avatar mặc định là chữ cái đầu họ và tên.
+- Đăng nhập bằng username/password hoặc Google OAuth sau khi cấu hình client ID/secret. Có chọn avatar lúc đăng ký và đổi avatar trong menu tài khoản; ảnh lưu bằng Cloudinary. Nếu không có ảnh, dùng chữ cái đầu họ tên. Xem [thiết lập Google và Cloudinary](docs/google-cloudinary.md). Chưa có reset mật khẩu qua email.
 
 ## AI daily / weekly recap
 

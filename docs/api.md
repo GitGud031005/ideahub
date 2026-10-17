@@ -10,6 +10,10 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | GET | `/session` | Lấy tài khoản hiện tại hoặc null; không tự tạo phiên |
 | POST | `/auth/register` | `{username,fullName,password}`; tạo tài khoản và phiên, 201 |
 | POST | `/auth/login` | `{username,password}`; cấp phiên mới, thu hồi cookie cũ, 200 |
+| GET | `/auth/config` | Cờ `google` và `avatarUpload`, không trả credential |
+| GET | `/auth/google/start?next=/ideas/:id` | Bắt đầu OIDC, đặt cookie state và redirect Google |
+| GET | `/auth/google/callback` | Kiểm tra state/nonce/PKCE và ID token, tạo phiên và redirect |
+| POST | `/auth/avatar` | Session + same-origin; multipart trường `avatar`, JPG/PNG/WebP tối đa 2 MB; trả session với avatar mới |
 | GET | `/ideas/:id/recaps?offset=0` | Cần đăng nhập; file theo ngày/tuần, phân trang 50 file, cờ `aiConfigured` |
 | GET | `/ideas/:id/recaps/:recapId` | Cần đăng nhập; nội dung bullet và ID bình luận nguồn; ràng buộc đúng phòng |
 | POST | `/ideas/:id/recaps` | Cần là thành viên; `{kind:"daily"\|"weekly",date:"YYYY-MM-DD"}`; tạo hoặc mở bản cache |

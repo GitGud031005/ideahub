@@ -13,30 +13,30 @@ export interface DatabasePool extends DatabaseExecutor { connect(): Promise<Data
 type Executor = DatabaseExecutor;
 interface IdeaRow {
   id: string; title: string; description: string; category: Category; tags: string[];
-  creator_id: string; display_name: string; initial: string; created_at: Date;
+  creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
   member_count: number; comment_count: number; joined: boolean; mine: boolean;
 }
 interface CommentRow {
   id: string; idea_id: string; parent_id: string | null; author_id: string;
-  display_name: string; initial: string; body: string; created_at: Date;
+  display_name: string; initial: string; avatar_url: string | null; body: string; created_at: Date;
 }
 const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.creator_id,
-  u.display_name, u.initial, i.created_at,
+  u.display_name, u.initial, u.avatar_url, i.created_at,
   (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id = i.id) AS member_count,
   (SELECT count(*)::int FROM public.comments c WHERE c.idea_id = i.id) AS comment_count,
   EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1) AS joined,
   i.creator_id = $1 AS mine
   FROM public.ideas i JOIN public.users u ON u.id = i.creator_id`;
 const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body, c.created_at,
-  u.display_name, u.initial FROM public.comments c JOIN public.users u ON u.id = c.author_id`;
+  u.display_name, u.initial, u.avatar_url FROM public.comments c JOIN public.users u ON u.id = c.author_id`;
 function idea(row: IdeaRow): Idea {
   return { id: row.id, title: row.title, description: row.description, category: row.category, tags: row.tags,
-    creator: { id: row.creator_id, name: row.display_name, initial: row.initial }, createdAt: row.created_at.toISOString(),
+    creator: { id: row.creator_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),
     memberCount: row.member_count, commentCount: row.comment_count, joined: row.joined, mine: row.mine };
 }
 function comment(row: CommentRow): Comment {
   return { id: row.id, ideaId: row.idea_id, parentId: row.parent_id, text: row.body,
-    author: { id: row.author_id, name: row.display_name, initial: row.initial }, createdAt: row.created_at.toISOString() };
+    author: { id: row.author_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString() };
 }
 async function upsertUser(db: Executor, user: Author) {
   await db.query(`INSERT INTO public.users (id, display_name, initial) VALUES ($1, $2, $3)

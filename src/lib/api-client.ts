@@ -3,7 +3,7 @@ export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public fields?: Record<string, string[]>) { super(message); }
 }
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(`/api${path}`, { ...init, credentials: "same-origin", cache: "no-store", headers: { ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers } });
+  const response = await fetch(`/api${path}`, { ...init, credentials: "same-origin", cache: "no-store", headers: { ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}), ...init.headers } });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     const error = (body as ApiErrorPayload | null)?.error;

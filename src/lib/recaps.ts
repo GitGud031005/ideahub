@@ -17,6 +17,7 @@ export interface RecapFile {
   id: string; ideaId: string; kind: RecapKind; periodStart: string; periodEnd: string;
   fileName: string; source: "sample" | "gemini"; sourceCount: number; createdAt: string;
   updatedAt: string;
+  model?: string | null;
 }
 export interface Recap extends RecapFile { content: RecapContent }
 export interface RecapPage { items: RecapFile[]; nextOffset: number | null; aiConfigured: boolean }

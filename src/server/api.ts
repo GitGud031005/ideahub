@@ -10,8 +10,10 @@ import { loginSchema, registerSchema } from "@/lib/auth-validation";
 import { recapInputSchema } from "@/lib/recaps";
 import { getRecapService, type RecapService } from "./recaps";
 import { z } from "zod";
+import { CloudinaryAvatars, readAvatar } from "./cloudinary";
+import { googleConfigured } from "./google-oauth";
 
-export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService): Promise<Response> {
+export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars()): Promise<Response> {
   try {
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
@@ -24,7 +26,15 @@ export async function handleApi(request: Request, path: string[], repository?: I
       }
       return json({ status: "ok", storage, persistent: storage !== "memory" });
     }
+    if(route==="auth/config"&&method==="GET")return json({google:googleConfigured(),avatarUpload:avatars.configured()});
     const auth = authentication ?? getAuthService(), token = getSessionToken(request);
+    if(route==="auth/avatar"&&method==="POST"){
+      const user=await auth.user(token);if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để cập nhật ảnh đại diện");
+      await auth.limit(`avatar:${user.id}`,10,900);await auth.limit("avatar:global",200,86400);
+      if(!avatars.configured())throw new AppError(503,"AVATAR_CONFIG","Chức năng ảnh đại diện chưa kết nối Cloudinary");
+      const image=await readAvatar(request),url=await avatars.upload(user.id,image);
+      return json({user:await auth.setAvatar(user.id,url),storage:storageMode()});
+    }
     if (route === "session" && method === "GET") {
       const user = await auth.user(token);
       return json({ user, storage: storageMode() }, 200, !user && token ? { "Set-Cookie": sessionCookie("", true) } : undefined);

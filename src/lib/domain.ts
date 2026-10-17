@@ -1,7 +1,7 @@
 export const CATEGORIES = ["Công nghệ", "Đời sống", "Học tập", "Thiết kế", "Khác"] as const;
 export type Category = (typeof CATEGORIES)[number];
 export type StorageMode = "json" | "memory" | "postgres";
-export interface Author { id: string; name: string; initial: string }
+export interface Author { id: string; name: string; initial: string; avatarUrl?: string | null }
 export interface Idea {
   id: string;
   title: string;
@@ -31,6 +31,6 @@ export type CommentSort = "old" | "new";
 export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number }
 export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number> }
 export interface CommentsPage { items: Comment[]; total: number; nextCursor: string | null }
-export interface Account extends Author { username: string }
+export interface Account extends Author { username: string; provider?: "password" | "google"; avatarSource?: "initials" | "google" | "custom" }
 export interface Session { user: Account | null; storage: StorageMode }
 export interface ApiErrorPayload { error: { code: string; message: string; fields?: Record<string, string[]> } }

@@ -22,7 +22,7 @@ Project hiện có: [GitGud031005’s Project](https://supabase.com/dashboard/pr
 - Đặt `IDEAHUB_STORAGE=postgres` và `DATABASE_URL` trong Vercel rồi redeploy. `PostgresIdeaRepository` đã được chọn qua factory khi dùng mode này. TLS luôn xác minh chứng chỉ; nếu gặp lỗi CA, cấu hình `DATABASE_SSL_CA` bằng root certificate từ Dashboard thay vì tắt xác minh.
 - Create idea + membership, comment + join phải chạy trong transaction. Giữ validation, kiểm tra parent cùng phòng, giới hạn sâu 12 và search tiếng Việt như adapter hiện tại.
 - Chạy integration test với credential test riêng bằng `TEST_DATABASE_URL=... npm test` (hoặc đặt biến tương đương trên Windows). Test chỉ xóa fixture UUID của chính lần chạy; không reset bảng. Sau đó gọi `/api/health`: cần nhận `storage: "postgres"`, `persistent: true`, rồi thử tạo idea/thảo luận và kiểm tra lại sau redeploy.
-- Auth hiện dùng username/password phía server. Google OAuth/recovery là phần mở rộng sau. Không thêm policy `USING (true)` hoặc dùng `auth.uid()` khi app không dùng Supabase Auth JWT.
+- Auth dùng username/password hoặc Google OIDC phía server; recovery chưa có. Xem `docs/google-cloudinary.md` để cấu hình OAuth và avatar. Không thêm policy `USING (true)` hoặc dùng `auth.uid()` khi app không dùng Supabase Auth JWT.
 
 ## Kiểm tra bảo vệ bảng
 
