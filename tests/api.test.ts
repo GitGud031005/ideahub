@@ -9,7 +9,7 @@ import { MemoryStore } from "../src/server/stores";
 import { rateLimit } from "../src/server/http";
 process.env.IDEAHUB_STORAGE = "memory";
 const base = "https://ideahub.test";
-const payload = { username: "minhan", fullName: "Nguyễn Minh An", password: "A long test passphrase 2026" };
+const payload = { username: "minhan", fullName: "Nguyễn Minh An", password: "Test2026" };
 function request(path: string, init: RequestInit = {}, token = "") {
   return new Request(base + "/api/" + path, { ...init, headers: { ...(token ? { cookie: `${SESSION_COOKIE}=${token}` } : {}), ...(init.body ? { "content-type": "application/json" } : {}), ...init.headers } });
 }
@@ -50,7 +50,7 @@ test("register/login/logout use real identities, rotate sessions and revoke old 
 });
 test("failed login is generic, payloads are strict, and cross-origin auth writes are rejected", async () => {
   const { call } = fixture();
-  assert.equal((await call("auth/register", post({ ...payload, password: "short" }))).status, 422);
+  assert.equal((await call("auth/register", post({ ...payload, password: "1234567" }))).status, 422);
   assert.equal((await call("auth/register", post({ ...payload, role: "admin" }))).status, 422);
   await call("auth/register", post(payload));
   const wrong = await call("auth/login", post({ username: payload.username, password: "wrong" }));

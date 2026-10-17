@@ -55,7 +55,7 @@ List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cur
 }
 ```
 
-Các POST tạo/join/comment và GET bình luận yêu cầu tài khoản thật. Username 3–24 ký tự `a-z0-9_`, không phân biệt hoa thường; họ tên 2–80 ký tự; mật khẩu đăng ký 15–128 ký tự. Cookie HttpOnly, Secure production, SameSite=Lax, hết hạn 30 ngày; không trả token/hash mật khẩu trong JSON. Auth có limiter dùng chung PostgreSQL.
+Các POST tạo/join/comment và GET bình luận yêu cầu tài khoản thật. Username 3–24 ký tự `a-z0-9_`, không phân biệt hoa thường; họ tên 2–80 ký tự; mật khẩu đăng ký 8–128 ký tự. Cookie HttpOnly, Secure production, SameSite=Lax, hết hạn 30 ngày; không trả token/hash mật khẩu trong JSON. Auth có limiter dùng chung PostgreSQL.
 
 Status: 400 JSON/cursor/parent sai; 401 thiếu/hết phiên hoặc sai credentials; 409 username đã dùng; 403 origin không hợp lệ; 404 không tồn tại; 405 sai method; 413 body lớn hơn 16 KiB; 415 sai content type; 422 validation/depth; 429 quá số ghi; 503 cấu hình secret/storage chưa hợp lệ.
 

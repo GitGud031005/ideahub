@@ -50,7 +50,7 @@ npm start      # Production auth cần PostgreSQL
 
 ## Tài khoản và phiên đăng nhập
 
-- Đăng ký bằng username (3–24 chữ cái không dấu/số/gạch dưới), họ tên và mật khẩu 15–128 ký tự. Username không phân biệt hoa thường; không trim mật khẩu.
+- Đăng ký bằng username (3–24 chữ cái không dấu/số/gạch dưới), họ tên và mật khẩu 8–128 ký tự. Username không phân biệt hoa thường; không trim mật khẩu.
 - Mật khẩu dùng scrypt (N=131072, r=8, p=1), salt riêng 16 byte; chỉ hash được lưu trong schema `ideahub_private`.
 - Cookie `ideahub_auth` chứa token ngẫu nhiên 256 bit, HttpOnly + Secure ở production + SameSite=Lax; DB chỉ lưu SHA-256 của token. Phiên hết hạn sau 30 ngày. Đăng xuất thu hồi phiên trên server; đăng nhập đổi token và thu hồi token cũ của trình duyệt.
 - Phiên khách cũ không cấp quyền ghi. Tên tác giả và avatar chữ cái đầu lấy từ tài khoản trên server. Không nhận ID/name tác giả từ body.
