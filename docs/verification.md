@@ -2,6 +2,18 @@
 
 Verified on 2026-10-17.
 
+## Automatic recaps and dedicated profile, 2026-10-17
+
+- Recap sidebar is read-only: no create button or date picker. Authenticated POST requests to the collection return 405, including for joined members. Existing files still open with source-comment links.
+- Verified the Vercel cron is enabled at 18:00 UTC (01:00 Vietnam, with the Hobby scheduling window). Existing scheduling selects only closed active days and completed active weeks; an isolated PostgreSQL test confirms empty periods cause zero provider calls.
+- Added `/profile` with avatar preview/upload and a strict display-name form. Menu avatar editing now links to this page. Google sign-in preserves the display name chosen in IdeaHub across subsequent logins.
+- Password-created accounts alone see the current/new/confirmation password form. The server independently rejects Google-account password changes, checks the current password, enforces eight characters, atomically changes the hash and revokes old sessions, then rotates the current session cookie. A stale password login cannot create a session after the hash changes.
+- Strict payload/session-owner tests verify clients cannot edit username, provider or another user's name. PostgreSQL tests confirm the new display name appears on existing ideas and Google-only accounts retain null password hashes.
+- `npm run check`: 33 passed, one optional external PostgreSQL test skipped. `npm run build` and final fixture typecheck passed. No production profile or password was changed by tests.
+- Browser fixtures with real Montserrat at 320/390/768/1440 px show no profile horizontal overflow. Password scenes contain three password inputs; Google scenes contain zero. An invalid name is rejected and a valid fixture save updates both the form and account label. At 320 px, the recap reader still fits at 296 px and no manual generation button exists.
+- Production Google profile loads the saved name/avatar with no password form. Security read-back confirms RLS and no direct client writes for users/accounts/sessions/recaps; advisors show only the intentional deny-by-default informational notices.
+- Generated public UI fixtures are removed after verification. Native mobile keyboard behavior was not exercised.
+
 ## UI component audit, 2026-10-17
 
 - Fixed the account menu's file-input lifecycle: opening the native file chooser no longer unmounts the input or treats window blur as moving focus to another control.
