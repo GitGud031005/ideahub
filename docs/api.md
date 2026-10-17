@@ -10,6 +10,10 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | GET | `/session` | Lấy tài khoản hiện tại hoặc null; không tự tạo phiên |
 | POST | `/auth/register` | `{username,fullName,password}`; tạo tài khoản và phiên, 201 |
 | POST | `/auth/login` | `{username,password}`; cấp phiên mới, thu hồi cookie cũ, 200 |
+| GET | `/ideas/:id/recaps?offset=0` | Cần đăng nhập; file theo ngày/tuần, phân trang 50 file, cờ `aiConfigured` |
+| GET | `/ideas/:id/recaps/:recapId` | Cần đăng nhập; nội dung bullet và ID bình luận nguồn; ràng buộc đúng phòng |
+| POST | `/ideas/:id/recaps` | Cần là thành viên; `{kind:"daily"\|"weekly",date:"YYYY-MM-DD"}`; tạo hoặc mở bản cache |
+| GET | `/cron/recaps` | Chỉ Bearer `CRON_SECRET`; tác vụ ngày, tối đa 4 file mỗi lượt |
 | POST | `/auth/logout` | Thu hồi phiên và xóa cookie, 200 |
 | GET | `/ideas?q=&view=all&sort=new&limit=24&offset=0` | Danh sách và số lượng all/joined/mine |
 | POST | `/ideas` | Tạo idea, creator đồng thời là thành viên; trả 201 |

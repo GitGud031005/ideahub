@@ -57,6 +57,12 @@ npm start      # Production auth cần PostgreSQL
 - Auth có giới hạn đăng nhập/đăng ký theo username, IP do Vercel cung cấp và budget toàn ứng dụng, dùng bucket PostgreSQL chia sẻ giữa instance. Wrong-password và username không tồn tại trả cùng lỗi.
 - UI yêu cầu đăng nhập trước khi tạo/tham gia, tiếp tục thao tác sau đăng nhập, xóa cache/draft khi đổi tài khoản. API kiểm tra độc lập, kể cả mở URL trực tiếp.
 - Bản này dùng username/password; chưa tích hợp Google OAuth, reset mật khẩu qua email hoặc tải ảnh avatar. Avatar mặc định là chữ cái đầu họ và tên.
+
+## AI daily / weekly recap
+
+Sidebar của mỗi phòng có file recap theo ngày, gom theo tuần và mở bằng popup. Nội dung gồm bullet cho ý tưởng chính, quyết định, việc tiếp theo và câu hỏi còn mở; có liên kết về bình luận nguồn. Bản ngày và tuần dùng giờ Việt Nam.
+
+Đã chuẩn bị tích hợp Google Gemini, lịch Vercel Cron và dữ liệu thảo luận mẫu trong DB. Khi chưa cấu hình key, các bản mẫu vẫn mở được nhưng chưa gọi AI thật. Xem [cấu hình, giới hạn và dữ liệu demo](docs/ai-recaps.md).
 - `SESSION_SECRET` của bản cũ không còn được sử dụng; không cần thêm secret auth mới. Không bỏ TLS database hoặc đưa `DATABASE_URL` vào frontend.
 
 **Phân quyền database:** public tables và private auth tables bật RLS, thu hồi toàn bộ quyền Data API của `anon`/`authenticated`. Chỉ backend truy cập bằng kết nối PostgreSQL phía server. Advisor có thể báo INFO [RLS Enabled No Policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy); đây là deny-by-default có chủ đích, không thêm policy public để xóa INFO.

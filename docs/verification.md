@@ -2,6 +2,15 @@
 
 Verified on 2026-10-17.
 
+## AI recap update
+
+- `npm run check`: 26 passed, one optional external-database test skipped. `npm run build` passed.
+- Added daily/weekly period tests, actual PostgreSQL file storage and evidence scope, membership/session checks, duplicate generation leases, cache refresh, preservation after failed refresh, stale-worker rejection, and bounded cron catch-up.
+- Mock Google transport tests verify stateless structured requests, output/citation validation, and error sanitization. A real Gemini request is pending the user's API-key configuration.
+- Applied the recap migration and explicitly requested demo seed to Supabase. Read-back confirmed one sample idea, 18 comments, five sample recap files, RLS enabled, and no direct SELECT privileges for anon/authenticated.
+- Sample documents are hand-authored and clearly labeled; three fictional author profiles have no login accounts.
+- Existing account checks below document the earlier authentication release, not the newly authorized discussion seed.
+
 ## Automated checks
 
 - `npm run check`: 18 tests passed; the optional external PostgreSQL integration test was skipped when its dedicated test URL was absent.

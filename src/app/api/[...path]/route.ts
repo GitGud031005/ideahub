@@ -1,6 +1,7 @@
 import { handleApi } from "@/server/api";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 type Context = { params: Promise<{ path: string[] }> };
 async function handler(request: Request, context: Context) {
   return handleApi(request, (await context.params).path);

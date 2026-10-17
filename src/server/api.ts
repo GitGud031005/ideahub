@@ -7,8 +7,11 @@ import { assertSameOrigin, errorResponse, json, rateLimit, readJson } from "./ht
 import { getSessionToken, sessionCookie } from "./session";
 import { AuthService, getAuthService } from "./auth";
 import { loginSchema, registerSchema } from "@/lib/auth-validation";
+import { recapInputSchema } from "@/lib/recaps";
+import { getRecapService, type RecapService } from "./recaps";
+import { z } from "zod";
 
-export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService): Promise<Response> {
+export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService): Promise<Response> {
   try {
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
@@ -47,9 +50,9 @@ export async function handleApi(request: Request, path: string[], repository?: I
       }
       return json({ user: result.user, storage: storageMode() }, route.endsWith("register") ? 201 : 200, { "Set-Cookie": sessionCookie(result.token) });
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
-    if ((method === "POST" || path[2] === "comments") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
+    if ((method === "POST" || path[2] === "comments" || path[2] === "recaps") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
     if (method === "POST") rateLimit(`${user!.id}:write`);
     if (path.length === 1) {
@@ -58,6 +61,22 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     const id = path[1];
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new AppError(400, "INVALID_ID", "Mã ý tưởng không hợp lệ");
+    if (path[2] === "recaps") {
+      const service = recapping ?? getRecapService();
+      if (path.length === 4) {
+        if (method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET" });
+        if (!/^[a-zA-Z0-9_-]{1,100}$/.test(path[3])) throw new AppError(400, "INVALID_ID", "Mã recap không hợp lệ");
+        return json(await service.get(id, path[3], user!.id));
+      }
+      if (method === "GET") {
+        const query = z.object({ offset: z.coerce.number().int().min(0).max(100000).default(0) }).strict().parse(Object.fromEntries(url.searchParams));
+        return json(await service.list(id, user!.id, query.offset));
+      }
+      const input = await readJson(request, recapInputSchema);
+      await auth.limit(`recap:user:${user!.id}`, 10, 900);
+      await auth.limit("recap:global", 100, 86400);
+      return json(await service.generate(id, input, user!.id));
+    }
     if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
     if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));
     if (path[2] === "comments") {
