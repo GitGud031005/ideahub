@@ -23,6 +23,8 @@ export function useCommentOutbox(ideaId:string,user:Account|null) {
       await client.cancelQueries({queryKey:key});
       client.setQueryData<Comment[]>(key,current=>[...(current??[]).filter(c=>c.id!==comment.id),comment]);
       update(entry,items=>items.filter(c=>c.id!==entry.id));
+      // A send acknowledgement may have cancelled a live refresh. Reconcile the full room.
+      void client.invalidateQueries({queryKey:key},{cancelRefetch:false});
       void client.invalidateQueries({queryKey:["idea",entry.ideaId]});void client.invalidateQueries({queryKey:["ideas"]});
     },
     onError:(error,entry)=>update(entry,items=>items.map(c=>c.id===entry.id?{...c,delivery:"failed",deliveryError:error instanceof Error&&error.name!=="AbortError"?error.message:"Chưa xác nhận được tin nhắn. Bạn có thể thử gửi lại"}:c)),

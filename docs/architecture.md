@@ -32,7 +32,7 @@ Auth hiện có credentials scrypt, phiên có thể thu hồi và limiter Postg
 - Bình luận được nhận dạng bằng ID, render text qua React; hierarchy dùng parentId và đường nối CSS liên tục.
 - Reply drafts/sidebar giữ trong React provider qua điều hướng; backend mới không ghi dữ liệu chính vào localStorage.
 - Dropdown tùy biến có keyboard navigation và focus handling. Dialog native quản lý focus modal. Canvas hero tôn trọng reduced motion, pause khi khuất hoặc background và dọn observer/listener/RAF khi unmount.
-- Bình luận refresh HTTP mỗi 15 giây trong tab đang hoạt động; không tuyên bố là realtime chat.
+- Bình luận dùng SSE `/api/ideas/:id/comments/stream` trong tab đang hoạt động. Server đọc số bình luận/thành viên từ storage mỗi giây và phát `comments-changed` khi thay đổi; client invalidate cache để tải đủ cây bình luận, không reload trang. Không dùng event bus trong bộ nhớ để tránh mất cập nhật giữa các instance Vercel. Mỗi stream tối đa 50 giây trong budget route 60 giây, gửi heartbeat và tự nối lại với retry 1 giây; lần kết nối nào cũng đồng bộ lại để bù tin đã bỏ lỡ. Kiểm tra session mỗi vòng, đóng khi hết hạn/thu hồi, abort hoặc client hủy. Tab ẩn/offline đóng kết nối, trở lại tự mở; không cần migration hoặc thêm public DB credentials. HTTP fallback 3 giây khi gián đoạn, kiểm tra dự phòng 30 giây khi SSE hoạt động. Có chi phí query/function theo số kết nối; quy mô lớn cần pub/sub.
 
 ## Môi trường và phạm vi kiểm tra
 

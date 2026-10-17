@@ -26,6 +26,7 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | GET | `/ideas/:id` | Thông tin đầy đủ, `joined`/`mine` của phiên hiện tại |
 | POST | `/ideas/:id/join` | Tham gia idempotent, trả idea đã cập nhật |
 | GET | `/ideas/:id/comments?limit=100&cursor=...` | Bình luận phẳng, chronological; có parentId để UI dựng cây |
+| GET | `/ideas/:id/comments/stream` | SSE yêu cầu đăng nhập: `comments-changed`, `auth-required`, `stream-error`; tự nối lại |
 | POST | `/ideas/:id/comments` | Tạo bình luận/trả lời và tham gia idea nếu chưa tham gia; trả 201 |
 
 ## Tạo idea
@@ -54,6 +55,8 @@ Text 1–2000 ký tự sau trim. Bỏ `parentId` hoặc dùng `null` cho bình l
 List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cursor là ID cuối của trang trước, không phải offset. Client tải các trang theo thứ tự để dựng cây đủ parent/child. Sắp xếp cũ/mới được thực hiện ở UI cho cả bình luận gốc và từng nhánh trả lời.
 
 Client có thể gửi thêm `clientId` là UUID để hiển thị optimistic và thử gửi lại. Server dùng UUID này làm ID; cùng tác giả, idea, parent và nội dung trả lại bình luận đã lưu. Tái sử dụng ID với dữ liệu khác trả 409 `COMMENT_CONFLICT`. Editor không chờ phản hồi; từng tin nhắn có trạng thái đang gửi hoặc lỗi với nút thử lại. Hàng chờ được giữ trong bộ nhớ khi chuyển trang nội bộ, không tồn tại sau khi tải lại toàn trang.
+
+SSE dùng cookie phiên cùng origin, `Cache-Control: private, no-store, no-transform`; event chỉ chứa `{}`. Client tải lại GET comments khi nhận `comments-changed`, kể cả lần đầu/reconnect để bù cập nhật bị lỡ. Backend kiểm tra số bình luận/thành viên mỗi giây; thay đổi ở phòng khác không phát event. Stream đóng sau tối đa 50 giây, báo `retry: 1000`; session được kiểm tra lại mỗi vòng. `auth-required` yêu cầu client đóng stream và đăng nhập lại; `stream-error` cho phép tự thử kết nối lại và dùng HTTP fallback. Không cần Supabase Realtime hoặc mở quyền Data API.
 
 ## Lỗi
 

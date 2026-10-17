@@ -11,6 +11,7 @@ import { getRecapService, type RecapService } from "./recaps";
 import { z } from "zod";
 import { CloudinaryAvatars, readAvatar } from "./cloudinary";
 import { googleConfigured } from "./google-oauth";
+import { commentStream } from "./comment-stream";
 
 export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars()): Promise<Response> {
   try {
@@ -70,7 +71,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
       }
       return json({ user: result.user, storage: storageMode() }, route.endsWith("register") ? 201 : 200, { "Set-Cookie": sessionCookie(result.token) });
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments(?:\/stream)?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
     if ((method === "POST" || path[2] === "comments" || path[2] === "recaps") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
@@ -97,6 +98,15 @@ export async function handleApi(request: Request, path: string[], repository?: I
     if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
     if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));
     if (path[2] === "comments") {
+      if (path[3] === "stream") {
+        if (method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET" });
+        assertSameOrigin(request);
+        const initial = await repo.getIdea(id, user!.id);
+        return commentStream(request, initial, async () => {
+          const viewer = await auth.user(token);
+          return viewer ? repo.getIdea(id, viewer.id) : null;
+        });
+      }
       if (method === "GET") { const query = commentQuerySchema.parse(Object.fromEntries(url.searchParams)); return json(await repo.listComments(id, query.cursor, query.limit)); }
       return json(await repo.createComment(id, user!, await readJson(request, createCommentSchema)), 201);
     }

@@ -6,7 +6,7 @@
 
 - Next.js 16 App Router + React 19 + TypeScript strict.
 - CSS thuần với các token và component rõ ràng, giữ ngôn ngữ thiết kế trắng đen của mock.
-- TanStack Query: cache, tải thêm idea, hủy request tìm kiếm cũ, mutation và cập nhật thảo luận mỗi 15 giây khi tab hoạt động.
+- TanStack Query: cache, tải thêm idea, hủy request tìm kiếm cũ, mutation và cập nhật bình luận qua SSE khi tab hoạt động; HTTP fallback mỗi 3 giây nếu kết nối SSE gián đoạn.
 - Lucide React: icon đồng bộ, không phụ thuộc glyph của hệ điều hành.
 - Next.js Route Handlers chạy Node.js: API cùng domain, phù hợp deploy Vercel.
 - Zod: validation phía client và server. Repository interface tách khỏi HTTP/UI để thay storage sau.
@@ -47,6 +47,14 @@ npm start      # Production auth cần PostgreSQL
    | `DATABASE_SSL_CA` | Tùy chọn: PEM root certificate nếu DB dùng CA riêng |
 
 4. Deploy. Không cần server Express riêng, API chạy trong cùng ứng dụng. Truy cập `/api/health` để kiểm tra runtime/storage, rồi mở dashboard và thử tạo idea.
+
+## CI/CD
+
+- `.github/workflows/ci.yml` chạy TypeScript, toàn bộ test và production build cho mỗi pull request hoặc push lên `main`; có thể chạy thủ công trong Actions. Run cũ cùng nhánh bị hủy khi có commit mới.
+- Vercel Git integration đang nối repo này và tự deploy `main` lên production, nhánh/PR lên preview. `vercel.json` chạy `npm run check && npm run build` để test lỗi sẽ dừng deployment trước khi bản mới được đưa lên. Không cần Vercel token hoặc secrets deploy trong GitHub, không chạy thêm CLI deploy trùng với Git integration.
+- Sau khi Vercel báo production deploy thành công, `.github/workflows/deployment.yml` kiểm tra trang chủ, kết nối PostgreSQL và endpoint bình luận SSE yêu cầu đăng nhập. Đây là kiểm tra chỉ đọc, không tạo tài khoản/bình luận trên production; khi lỗi, workflow báo đỏ để xử lý hoặc rollback qua Vercel. Không tự rollback.
+- Có thể kiểm tra thủ công: `DEPLOYMENT_URL=https://ideahub-umber.vercel.app npm run check:deployment` (PowerShell: `$env:DEPLOYMENT_URL='https://ideahub-umber.vercel.app'; npm run check:deployment`). Workflow smoke cũng có nút Run workflow và ô URL.
+- Các biến `DATABASE_URL`, Google, Cloudinary và Gemini tiếp tục được lưu trên Vercel. Test SQL mặc định dùng PostgreSQL nhúng; kiểm thử driver ngoài chỉ dùng `TEST_DATABASE_URL` riêng khi được cấu hình, không dùng database production.
 
 ## Tài khoản và phiên đăng nhập
 
@@ -96,7 +104,9 @@ Xem [API contract](docs/api.md), [kiến trúc và tích hợp PostgreSQL](docs/
 
 API có session cookie, giới hạn payload 16 KiB, validation chặt, kiểm tra origin cho mutation, lỗi có mã và giới hạn ghi theo phiên trong mỗi instance. Membership được thêm theo cách idempotent. Parent của bình luận phải thuộc cùng idea; nhánh tối đa 12 cấp trả lời. Các đoạn text được render qua React, không chèn HTML thô. GET dữ liệu phiên có `Cache-Control: no-store`.
 
-Giới hạn hiện tại: chưa có realtime WebSocket, upload file, chỉnh sửa/xóa bài, moderation hay rate limit phân tán cho toàn bộ thao tác ghi (auth đã dùng limiter PostgreSQL). Polling chỉ là refresh HTTP; backend JSON hỗ trợ một process local, không dùng nhiều process đồng thời trên cùng file. PostgreSQL adapter dùng transaction và unique constraints; không tự seed dữ liệu demo lên DB.
+Bình luận tự cập nhật qua Server-Sent Events (SSE), thường trong khoảng 1–2 giây cộng độ trễ mạng. Backend kiểm tra số bình luận/thành viên từ storage chung mỗi giây rồi báo client tải lại dữ liệu khi có thay đổi, hoạt động giữa các instance Vercel với PostgreSQL và không cần key/dịch vụ realtime mới. Stream tự nối lại sau tối đa 50 giây, khi trở lại tab hoặc có mạng; HTTP fallback mỗi 3 giây khi SSE gián đoạn và kiểm tra dự phòng mỗi 30 giây khi đã kết nối. Nội dung đang soạn và nhánh đang mở được giữ nguyên.
+
+Giới hạn hiện tại: chưa có upload file thảo luận, chỉnh sửa/xóa bài, moderation hay rate limit phân tán cho toàn bộ thao tác ghi (auth đã dùng limiter PostgreSQL). SSE vẫn kiểm tra storage định kỳ; phòng lớn/nhiều người cần pub/sub để giảm số lượt query và thời gian chạy function. Backend JSON hỗ trợ một process local, không dùng nhiều process đồng thời trên cùng file. PostgreSQL adapter dùng transaction và unique constraints; không tự seed dữ liệu demo lên DB.
 
 ## Kiểm tra
 

@@ -1,0 +1,31 @@
+name: Verify production deployment
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Production URL to verify
+        required: true
+        default: https://ideahub-umber.vercel.app
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify page, database health and authenticated live endpoint
+        run: npm run check:deployment
+        env:
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url || github.event.deployment_status.target_url || inputs.url }}
