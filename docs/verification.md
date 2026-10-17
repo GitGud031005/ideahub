@@ -2,6 +2,16 @@
 
 Verified on 2026-10-17.
 
+## Profile crop, tags and optimistic discussions, 2026-10-17
+
+- Compact `/profile` content and moved the dashboard back link from the header into main content. Actual-component browser fixtures at 320, 390, 768 and 1440 px have matching document/viewport widths; password accounts retain three password fields and Google accounts have none.
+- Avatar selection opens a modal with a file picker or drag/drop zone, position and zoom controls, local circular preview, and explicit save. Only the cropped 512×512 image is uploaded. Browser fixture tested file chooser, zoom, keyboard pan, modal fit at 320 px and successful mock save with actual 512×512 decoded image dimensions. Native phone touch/keyboard and OS file dragging were not exercised.
+- Tags now reveal a left control when scrolled right, with edge fades reflecting available directions. Browser test confirmed right scrolling reveals the left button and left scrolling returns to the beginning (within 1 px rounding) and hides that control.
+- Root and reply editors immediately enqueue each message with its own sending/failure status and clear the editor. Browser tests sent two root messages and two replies before earlier acknowledgements, with the next draft still intact afterward. A simulated failure and retry retained one bubble and did not lock the editor. The outbox survives internal navigation in memory; full-page reload discards unsent entries.
+- Every sibling list, including nested replies, follows old/new sort. Browser tests and unit coverage verify both root and nested sibling order.
+- Optional UUID `clientId` makes repeated comment submissions idempotent, bound to author, room, parent and content. Both in-memory and isolated PostgreSQL tests verify repeated IDs create one message and conflicting reuse is rejected. No schema migration required.
+- `npm run check`: 37 passed, one optional external PostgreSQL test skipped. Production build passed. UI writes used disposable mock state; no real comments, avatars or passwords were changed.
+
 ## Automatic recaps and dedicated profile, 2026-10-17
 
 - Recap sidebar is read-only: no create button or date picker. Authenticated POST requests to the collection return 405, including for joined members. Existing files still open with source-comment links.

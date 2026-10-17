@@ -16,8 +16,10 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | POST | `/auth/avatar` | Session + same-origin; multipart trường `avatar`, JPG/PNG/WebP tối đa 2 MB; trả session với avatar mới |
 | GET | `/ideas/:id/recaps?offset=0` | Cần đăng nhập; file theo ngày/tuần, phân trang 50 file, cờ `aiConfigured` |
 | GET | `/ideas/:id/recaps/:recapId` | Cần đăng nhập; nội dung bullet và ID bình luận nguồn; ràng buộc đúng phòng |
-| POST | `/ideas/:id/recaps` | Cần là thành viên; `{kind:"daily"\|"weekly",date:"YYYY-MM-DD"}`; tạo hoặc mở bản cache |
+| POST | `/ideas/:id/recaps` | Không hỗ trợ tạo thủ công; trả 405 sau xác thực |
 | GET | `/cron/recaps` | Chỉ Bearer `CRON_SECRET`; tác vụ ngày, tối đa 4 file mỗi lượt |
+| POST | `/auth/profile` | Session + same-origin; `{name}`, chỉ sửa tên hiển thị |
+| POST | `/auth/password` | Account bằng mật khẩu; `{currentPassword,newPassword}`, xác minh mật khẩu cũ và thu hồi phiên cũ |
 | POST | `/auth/logout` | Thu hồi phiên và xóa cookie, 200 |
 | GET | `/ideas?q=&view=all&sort=new&limit=24&offset=0` | Danh sách và số lượng all/joined/mine |
 | POST | `/ideas` | Tạo idea, creator đồng thời là thành viên; trả 201 |
@@ -49,7 +51,9 @@ List response: `{items: Idea[], total: number, counts: {all, joined, mine}}`. Qu
 
 Text 1–2000 ký tự sau trim. Bỏ `parentId` hoặc dùng `null` cho bình luận gốc. Parent phải tồn tại trong cùng idea. Reply depth tối đa 12; không có vote. Response comment: `{id, ideaId, parentId, author: {id,name,initial}, text, createdAt}`.
 
-List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cursor là ID cuối của trang trước, không phải offset. Client tải các trang theo thứ tự để dựng cây đủ parent/child. Đổi thứ tự root cũ/mới được thực hiện ở UI; thứ tự trả lời trong nhánh luôn theo thời gian.
+List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cursor là ID cuối của trang trước, không phải offset. Client tải các trang theo thứ tự để dựng cây đủ parent/child. Sắp xếp cũ/mới được thực hiện ở UI cho cả bình luận gốc và từng nhánh trả lời.
+
+Client có thể gửi thêm `clientId` là UUID để hiển thị optimistic và thử gửi lại. Server dùng UUID này làm ID; cùng tác giả, idea, parent và nội dung trả lại bình luận đã lưu. Tái sử dụng ID với dữ liệu khác trả 409 `COMMENT_CONFLICT`. Editor không chờ phản hồi; từng tin nhắn có trạng thái đang gửi hoặc lỗi với nút thử lại. Hàng chờ được giữ trong bộ nhớ khi chuyển trang nội bộ, không tồn tại sau khi tải lại toàn trang.
 
 ## Lỗi
 

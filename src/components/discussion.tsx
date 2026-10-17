@@ -18,7 +18,7 @@ import { ErrorState, LoadingState } from "./status";
 
 export function Discussion({ id }: { id: string }) {
   const session = useSession(), { user, requestLogin } = useAuth(), client = useQueryClient(), { sidebarOpen, setSidebarOpen } = useUi();
-  const [sort, setSort] = useState<CommentSort>("old"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set()), [status, setStatus] = useState("");
+  const [sort, setSort] = useState<CommentSort>("old"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const reveal = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null), panel = useRef<HTMLElement>(null), joinAttempted = useRef(false);
   const [mobile, setMobile] = useState(false);
   const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
@@ -46,12 +46,13 @@ export function Discussion({ id }: { id: string }) {
     document.addEventListener("keydown",keyboard);return()=>document.removeEventListener("keydown",keyboard);
   },[mobile,sidebarOpen,setSidebarOpen]);
   const outbox=useCommentOutbox(id,user);
+  const sending=outbox.items.filter(c=>c.delivery==="sending").length;
+  const status=sending?`Đang gửi ${sending} bình luận`:outbox.items.some(c=>c.delivery==="failed")?"Có bình luận chưa gửi được":"";
   const thread=useMemo(()=>mergeComments(comments.data??[],outbox.items),[comments.data,outbox.items]);
   const tree=useMemo(()=>buildCommentForest(thread,sort),[thread,sort]);
   function submit(text:string,parentId:string|null=null){
     const entry=outbox.enqueue(text,parentId);if(!entry)return;
     if(parentId)setExpanded(current=>{const next=new Set(current),seen=new Set<string>();let parent:string|null=parentId;while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=thread.find(c=>c.id===parent)?.parentId??null;}return next;});
-    setStatus(parentId?"Đang gửi trả lời":"Đang gửi bình luận");
     if(!parentId)requestAnimationFrame(()=>document.getElementById(`comment-${entry.id}`)?.scrollIntoView({block:"nearest",behavior:"instant"}));
   }
   function toggleSidebar(open: boolean) { setSidebarOpen(open); requestAnimationFrame(() => (open ? close : reveal).current?.focus({ preventScroll: true })); }
