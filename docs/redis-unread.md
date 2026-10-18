@@ -23,7 +23,7 @@ UPSTASH_REDIS_REST_TOKEN=your-rest-token
 
 3. Áp dụng cho Production (và Preview nếu cần), rồi redeploy. Không thêm `NEXT_PUBLIC_`, không commit token hoặc gửi token qua chat.
 
-Chưa đặt đủ hai biến thì Redis tắt và app đọc Supabase bình thường. Code đã tích hợp, chưa có tài khoản/key Upstash để kiểm chứng cache thật.
+Chưa đặt đủ hai biến thì Redis tắt và app đọc Supabase bình thường. Code đã tích hợp. Sau khi thêm biến và redeploy, mở `/api/health?cache=verify` để kiểm tra Redis thật: `cache.status=ok`, `readWrite`, `hit` và `invalidation` cùng là `true`. Phép kiểm tra dùng namespace tạm riêng, TTL 15 giây và xóa key sau khi xong; không tăng revision của cache ứng dụng. Kết quả gộp/cache 60 giây mỗi warm instance, giới hạn 4 request/phút/instance. `/api/health` thường chỉ trả cờ cấu hình Redis; không trả URL/token/key.
 
 ## Phạm vi cache và tính nhất quán
 

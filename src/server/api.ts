@@ -25,7 +25,9 @@ export async function handleApi(request: Request, path: string[], repository?: I
         try { await getDatabasePool().query("SELECT i.id FROM public.ideas i LEFT JOIN ideahub_private.accounts a ON false LIMIT 0"); }
         catch { throw new AppError(503, "DATABASE_UNAVAILABLE", "Chưa kết nối được database"); }
       }
-      return json({ status: "ok", storage, persistent: storage !== "memory" });
+      const verify=new URL(request.url).searchParams.get("cache")==="verify";
+      if(verify)rateLimit("health:cache-probe",4);
+      return json({ status: "ok", storage, persistent: storage !== "memory",cache:verify?await applicationCache.verify():{configured:applicationCache.configured} });
     }
     if(route==="auth/config"&&method==="GET")return json({google:googleConfigured(),avatarUpload:avatars.configured()});
     const auth = authentication ?? getAuthService(), token = getSessionToken(request);

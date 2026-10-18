@@ -6,6 +6,7 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 
 | Method | Endpoint | Hành vi |
 | --- | --- | --- |
+| GET | `/health?cache=verify` | Kiểm tra cache bằng key tạm: cấu hình, read/write, hit, invalidation; không trả secret; tối đa 4 request/phút/instance |
 | GET | `/health` | `{status, storage, persistent}`; postgres có query kiểm tra DB, lỗi kết nối trả 503; không thay thế kiểm tra session |
 | GET | `/unread` | Cần đăng nhập; map `{ideaId: unreadCount}` chỉ của user trong session, không cache HTTP |
 | POST | `/ideas/:id/read` | `{commentId}` snapshot đã tải; yêu cầu đã tham gia, mốc chỉ tiến lên |
