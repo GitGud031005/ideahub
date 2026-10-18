@@ -279,4 +279,4 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 /* Unread counts belong to the signed-in user's joined idea. */
 .ih-chat-indicators{display:inline-flex;align-items:center;gap:10px}
 .ih-unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border:1px solid #222;border-radius:999px;background:#222;color:#fff;font-size:10px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;transition:background .2s,color .2s,border-color .2s}
-.ih-idea:hover .ih-unread-badge,.ih-join:focus-visible .ih-unread-badge{background:#fff;color:#222;border-color:#fff}
+.ih-idea:hover .ih-unread-badge,.ih-idea:focus-within .ih-unread-badge,.ih-join:focus-visible .ih-unread-badge{background:#fff;color:#222;border-color:#fff}
