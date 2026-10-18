@@ -14,6 +14,9 @@ test("cache health checks real read/write, hits and isolated invalidation, clean
   assert.equal((await new RedisCache(null).verify()).status,"disabled");
   const unavailable=await new RedisCache({async command(){throw Error("secret-provider-error");}}).verify();
   assert.equal(unavailable.status,"unavailable");assert(!JSON.stringify(unavailable).includes("secret-provider-error"));
+  const readonlyRevision=fake();
+  const failedInvalidation=await new RedisCache({async command(args){if(args[0]==="INCR")throw Error("denied");return readonlyRevision.command(args);}}).verify();
+  assert.equal(failedInvalidation.status,"unavailable");assert.equal(failedInvalidation.invalidation,false);
 });
 test("cache reuses reads, versions writes, and an old in-flight loader cannot poison a new version",async()=>{
   const redis=fake(),cache=new RedisCache(redis,"test");let loads=0;

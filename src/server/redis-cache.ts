@@ -36,8 +36,9 @@ export class RedisCache {
         const first=await probe.remember("canary",15,load),second=await probe.remember("canary",15,load);
         const hit=first===second&&loads===1;
         await probe.invalidate();
+        const revision=await probe.command(["GET",keys[0]]);
         const third=await probe.remember("canary",15,load);
-        const invalidation=third===`${nonce}:2`&&loads===2;
+        const invalidation=String(revision)==="1"&&third===`${nonce}:2`&&loads===2;
         result={configured:true,status:hit&&invalidation?"ok":"unavailable",readWrite:hit,hit,invalidation};
       }catch{/* No upstream response, credential, host or cache key is returned. */}
       finally{try{await this.redis!.command(["DEL",...keys]);}catch{/* All probe keys already have a short TTL. */}}
