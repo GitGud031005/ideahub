@@ -40,7 +40,7 @@ async function measure() {
       }
       results[kind] = { direct:summaries(direct),redisHit:summaries(hit),redisMiss:summaries(miss) };
     }
-    return { available:true, environment:"Vercel production, warm connection",results };
+    return { available:true, environment:"Vercel production, warm connection",region:process.env.VERCEL_REGION??"unknown",results };
   } finally {
     // Bounded synthetic cache keys expire in 60s even when cleanup fails.
     const {createHash}=await import("node:crypto");
