@@ -28,8 +28,8 @@ export interface CreateCommentInput { text: string; parentId?: string | null; cl
 export type IdeaView = "all" | "joined" | "mine";
 export type IdeaSort = "new" | "popular";
 export type CommentSort = "old" | "new";
-export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number }
-export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number> }
+export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number; cursor?: string }
+export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number>; nextCursor: string | null }
 export interface CommentsPage { items: Comment[]; total: number; nextCursor: string | null }
 export interface Account extends Author { username: string; provider?: "password" | "google"; avatarSource?: "initials" | "google" | "custom" }
 export interface Session { user: Account | null; storage: StorageMode }

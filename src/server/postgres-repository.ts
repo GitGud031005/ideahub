@@ -4,6 +4,7 @@ import type { Author, Category, Comment, CommentsPage, CreateCommentInput, Creat
 import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { IdeaRepository } from "./repository";
+import { readIdeaCursor, writeIdeaCursor } from "./idea-pagination";
 
 export interface DatabaseExecutor {
   query<Row extends QueryResultRow = QueryResultRow>(sql: string, values?: unknown[]): Promise<{ rows: Row[]; rowCount: number | null }>;
@@ -15,6 +16,7 @@ interface IdeaRow {
   id: string; title: string; description: string; category: Category; tags: string[];
   creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
   member_count: number; comment_count: number; joined: boolean; mine: boolean;
+  cursor_time: string; rank_members?: number;
 }
 interface CommentRow {
   id: string; idea_id: string; parent_id: string | null; author_id: string;
@@ -22,6 +24,7 @@ interface CommentRow {
 }
 const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.creator_id,
   u.display_name, u.initial, u.avatar_url, i.created_at,
+  to_char(i.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time,
   (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id = i.id) AS member_count,
   (SELECT count(*)::int FROM public.comments c WHERE c.idea_id = i.id) AS comment_count,
   EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1) AS joined,
@@ -38,9 +41,9 @@ function comment(row: CommentRow): Comment {
   return { id: row.id, ideaId: row.idea_id, parentId: row.parent_id, text: row.body,
     author: { id: row.author_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString() };
 }
-async function upsertUser(db: Executor, user: Author) {
+async function ensureUser(db: Executor, user: Author) {
   await db.query(`INSERT INTO public.users (id, display_name, initial) VALUES ($1, $2, $3)
-    ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name, initial = EXCLUDED.initial`, [user.id, user.name, user.initial]);
+    ON CONFLICT (id) DO NOTHING`, [user.id, user.name, user.initial]);
 }
 async function getIdea(db: Executor, id: string, userId: string): Promise<Idea> {
   const result = await db.query<IdeaRow>(`${IDEA_SELECT} WHERE i.id = $2`, [userId, id]);
@@ -69,26 +72,39 @@ export class PostgresIdeaRepository implements IdeaRepository {
     } finally { client.release(broken); }
   }
   async listIdeas(userId: string, query: IdeaQuery): Promise<IdeasPage> {
+    const cursor = readIdeaCursor(userId, query);
     return this.transaction(async db => {
+      const snapshot = cursor?.snapshot ?? (await db.query<{ snapshot: string }>(`SELECT
+        to_char(transaction_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS snapshot`)).rows[0].snapshot;
       // Counts describe the full dashboard, independently of the current search/filter.
       const counts = (await db.query<{ all: number; joined: number; mine: number }>(`SELECT count(*)::int AS all,
         count(*) FILTER (WHERE EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1))::int AS joined,
         count(*) FILTER (WHERE i.creator_id = $1)::int AS mine FROM public.ideas i`, [userId])).rows[0];
-      const where = `WHERE strpos(i.search_text, $2) > 0
+      const where = `WHERE strpos(i.search_text, $2) > 0 AND i.created_at <= $4::timestamptz
         AND ($3 = 'all' OR ($3 = 'mine' AND i.creator_id = $1)
-          OR ($3 = 'joined' AND EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1)))`;
-      const values = [userId, normalize(query.q), query.view];
+          OR ($3 = 'joined' AND EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1 AND m.joined_at <= $4::timestamptz)))`;
+      const values = [userId, normalize(query.q), query.view, snapshot];
       const total = (await db.query<{ total: number }>(`SELECT count(*)::int AS total FROM public.ideas i ${where}`, values)).rows[0].total;
-      const order = query.sort === "popular" ? "member_count DESC, " : "";
-      const result = await db.query<IdeaRow>(`${IDEA_SELECT} ${where} ORDER BY ${order}i.created_at DESC, i.id COLLATE "C" ASC LIMIT $4 OFFSET $5`, [...values, query.limit, query.offset]);
-      return { items: result.rows.map(idea), total, counts };
+      // Freeze popularity at the first page; new joins must not move unseen rows across the cursor.
+      const rank = query.sort === "popular" ? `(SELECT count(*)::int FROM public.memberships m
+        WHERE m.idea_id = i.id AND m.joined_at <= $4::timestamptz)` : "0";
+      const result = await db.query<IdeaRow>(`WITH ranked AS (
+        ${IDEA_SELECT.replace("SELECT i.id", `SELECT ${rank} AS rank_members, i.id`)} ${where}
+      ) SELECT * FROM ranked WHERE $5::text IS NULL OR rank_members < $6::int
+        OR (rank_members = $6::int AND (created_at < $7::timestamptz
+          OR (created_at = $7::timestamptz AND id COLLATE "C" > $5)))
+        ORDER BY rank_members DESC, created_at DESC, id COLLATE "C" ASC LIMIT $8 OFFSET $9`,
+      [...values, cursor?.id ?? null, cursor?.members ?? 0, cursor?.createdAt ?? null, query.limit + 1, cursor ? 0 : query.offset]);
+      const rows = result.rows.slice(0, query.limit), last = rows.at(-1);
+      return { items: rows.map(idea), total, counts, nextCursor: result.rows.length > query.limit && last
+        ? writeIdeaCursor(userId, query, { snapshot, id: last.id, createdAt: last.cursor_time, members: last.rank_members! }) : null };
     }, true);
   }
   getIdea(id: string, userId: string) { return getIdea(this.pool, id, userId); }
   async createIdea(user: Author, input: CreateIdeaInput): Promise<Idea> {
     return this.transaction(async db => {
       const id = randomUUID(), tags = [...new Set([input.category, ...input.tags])].slice(0, 12);
-      await upsertUser(db, user);
+      await ensureUser(db, user);
       await db.query(`INSERT INTO public.ideas (id, title, description, category, tags, search_text, creator_id)
         VALUES ($1, $2, $3, $4, $5, $6, $7)`, [id, input.title, input.description, input.category, tags, normalize([input.title, input.description, ...tags].join(" ")), user.id]);
       await db.query("INSERT INTO public.memberships (idea_id, user_id) VALUES ($1, $2)", [id, user.id]);
@@ -134,7 +150,7 @@ export class PostgresIdeaRepository implements IdeaRepository {
         if (ancestors.rows.some(a => a.depth > 12)) throw new AppError(422, "MAX_DEPTH", "Nhánh trả lời đã quá sâu, hãy trả lời một bình luận gần hơn");
       }
       const id = input.clientId ?? randomUUID();
-      await upsertUser(db, user);
+      await ensureUser(db, user);
       await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text]);
       const existing=(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`,[id])).rows[0];
       if(!existing||existing.idea_id!==ideaId||existing.author_id!==user.id||existing.parent_id!==parentId||existing.body!==input.text)throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");

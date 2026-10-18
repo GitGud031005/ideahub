@@ -3,6 +3,7 @@ import type { Author, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput
 import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { DataState, IdeaRecord, StateStore } from "./state";
+import { readIdeaCursor, writeIdeaCursor } from "./idea-pagination";
 
 /** Shared storage contract implemented by state and PostgreSQL repositories. */
 export interface IdeaRepository {
@@ -14,18 +15,29 @@ export interface IdeaRepository {
   createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment>;
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
-  const { members, ...record } = idea;
+  const { members, memberJoinedAt: _joinedAt, ...record } = idea;
   return { ...record, memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
-  listIdeas(userId: string, query: IdeaQuery) {
+  async listIdeas(userId: string, query: IdeaQuery) {
+    const cursor = readIdeaCursor(userId, query);
     return this.store.read(state => {
+      const snapshot = cursor?.snapshot ?? new Date().toISOString();
       const all = state.ideas.map(i => present(i, state, userId));
       const q = normalize(query.q);
-      const filtered = all.filter(i => (query.view === "all" || (query.view === "joined" ? i.joined : i.mine)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
-      filtered.sort((a, b) => (query.sort === "popular" ? b.memberCount - a.memberCount : 0) || Date.parse(b.createdAt) - Date.parse(a.createdAt) || a.id.localeCompare(b.id));
-      return { items: filtered.slice(query.offset, query.offset + query.limit), total: filtered.length, counts: { all: all.length, joined: all.filter(i => i.joined).length, mine: all.filter(i => i.mine).length } };
+      const before = (time?: string) => !time || Date.parse(time) <= Date.parse(snapshot);
+      const ranked = state.ideas.map(i => ({ item: present(i, state, userId),
+        joined: i.members.includes(userId) && before(i.memberJoinedAt?.[userId]),
+        rank: query.sort === "popular" ? i.members.filter(id => before(i.memberJoinedAt?.[id])).length : 0 }));
+      const filtered = ranked.filter(({ item: i, joined }) => before(i.createdAt) && (query.view === "all" || (query.view === "joined" ? joined : i.mine)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
+      const compare = (a: {rank: number; createdAt: string; id: string}, b: {rank: number; createdAt: string; id: string}) =>
+        b.rank - a.rank || Date.parse(b.createdAt) - Date.parse(a.createdAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      filtered.sort((a, b) => compare({ ...a.item, rank: a.rank }, { ...b.item, rank: b.rank }));
+      const remaining = cursor ? filtered.filter(({ item, rank }) => compare({ ...item, rank }, { ...cursor, rank: cursor.members }) > 0) : filtered.slice(query.offset);
+      const page = remaining.slice(0, query.limit), last = page.at(-1);
+      return { items: page.map(p => p.item), total: filtered.length, counts: { all: all.length, joined: all.filter(i => i.joined).length, mine: all.filter(i => i.mine).length },
+        nextCursor: remaining.length > query.limit && last ? writeIdeaCursor(userId, query, { snapshot, createdAt: last.item.createdAt, id: last.item.id, members: last.rank }) : null };
     });
   }
   getIdea(id: string, userId: string) {
@@ -40,7 +52,7 @@ export class StateIdeaRepository implements IdeaRepository {
   joinIdea(id: string, userId: string) {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();
-      if (!idea.members.includes(userId)) idea.members.push(userId);
+      if (!idea.members.includes(userId)) { idea.members.push(userId); (idea.memberJoinedAt ??= {})[userId] = new Date().toISOString(); }
       return present(idea, state, userId);
     });
   }
@@ -71,7 +83,7 @@ export class StateIdeaRepository implements IdeaRepository {
         seen.add(parent); parent = entry.parentId;
       }
       const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString() };
-      if (!idea.members.includes(user.id)) idea.members.push(user.id);
+      if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); }
       state.comments.push(comment); return comment;
     });
   }

@@ -6,7 +6,18 @@ export function json(data: unknown, status = 200, headers?: HeadersInit) {
 }
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get("origin");
-  if ((origin && origin !== new URL(request.url).origin) || request.headers.get("sec-fetch-site") === "cross-site") throw new AppError(403, "ORIGIN_REJECTED", "Yêu cầu không hợp lệ");
+  const url = new URL(request.url), host = request.headers.get("host");
+  // Next may canonicalize request.url to localhost in dev. Host retains the browser's
+  // actual destination; never use a caller-supplied forwarded host as an allow-list.
+  let expectedOrigin = url.origin;
+  if (host) {
+    try {
+      const destination = new URL(`${url.protocol}//${host}`);
+      if (/[^a-zA-Z0-9.:[\]-]/.test(host) || destination.username || destination.password || destination.pathname !== "/" || destination.search || destination.hash) throw new Error("Invalid Host");
+      expectedOrigin = destination.origin;
+    } catch { throw new AppError(403, "ORIGIN_REJECTED", "Yêu cầu không hợp lệ"); }
+  }
+  if ((origin && origin !== expectedOrigin) || request.headers.get("sec-fetch-site") === "cross-site") throw new AppError(403, "ORIGIN_REJECTED", "Yêu cầu không hợp lệ");
 }
 export async function readJson<T>(request: Request, schema: ZodType<T>): Promise<T> {
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) throw new AppError(415, "CONTENT_TYPE", "Yêu cầu phải sử dụng JSON");

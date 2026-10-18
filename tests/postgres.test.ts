@@ -11,6 +11,9 @@ test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and 
   const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", category: "Học tập" as const, tags: ["Bản đồ", "Bản đồ"] };
   const query = { q: "", view: "all" as const, sort: "new" as const, limit: 24, offset: 0 };
   try {
+    // Real sessions already have a profile before joining; repository writes must
+    // preserve that profile rather than replacing it with the request snapshot.
+    await embedded.pool.query("INSERT INTO public.users(id,display_name,initial) VALUES ($1,$2,$3)", [other.id, other.name, other.initial]);
     const idea = await repository.createIdea(user, input);
     const second = await repository.createIdea(user, { ...input, title: "Phòng khác" });
     assert.equal(idea.memberCount, 1); assert.equal(idea.mine, true); assert.equal(idea.joined, true);

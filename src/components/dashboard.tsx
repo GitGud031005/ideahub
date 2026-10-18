@@ -22,15 +22,15 @@ export function Dashboard() {
   useEffect(() => { const timer = setTimeout(() => setQuery(dashboard.search), 200); return () => clearTimeout(timer); }, [dashboard.search]);
   const ideas = useInfiniteQuery({
     queryKey: ["ideas", { viewer: user?.id ?? "guest", q: query, view: dashboard.view, sort: dashboard.sort }], enabled: !!session.data,
-    initialPageParam: 0,
+    initialPageParam: "",
     retry: (count, error) => !(error instanceof ApiError && error.status < 500) && count < 1,
-    queryFn: ({ signal, pageParam }) => api<IdeasPage>(`/ideas?${new URLSearchParams({ q: query, view: dashboard.view, sort: dashboard.sort, offset: String(pageParam), limit: "24" })}`, { signal }),
-    getNextPageParam: (last, pages) => { const loaded = pages.reduce((total, page) => total + page.items.length, 0); return loaded < last.total ? loaded : undefined; },
+    queryFn: ({ signal, pageParam }) => api<IdeasPage>(`/ideas?${new URLSearchParams({ q: query, view: dashboard.view, sort: dashboard.sort, ...(pageParam ? { cursor: pageParam } : {}), limit: "24" })}`, { signal }),
+    getNextPageParam: last => last.nextCursor ?? undefined,
   });
   useEffect(() => { if (ideas.data && !restored.current) { window.scrollTo({ top: dashboard.scroll, behavior: "instant" }); restored.current = true; } }, [ideas.data, dashboard.scroll]);
   useEffect(() => { const keydown = (event: KeyboardEvent) => { if (event.key === "/" && !document.querySelector("dialog[open]") && !create && !(event.target as HTMLElement).closest("input,textarea,select,[role=listbox]")) { event.preventDefault(); search.current?.focus(); } }; document.addEventListener("keydown", keydown); return () => document.removeEventListener("keydown", keydown); }, [create]);
   useEffect(() => { if (!user) return; const url=new URL(window.location.href); if(url.searchParams.get("new")!=="1")return;setCreate(true);url.searchParams.delete("new");window.history.replaceState(null,"",url.pathname+url.search+url.hash); }, [user]);
-  const items = ideas.data?.pages.flatMap(p => p.items) ?? [], counts = ideas.data?.pages[0].counts, total = ideas.data?.pages[0].total ?? 0;
+  const items = [...new Map(ideas.data?.pages.flatMap(p => p.items).map(item => [item.id, item]) ?? []).values()], counts = ideas.data?.pages[0].counts, total = ideas.data?.pages[0].total ?? 0;
   const remember = () => setDashboard(current => ({ ...current, scroll: window.scrollY }));
   function enterIdea(id: string) { remember(); requestLogin(() => router.push(`/ideas/${id}`), `/ideas/${id}`); }
   function ideaLink(event: MouseEvent<HTMLAnchorElement>, id: string) {

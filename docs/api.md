@@ -21,7 +21,7 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | POST | `/auth/profile` | Session + same-origin; `{name}`, chỉ sửa tên hiển thị |
 | POST | `/auth/password` | Account bằng mật khẩu; `{currentPassword,newPassword}`, xác minh mật khẩu cũ và thu hồi phiên cũ |
 | POST | `/auth/logout` | Thu hồi phiên và xóa cookie, 200 |
-| GET | `/ideas?q=&view=all&sort=new&limit=24&offset=0` | Danh sách và số lượng all/joined/mine |
+| GET | `/ideas?q=&view=all&sort=new&limit=24&cursor=...` | Danh sách, cursor trang kế tiếp và số lượng all/joined/mine |
 | POST | `/ideas` | Tạo idea, creator đồng thời là thành viên; trả 201 |
 | GET | `/ideas/:id` | Thông tin đầy đủ, `joined`/`mine` của phiên hiện tại |
 | POST | `/ideas/:id/join` | Tham gia idempotent, trả idea đã cập nhật |
@@ -42,7 +42,9 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 
 Title 1–80 ký tự sau trim; description 1–240; category là một trong `Công nghệ`, `Đời sống`, `Học tập`, `Thiết kế`, `Khác`. Tối đa 12 tags, mỗi tag 1–28 ký tự. Server loại trùng và thêm category vào tags, giữ tổng tối đa 12.
 
-List response: `{items: Idea[], total: number, counts: {all, joined, mine}}`. Query `q` tối đa 120 ký tự; `view=all|joined|mine`; `sort=new|popular`; limit 1–100, offset 0–100000. Các count không phụ thuộc từ khóa hoặc trang hiện tại.
+List response: `{items: Idea[], total: number, counts: {all, joined, mine}, nextCursor: string|null}`. Query `q` tối đa 120 ký tự; `view=all|joined|mine`; `sort=new|popular`; limit 1–100. Trang đầu bỏ `cursor`; trang sau gửi nguyên `nextCursor` và giữ nguyên người xem, từ khóa, bộ lọc, cách sắp xếp. Cursor sai hoặc dùng cho truy vấn khác trả 400 `INVALID_CURSOR`. Các count không phụ thuộc từ khóa hoặc trang hiện tại.
+
+Client web dùng keyset cursor theo thứ hạng, thời gian tạo và ID; tổng kết quả, thứ hạng theo số thành viên và bộ lọc đã tham gia được tính tại mốc thời gian trang đầu. Ý tưởng/lượt tham gia mới được thấy khi danh sách tải lại; không làm dịch vị trí giữa các trang đang xem. PostgreSQL giữ độ chính xác microsecond của cursor; JSON local ghi thời điểm tham gia mới và coi thành viên từ dữ liệu cũ là đã có trước mốc tải. Đây là mốc thời gian dữ liệu, không giữ mở một transaction xuyên nhiều HTTP request. `offset=0..100000` vẫn được hỗ trợ cho client cũ nhưng không dùng cùng cursor; client mới nên dùng cursor để tránh trang bị dịch khi có dữ liệu mới.
 
 ## Bình luận
 

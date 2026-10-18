@@ -6,7 +6,7 @@ import { SESSION_COOKIE, getSessionToken, sessionCookie } from "../src/server/se
 import { AuthService, MemoryAuthStore } from "../src/server/auth";
 import { StateIdeaRepository } from "../src/server/repository";
 import { MemoryStore } from "../src/server/stores";
-import { rateLimit } from "../src/server/http";
+import { assertSameOrigin, rateLimit } from "../src/server/http";
 process.env.IDEAHUB_STORAGE = "memory";
 const base = "https://ideahub.test";
 const payload = { username: "minhan", fullName: "Nguyễn Minh An", password: "Test2026" };
@@ -20,6 +20,24 @@ function fixture() {
 const post = (body: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(body) });
 const cookie = (r: Response) => r.headers.get("set-cookie")!.split(";")[0].slice(SESSION_COOKIE.length + 1);
 const ideaInput = { title: "Hello", description: "An idea", category: "Công nghệ", tags: ["Python"] };
+
+test("same-origin checks use the actual Host when Next canonicalizes local URLs and reject forged forwarded hosts", () => {
+  const check = (headers: Record<string,string>, url = "http://localhost:3000/api/auth/logout") => assertSameOrigin(new Request(url, { method:"POST", headers }));
+  assert.doesNotThrow(() => check({host:"127.0.0.1:3000",origin:"http://127.0.0.1:3000","sec-fetch-site":"same-origin"}));
+  assert.doesNotThrow(() => check({host:"localhost:3000",origin:"http://localhost:3000"}));
+  assert.doesNotThrow(() => check({host:"ideahub.test",origin:"https://ideahub.test"}, "https://ideahub.test/api/auth/logout"));
+  assert.doesNotThrow(() => check({host:"IDEAHUB.test:443",origin:"https://ideahub.test"}, "https://ideahub.test/api/auth/logout"));
+  assert.doesNotThrow(() => check({host:"[::1]:3000",origin:"http://[::1]:3000"}));
+  const rejected: Record<string,string>[] = [
+    {host:"127.0.0.1:3000",origin:"http://localhost:3000"},
+    {host:"localhost:3000",origin:"http://attacker.test","x-forwarded-host":"attacker.test"},
+    {host:"localhost:3000",origin:"http://localhost:3000","sec-fetch-site":"cross-site"},
+    {host:"localhost:3000@attacker.test",origin:"http://attacker.test"},
+    {host:"localhost:3000/path",origin:"http://localhost:3000"},
+    {host:"localhost:3000#fragment",origin:"http://localhost:3000"},
+  ];
+  for (const headers of rejected) assert.throws(() => check(headers), {code:"ORIGIN_REJECTED"});
+});
 
 test("anonymous sessions cannot mint identities; public browsing works and all mutations require login", async () => {
   const { call } = fixture();

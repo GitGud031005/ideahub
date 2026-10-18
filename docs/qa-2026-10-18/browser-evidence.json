@@ -1,0 +1,91 @@
+{
+  "viewportChecks": [
+    {
+      "columns": "425.333px 425.333px 425.333px",
+      "documentWidth": 1427,
+      "header": {
+        "bottom": 88,
+        "height": 88,
+        "left": 0,
+        "right": 1427.3333740234375,
+        "top": 0,
+        "width": 1427.3333740234375,
+        "x": 0,
+        "y": 0
+      },
+      "height": 900,
+      "width": 1440
+    },
+    {
+      "columns": "340.104px 340.104px",
+      "documentWidth": 756,
+      "header": {
+        "bottom": 80,
+        "height": 80,
+        "left": 0,
+        "right": 756,
+        "top": 0,
+        "width": 756,
+        "x": 0,
+        "y": 0
+      },
+      "height": 1025,
+      "width": 769
+    },
+    {
+      "columns": "337.333px",
+      "documentWidth": 377,
+      "header": {
+        "bottom": 136,
+        "height": 136,
+        "left": 0,
+        "right": 377.3333435058594,
+        "top": 0,
+        "width": 377.3333435058594,
+        "x": 0,
+        "y": 0
+      },
+      "height": 845,
+      "width": 390
+    },
+    {
+      "columns": "280px",
+      "documentWidth": 320,
+      "header": {
+        "bottom": 136,
+        "height": 136,
+        "left": 0,
+        "right": 320,
+        "top": 0,
+        "width": 320,
+        "x": 0,
+        "y": 0
+      },
+      "height": 845,
+      "width": 320
+    }
+  ],
+  "pagination": {
+    "rendered": 30,
+    "unique": 29,
+    "duplicates": [
+      {
+        "href": "/ideas/1",
+        "title": "Data crawling lab"
+      }
+    ]
+  },
+  "thread": {
+    "width": 320,
+    "documentWidth": 320,
+    "viewportHeight": 845,
+    "documentHeight": 845,
+    "maxDepth": 12,
+    "minimumTextWidth": 190,
+    "liveCount": 25
+  },
+  "fixtureRetry": {
+    "messageCount": 1,
+    "retryButtonGone": true
+  }
+}

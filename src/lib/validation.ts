@@ -19,6 +19,7 @@ export const ideaQuerySchema = z.object({
   sort: z.enum(["new", "popular"]).default("new"),
   limit: z.coerce.number().int().min(1).max(100).default(24),
   offset: z.coerce.number().int().min(0).max(100000).default(0),
+  cursor: z.string().min(1).max(2000).optional(),
 });
 export const commentQuerySchema = z.object({
   cursor: z.string().max(100).optional(),

@@ -22,7 +22,7 @@ export function Discussion({ id }: { id: string }) {
   const [sort, setSort] = useState<CommentSort>("old"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const reveal = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null), panel = useRef<HTMLElement>(null), joinAttempted = useRef(false);
   const [mobile, setMobile] = useState(false);
-  const scrollBox = useRef<HTMLElement>(null), followLatest = useRef(true);
+  const scrollBox = useRef<HTMLElement>(null), followLatest = useRef(true), previousSort = useRef(sort);
   const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
   const liveInterval = useLiveComments(id, user?.id, !!idea.data);
   const comments = useQuery({ queryKey: ["comments", id, user?.id], queryFn: ({ signal }) => fetchComments(id, signal), enabled: !!user && !!idea.data, refetchInterval: liveInterval, refetchOnWindowFocus: "always", refetchOnReconnect: "always" });
@@ -56,6 +56,11 @@ export function Discussion({ id }: { id: string }) {
   useLayoutEffect(() => { followLatest.current = true; }, [id]);
   useLayoutEffect(() => {
     const box = scrollBox.current;
+    if (previousSort.current !== sort) {
+      previousSort.current = sort;
+      if (box) { box.scrollTop = 0; followLatest.current = box.scrollHeight <= box.clientHeight + 96; }
+      return;
+    }
     if (box && sort === "old" && followLatest.current) box.scrollTop = box.scrollHeight;
   }, [thread, sort]);
   function submit(text:string,parentId:string|null=null){

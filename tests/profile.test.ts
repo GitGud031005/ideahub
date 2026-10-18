@@ -23,6 +23,13 @@ test("profile changes only the session owner's display name and keeps Google edi
     const data=await response.json();assert.equal(data.user.name,"Trần Minh An");assert.equal(data.user.initial,"TA");assert.equal(data.user.username,"profile_one");
     assert.equal((await auth.user(other.token))!.name,"Người khác");
     assert.equal((await repo.getIdea(idea.id,first.user.id)).creator.name,"Trần Minh An");
+    // A write can authenticate before the rename and reach the repository after it.
+    const staleComment = await repo.createComment(idea.id, first.user, {text:"Request authenticated before profile edit"});
+    assert.equal(staleComment.author.name,"Trần Minh An");
+    const staleIdea = await repo.createIdea(first.user,{title:"Late request",description:"Stale account snapshot",category:"Công nghệ",tags:[]});
+    assert.equal(staleIdea.creator.name,"Trần Minh An");
+    assert.equal((await auth.user(first.token))!.name,"Trần Minh An");
+    assert.equal((await auth.user(first.token))!.initial,"TA");
     const google=await auth.google({subject:"profile-google",name:"Tên từ Google",avatarUrl:null});
     const session=await auth.issueSession(google.user,null);
     assert.equal((await call(session.token,{name:"Tên tự chọn"})).status,200);
