@@ -22,6 +22,22 @@ async function verify() {
   assert.match(page.headers.get("content-type") ?? "", /text\/html/);
   await page.body?.cancel();
 
+  // Exercise the dashboard SQL on the actual production database without writes.
+  const ideas = await request("/api/ideas?limit=1");
+  assert.equal(ideas.status, 200, "Idea listing must return 200");
+  assert.match(ideas.headers.get("content-type") ?? "", /application\/json/);
+  const first = await ideas.json();
+  assert(Array.isArray(first.items) && first.items.length <= 1);
+  assert(Number.isInteger(first.total) && first.total >= first.items.length);
+  assert(first.nextCursor === null || typeof first.nextCursor === "string", "Dashboard must ship the cursor pagination contract");
+  if (first.nextCursor) {
+    const next = await request(`/api/ideas?${new URLSearchParams({ limit:"1", cursor:first.nextCursor })}`);
+    assert.equal(next.status, 200, "Cursor continuation must work on PostgreSQL");
+    const second = await next.json();
+    assert(Array.isArray(second.items) && second.items.length === 1);
+    assert.notEqual(second.items[0].id, first.items[0].id, "Consecutive pages must not repeat an idea");
+  }
+
   // Authentication runs before room lookup: no production account or writes are needed.
   // Old builds return 404 here, so this also verifies that the SSE route was shipped.
   const live = await request("/api/ideas/__deployment_probe__/comments/stream");
@@ -33,7 +49,7 @@ async function verify() {
 for (let attempt = 1; ; attempt++) {
   try {
     await verify();
-    console.log(`Deployment verified: ${base.origin} (homepage, PostgreSQL and live endpoint)`);
+    console.log(`Deployment verified: ${base.origin} (homepage, PostgreSQL, idea cursor pagination and live endpoint)`);
     break;
   } catch (error) {
     if (attempt === 6) throw error;

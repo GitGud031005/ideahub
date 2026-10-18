@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Verify page, database health and authenticated live endpoint
+      - name: Verify page, database, idea pagination and authenticated live endpoint
         run: npm run check:deployment
         env:
           # Immutable deployment URLs can require Vercel login even when production is public.
