@@ -4,6 +4,35 @@ import { PostgresIdeaRepository } from "../src/server/postgres-repository";
 import { embeddedPool } from "./helpers/postgres";
 import { AppError } from "../src/server/errors";
 
+test("comment pages use one database statement and retain metadata for empty/end pages", async () => {
+  const embedded = await embeddedPool(), setup = new PostgresIdeaRepository(embedded.pool);
+  const actor = { id:"page-reader", name:"Reader", initial:"R" };
+  try {
+    const room = await setup.createIdea(actor,{title:"Single snapshot",description:"Test",category:"Khác",tags:[]});
+    let calls=0;
+    const repo = new PostgresIdeaRepository({
+      connect: async()=>{throw Error("Read should not lease an explicit transaction");},
+      query: async(sql,values)=>{calls++;return embedded.pool.query(sql,values);},
+    });
+    assert.deepEqual(await repo.listComments(room.id),{items:[],total:0,nextCursor:null});
+    assert.equal(calls,1);
+    const first=await setup.createComment(room.id,actor,{text:"First"});
+    const second=await setup.createComment(room.id,actor,{text:"Reply",parentId:first.id});
+    // Identical timestamps exercise the stable ID tie-breaker.
+    await embedded.pool.query("UPDATE public.comments SET created_at='2026-10-18T01:02:03.123456Z' WHERE idea_id=$1",[room.id]);
+    calls=0;
+    const page=await repo.listComments(room.id,undefined,1);
+    assert.equal(calls,1);assert.equal(page.total,2);assert.equal(page.items.length,1);
+    assert(page.nextCursor);assert.equal(page.items[0].createdAt,"2026-10-18T01:02:03.123Z");
+    const next=await repo.listComments(room.id,page.nextCursor,1);
+    assert.equal(next.total,2);assert.equal(next.items.length,1);assert.equal(next.nextCursor,null);
+    assert.deepEqual(new Set([page.items[0].id,next.items[0].id]),new Set([first.id,second.id]));
+    assert.deepEqual(await repo.listComments(room.id,next.items[0].id),{items:[],total:2,nextCursor:null});
+    await assert.rejects(repo.listComments(room.id,"unknown"),{code:"INVALID_CURSOR"});
+    await assert.rejects(repo.listComments("missing",first.id),{code:"NOT_FOUND"});
+  } finally {await embedded.close();}
+});
+
 
 test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and rollback", async () => {
   const embedded = await embeddedPool(), repository = new PostgresIdeaRepository(embedded.pool);

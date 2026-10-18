@@ -19,14 +19,21 @@ Khuyến nghị Upstash: Redis qua HTTPS REST, không giữ kết nối TCP từ
 ```env
 UPSTASH_REDIS_REST_URL=https://your-database.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-rest-token
+# Optional read cache: keep off for the current low-traffic deployment.
+IDEAHUB_REDIS_CACHE=false
 ```
 
 3. Áp dụng cho Production (và Preview nếu cần), rồi redeploy. Không thêm `NEXT_PUBLIC_`, không commit token hoặc gửi token qua chat.
 
-Chưa đặt đủ hai biến thì Redis tắt và app đọc Supabase bình thường. Code đã tích hợp. Sau khi thêm biến và redeploy, mở `/api/health?cache=verify` để kiểm tra Redis thật: `cache.status=ok`, `readWrite`, `hit` và `invalidation` cùng là `true`. Phép kiểm tra dùng namespace tạm riêng, TTL 15 giây và xóa key sau khi xong; không tăng revision của cache ứng dụng. Kết quả gộp/cache 60 giây mỗi warm instance, giới hạn 4 request/phút/instance. `/api/health` thường chỉ trả cờ cấu hình Redis; không trả URL/token/key.
+Cache đọc **tắt mặc định**, kể cả khi đã đặt đủ credentials. Chỉ bật khi `IDEAHUB_REDIS_CACHE=true` và có đủ hai biến Redis; cần redeploy khi đổi cấu hình. Ở chế độ tắt, đọc/ghi ứng dụng không gọi Redis, kể cả invalidation khi đổi profile. PostgreSQL và cache frontend tiếp tục hoạt động bình thường.
+
+`/api/health` trả riêng `cache.configured` (đã cấu hình provider) và `cache.enabled` (cache đọc đang bật). Mở `/api/health?cache=verify` để kiểm tra Redis thật: `cache.status=ok`, `readWrite`, `hit` và `invalidation` cùng là `true`, ngay cả khi `enabled=false`. Phép kiểm tra chủ động dùng namespace tạm riêng, TTL 15 giây và xóa key sau khi xong; không tăng revision của cache ứng dụng. Kết quả gộp/cache 60 giây mỗi warm instance, giới hạn 4 request/phút/instance. Không trả URL/token/key.
+
+Trang bình luận được đọc bằng **một câu SQL/một snapshot**, thay cho 5 lượt gọi DB ở trang đầu hoặc 6 lượt khi có cursor. Kiểm tra phòng/cursor, tổng số, thông tin tác giả và trang bình luận đều cùng snapshot. Không cần transaction `BEGIN/COMMIT` riêng cho lượt đọc này.
 
 ## Phạm vi cache và tính nhất quán
 
+- Các mục dưới đây chỉ áp dụng khi bật cache đọc. Container mặc định dùng trực tiếp `PostgresIdeaRepository`.
 - `CachedIdeaRepository` cache trang bình luận 5 giây và số bình luận/thành viên dùng cho SSE 2 giây. Các phòng khác nhau/cursor/page size có key riêng.
 - Cache không lưu session, mật khẩu, tài khoản đăng nhập, mốc đã đọc hoặc kết quả idea được cá nhân hóa. Unread query luôn lấy PostgreSQL trực tiếp.
 - Tạo idea, join, bình luận hoặc đổi tên/avatar tăng revision để các instance không đọc lại namespace cũ. Loader đang chạy từ revision cũ không thể ghi đè cache của revision mới. Cache của bản sửa trực tiếp qua SQL hết hạn theo TTL.

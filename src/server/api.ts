@@ -32,7 +32,8 @@ export async function handleApi(request: Request, path: string[], repository?: I
       }
       const verify=new URL(request.url).searchParams.get("cache")==="verify";
       if(verify)rateLimit("health:cache-probe",4);
-      return json({ status: "ok", storage, persistent: storage !== "memory",cache:verify?await applicationCache.verify():{configured:applicationCache.configured} });
+      const cache={...(verify?await applicationCache.verify():{configured:applicationCache.configured}),enabled:applicationCache.enabled};
+      return json({ status: "ok", storage, persistent: storage !== "memory",cache });
     }
     if(route==="auth/config"&&method==="GET")return json({google:googleConfigured(),avatarUpload:avatars.configured()});
     const auth = authentication ?? getAuthService(), token = getSessionToken(request);
@@ -121,7 +122,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if (path[3] === "stream") {
         if (method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET" });
         assertSameOrigin(request);
-        const initial = await repo.getIdea(id, user!.id);
+        const initial = await repo.getActivity(id);
         return commentStream(request, initial, async () => {
           const viewer = await auth.user(token);
           return viewer ? repo.getActivity(id) : null;

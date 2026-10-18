@@ -1,10 +1,32 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { RedisCache, redisCommands, type CacheCommands } from "../src/server/redis-cache";
+import { RedisCache, redisCommands, redisReadCacheEnabled, type CacheCommands } from "../src/server/redis-cache";
 import { CachedIdeaRepository } from "../src/server/cached-repository";
 import { StateIdeaRepository } from "../src/server/repository";
 import { MemoryStore } from "../src/server/stores";
 function fake(){const values=new Map<string,string>();let commands=0;return {values,get calls(){return commands;},async command(args:(string|number)[]){commands++;const [op,key]=args as string[];if(op==="GET")return values.get(key)??null;if(op==="DEL"){for(const k of args.slice(1))values.delete(String(k));return args.length-1;}if(op==="INCR"){const next=Number(values.get(key)??0)+1;values.set(key,String(next));return next;}if(op==="SET"){assert.equal(args[3],"EX");assert(Number(args[4])>0);values.set(key,String(args[2]));return "OK";}throw Error("Unsupported command");}};}
+test("read caching is opt-in and disabled reads/writes issue zero Redis commands",async()=>{
+  assert.equal(redisReadCacheEnabled({}),false);
+  assert.equal(redisReadCacheEnabled({IDEAHUB_REDIS_CACHE:"false"}),false);
+  assert.equal(redisReadCacheEnabled({IDEAHUB_REDIS_CACHE:"true"}),true);
+  const redis=fake(),cache=new RedisCache(redis,"opt-in-test",false);
+  assert.equal(cache.configured,true);assert.equal(cache.enabled,false);
+  let loads=0;
+  assert.equal(await cache.remember("room",5,async()=>++loads),1);
+  assert.equal(await cache.remember("room",5,async()=>++loads),2);
+  const repo=new CachedIdeaRepository(new StateIdeaRepository(new MemoryStore()),cache);
+  const author={id:"disabled-cache-reader",name:"Reader",initial:"R"};
+  const room=await repo.createIdea(author,{title:"Direct reads",description:"Test",category:"Khác",tags:[]});
+  await repo.joinIdea(room.id,"other-reader");
+  const comment=await repo.createComment(room.id,author,{text:"Fresh without Redis"});
+  assert.equal((await repo.listComments(room.id)).items[0].id,comment.id);
+  assert.equal((await repo.getActivity(room.id)).commentCount,1);
+  assert.equal((await repo.unreadCounts("other-reader"))[room.id],1);
+  await cache.invalidate();assert.equal(redis.calls,0);
+  // Explicit provider diagnostics remain usable independently of read-cache policy.
+  assert.equal((await cache.verify()).status,"ok");
+  assert.equal(redis.values.size,0);assert.equal(cache.enabled,false);
+});
 test("cache health checks real read/write, hits and isolated invalidation, cleans keys and coalesces probes",async()=>{
   const redis=fake(),cache=new RedisCache(redis,"health-test");redis.values.set("health-test:revision","8");
   const results=await Promise.all([cache.verify(),cache.verify()]);

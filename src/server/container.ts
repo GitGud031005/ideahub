@@ -17,7 +17,11 @@ export function storageMode(): StorageMode {
 const globalContainer = globalThis as typeof globalThis & { __ideahubRepository?: IdeaRepository };
 export function getRepository(): IdeaRepository {
   const mode = storageMode();
-  return globalContainer.__ideahubRepository ??= mode === "postgres"
-    ? new CachedIdeaRepository(new PostgresIdeaRepository(getDatabasePool()),applicationCache)
-    : new StateIdeaRepository(mode === "memory" ? new MemoryStore() : new JsonStore(resolve(process.env.IDEAHUB_DATA_FILE || "./data/ideahub.json")));
+  if(!globalContainer.__ideahubRepository){
+    if(mode==="postgres"){
+      const repository=new PostgresIdeaRepository(getDatabasePool());
+      globalContainer.__ideahubRepository=applicationCache.enabled?new CachedIdeaRepository(repository,applicationCache):repository;
+    }else globalContainer.__ideahubRepository=new StateIdeaRepository(mode === "memory" ? new MemoryStore() : new JsonStore(resolve(process.env.IDEAHUB_DATA_FILE || "./data/ideahub.json")));
+  }
+  return globalContainer.__ideahubRepository;
 }

@@ -122,19 +122,28 @@ export class PostgresIdeaRepository implements IdeaRepository {
     });
   }
   async listComments(ideaId: string, cursor?: string, limit = 100): Promise<CommentsPage> {
-    return this.transaction(async db => {
-      if (!(await db.query("SELECT id FROM public.ideas WHERE id = $1", [ideaId])).rowCount) throw notFound();
-      if (cursor && !(await db.query("SELECT id FROM public.comments WHERE idea_id = $1 AND id = $2", [ideaId, cursor])).rowCount) {
-        throw new AppError(400, "INVALID_CURSOR", "Vị trí bình luận không hợp lệ");
-      }
-      const total = (await db.query<{ total: number }>("SELECT count(*)::int AS total FROM public.comments WHERE idea_id = $1", [ideaId])).rows[0].total;
-      const result = await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.idea_id = $1
+    // One statement has one MVCC snapshot: metadata and page stay consistent
+    // without BEGIN/COMMIT and several sequential network round trips.
+    type PageRow = { [K in keyof CommentRow]: CommentRow[K] | null } & {
+      idea_exists: boolean; cursor_exists: boolean; total: number;
+    };
+    const result = await this.pool.query<PageRow>(`WITH metadata AS (
+        SELECT EXISTS (SELECT 1 FROM public.ideas WHERE id=$1) AS idea_exists,
+          ($2::text IS NULL OR EXISTS (SELECT 1 FROM public.comments WHERE idea_id=$1 AND id=$2)) AS cursor_exists,
+          (SELECT count(*)::int FROM public.comments WHERE idea_id=$1) AS total
+      ), page AS (
+        ${COMMENT_SELECT} WHERE c.idea_id = $1
         AND ($2::text IS NULL OR (c.created_at, c.id COLLATE "C") >
           (SELECT created_at, id COLLATE "C" FROM public.comments WHERE idea_id = $1 AND id = $2))
-        ORDER BY c.created_at, c.id COLLATE "C" LIMIT $3`, [ideaId, cursor ?? null, limit + 1]);
-      const items = result.rows.slice(0, limit).map(comment);
-      return { items, total, nextCursor: result.rows.length > limit ? items.at(-1)?.id ?? null : null };
-    }, true);
+        ORDER BY c.created_at, c.id COLLATE "C" LIMIT $3
+      ) SELECT metadata.*, page.* FROM metadata LEFT JOIN page ON true
+      ORDER BY page.created_at, page.id COLLATE "C"`, [ideaId, cursor ?? null, limit + 1]);
+    const metadata = result.rows[0];
+    if (!metadata.idea_exists) throw notFound();
+    if (!metadata.cursor_exists) throw new AppError(400, "INVALID_CURSOR", "Vị trí bình luận không hợp lệ");
+    const rows = result.rows.filter((row): row is PageRow & CommentRow => row.id !== null);
+    const items = rows.slice(0, limit).map(comment);
+    return { items, total: metadata.total, nextCursor: rows.length > limit ? items.at(-1)?.id ?? null : null };
   }
   getActivity(ideaId:string){return this.pool.query<{comment_count:number;member_count:number}>(`SELECT
     (SELECT count(*)::int FROM public.comments c WHERE c.idea_id=i.id) AS comment_count,

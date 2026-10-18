@@ -2,6 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 
 export interface CacheCommands { command(args:(string|number)[]):Promise<unknown> }
 export interface CacheCheck { configured:boolean; status:"ok"|"disabled"|"unavailable"; readWrite:boolean; hit:boolean; invalidation:boolean }
+/** Redis read caching is opt-in; configured credentials alone must not add request latency. */
+export function redisReadCacheEnabled(env:Record<string,string|undefined>=process.env){return env.IDEAHUB_REDIS_CACHE==="true";}
 /** Small REST adapter: no connection pool, secrets stay on the server, errors never block DB reads. */
 export function redisCommands(env:Record<string,string|undefined>=process.env,transport:typeof fetch=fetch):CacheCommands|null {
   if(!env.UPSTASH_REDIS_REST_URL||!env.UPSTASH_REDIS_REST_TOKEN)return null;
@@ -18,8 +20,9 @@ export class RedisCache {
   private pending=new Map<string,Promise<unknown>>();
   private lastCheck?:{at:number;result:CacheCheck};
   private checking?:Promise<CacheCheck>;
-  constructor(private redis:CacheCommands|null=redisCommands(),private prefix="ideahub:cache:v1"){}
+  constructor(private redis:CacheCommands|null=redisCommands(),private prefix="ideahub:cache:v1",private readCaching=true){}
   get configured(){return !!this.redis;}
+  get enabled(){return this.configured&&this.readCaching;}
   /** Explicit health probe: isolated synthetic keys expire even if cleanup/network fails. */
   async verify():Promise<CacheCheck>{
     if(!this.redis)return {configured:false,status:"disabled",readWrite:false,hit:false,invalidation:false};
@@ -50,9 +53,9 @@ export class RedisCache {
     if(!this.redis||Date.now()<this.unavailableUntil)throw new Error("Cache disabled");
     try{return await this.redis.command(args);}catch{this.unavailableUntil=Date.now()+30000;throw new Error("Cache unavailable");}
   }
-  async invalidate(){if(this.redis)try{await this.command(["INCR",`${this.prefix}:revision`]);}catch{/* DB remains authoritative; short TTL bounds stale data. */}}
+  async invalidate(){if(this.enabled)try{await this.command(["INCR",`${this.prefix}:revision`]);}catch{/* DB remains authoritative; short TTL bounds stale data. */}}
   async remember<T>(logicalKey:string,seconds:number,load:()=>Promise<T>):Promise<T>{
-    if(!this.redis||Date.now()<this.unavailableUntil)return load();
+    if(!this.enabled||Date.now()<this.unavailableUntil)return load();
     let key:string;
     try{
       const revision=await this.command(["GET",`${this.prefix}:revision`]);
@@ -65,4 +68,4 @@ export class RedisCache {
     this.pending.set(key,work);try{return await work;}finally{this.pending.delete(key);}
   }
 }
-export const applicationCache=new RedisCache();
+export const applicationCache=new RedisCache(redisCommands(),"ideahub:cache:v1",redisReadCacheEnabled());
