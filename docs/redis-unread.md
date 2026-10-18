@@ -31,6 +31,8 @@ Cache đọc **tắt mặc định**, kể cả khi đã đặt đủ credential
 
 Trang bình luận được đọc bằng **một câu SQL/một snapshot**, thay cho 5 lượt gọi DB ở trang đầu hoặc 6 lượt khi có cursor. Kiểm tra phòng/cursor, tổng số, thông tin tác giả và trang bình luận đều cùng snapshot. Không cần transaction `BEGIN/COMMIT` riêng cho lượt đọc này.
 
+Vercel Functions chạy ở `hnd1` (Tokyo), cùng vùng `ap-northeast-1` với Supabase. Đo production ngày 2026-10-18: median đọc trang bình luận trực tiếp 7,8 ms, so với Redis hit 145,2 ms; mỗi đường đọc 7 mẫu, kết nối DB đã warm. Đây là thời gian repository, không phải thời gian tải toàn trang. Xem [phương pháp và kết quả](cache-performance-2026-10-18.md).
+
 ## Phạm vi cache và tính nhất quán
 
 - Các mục dưới đây chỉ áp dụng khi bật cache đọc. Container mặc định dùng trực tiếp `PostgresIdeaRepository`.

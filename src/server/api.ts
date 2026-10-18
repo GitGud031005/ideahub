@@ -13,7 +13,6 @@ import { CloudinaryAvatars, readAvatar } from "./cloudinary";
 import { googleConfigured } from "./google-oauth";
 import { applicationCache } from "./redis-cache";
 import { commentStream } from "./comment-stream";
-import { benchmarkCache } from "./cache-benchmark";
 
 export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars()): Promise<Response> {
   try {
@@ -21,10 +20,6 @@ export async function handleApi(request: Request, path: string[], repository?: I
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
     if (method === "POST") assertSameOrigin(request);
     if (route === "health" && method === "GET") {
-      if(new URL(request.url).searchParams.get("cache")==="benchmark") {
-        rateLimit("health:cache-benchmark",1);
-        return json(await benchmarkCache());
-      }
       const storage = storageMode();
       if (storage === "postgres") {
         try { await getDatabasePool().query("SELECT i.id FROM public.ideas i LEFT JOIN ideahub_private.accounts a ON false LIMIT 0"); }

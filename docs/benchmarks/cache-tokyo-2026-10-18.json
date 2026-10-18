@@ -1,0 +1,47 @@
+{
+  "available": true,
+  "environment": "Vercel production, warm connection",
+  "region": "hnd1",
+  "results": {
+    "activity": {
+      "direct": {
+        "samples": 7,
+        "medianMs": 6.5,
+        "minMs": 6.3,
+        "maxMs": 6.9
+      },
+      "redisHit": {
+        "samples": 7,
+        "medianMs": 146.7,
+        "minMs": 144.5,
+        "maxMs": 147.9
+      },
+      "redisMiss": {
+        "samples": 7,
+        "medianMs": 226,
+        "minMs": 223.9,
+        "maxMs": 271.9
+      }
+    },
+    "comments": {
+      "direct": {
+        "samples": 7,
+        "medianMs": 7.8,
+        "minMs": 7.3,
+        "maxMs": 7.9
+      },
+      "redisHit": {
+        "samples": 7,
+        "medianMs": 145.2,
+        "minMs": 143.8,
+        "maxMs": 193.2
+      },
+      "redisMiss": {
+        "samples": 7,
+        "medianMs": 227.4,
+        "minMs": 225.8,
+        "maxMs": 286.6
+      }
+    }
+  }
+}
