@@ -1,3 +1,5 @@
+import { CachedIdeaRepository } from "./cached-repository";
+import { applicationCache } from "./redis-cache";
 import { resolve } from "node:path";
 import type { StorageMode } from "@/lib/domain";
 import { JsonStore, MemoryStore } from "./stores";
@@ -16,6 +18,6 @@ const globalContainer = globalThis as typeof globalThis & { __ideahubRepository?
 export function getRepository(): IdeaRepository {
   const mode = storageMode();
   return globalContainer.__ideahubRepository ??= mode === "postgres"
-    ? new PostgresIdeaRepository(getDatabasePool())
+    ? new CachedIdeaRepository(new PostgresIdeaRepository(getDatabasePool()),applicationCache)
     : new StateIdeaRepository(mode === "memory" ? new MemoryStore() : new JsonStore(resolve(process.env.IDEAHUB_DATA_FILE || "./data/ideahub.json")));
 }

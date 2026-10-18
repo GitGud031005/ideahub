@@ -18,12 +18,23 @@ comments.push(...[
   {id:"qa-nested-old",parentId:"qa-sibling-new",text:"Trả lời cũ trong nhánh",createdAt:"2026-10-16T10:00:00Z"},
   {id:"qa-nested-new",parentId:"qa-sibling-new",text:"Trả lời mới trong nhánh",createdAt:"2026-10-17T11:00:00Z"},
 ].map(c=>({...comments[0],...c})));
+comments.forEach((c,i)=>{c.readCursor=String(i+1);});
+ideas[0].joined=true;ideas[1].joined=true;
+const unread:Record<string,number>={[ideas[0].id]:7,[ideas[1].id]:123};
 const attempts=new Map<string,number>();let postNumber=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
+class MockSource extends EventTarget {
+  onopen:((event:Event)=>void)|null=null;onerror:((event:Event)=>void)|null=null;
+  constructor(_url:string){super();setTimeout(()=>this.onopen?.(new Event("open")),10);}
+  close(){}
+}
+window.EventSource=MockSource as unknown as typeof EventSource;
 let current: Account|null = window.__qaScene === "guest" ? null : { ...person, provider:window.__qaScene === "profile-google"?"google":"password" };
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
+  if(path==="/api/unread")return Response.json(unread);
+  if(path.endsWith("/read")&&init?.method==="POST"){unread[path.split("/")[3]]=0;return Response.json({ok:true});}
   if (path === "/api/session") return Response.json({ user: current, storage: "postgres" });
   if (path === "/api/auth/config") return Response.json({google:true,avatarUpload:true});
   if (path === "/api/auth/register" || path === "/api/auth/login") { current=person;return Response.json({user:current,storage:"postgres"}); }
@@ -34,7 +45,7 @@ window.fetch = async (input, init) => {
     current={...current!,avatarUrl:URL.createObjectURL(file)};return Response.json({user:current,storage:"postgres"});
   }
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
-  if (path === "/api/ideas") return Response.json({ items: ideas, total: 3, counts: { all: 3, joined: 1, mine: 1 } });
+  if (path === "/api/ideas") return Response.json({ items: ideas, total: 3, counts: { all: 3, joined: 2, mine: 1 },nextCursor:null });
   if (path.endsWith("/recaps/qa-recap")) return Response.json(recap);
   if (path.endsWith("/recaps")) return Response.json({items:[recap],nextOffset:null,aiConfigured:true});
   if (path.endsWith("/comments") && init?.method === "POST") {
@@ -42,7 +53,7 @@ window.fetch = async (input, init) => {
     await new Promise(resolve=>setTimeout(resolve,window.__qaScene==="discussion-slow"?(order===1?6000:2500):200));
     if(input.text.includes("lỗi thử")&&attempt===1)return Response.json({error:{code:"QA_NETWORK",message:"Mất kết nối thử nghiệm"}},{status:503});
     const existing=comments.find(c=>c.id===input.clientId);if(existing)return Response.json(existing);
-    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,createdAt:new Date().toISOString()};comments.push(comment);return Response.json(comment);
+    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);return Response.json(comment);
   }
   if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
   if (path.endsWith("/join") && init?.method === "POST") return Response.json({ ...ideas[0], joined: true });

@@ -22,7 +22,10 @@ export interface Comment {
   author: Author;
   text: string;
   createdAt: string;
+  readCursor?: string;
 }
+export type UnreadCounts = Record<string, number>;
+export interface RoomActivity { commentCount:number; memberCount:number }
 export interface CreateIdeaInput { title: string; description: string; category: Category; tags: string[] }
 export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string }
 export type IdeaView = "all" | "joined" | "mine";

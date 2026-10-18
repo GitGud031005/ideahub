@@ -8,6 +8,7 @@ import type { CommentSort, Idea } from "@/lib/domain";
 import { buildCommentForest, relativeTime } from "@/lib/format";
 import { mergeComments } from "@/lib/comment-outbox";
 import { useCommentOutbox } from "./use-comment-outbox";
+import { useReadComments } from "./use-read-comments";
 import { useLiveComments } from "./use-live-comments";
 import { CommentEditor } from "./comment-editor";
 import { Avatar } from "./avatar";
@@ -26,6 +27,7 @@ export function Discussion({ id }: { id: string }) {
   const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
   const liveInterval = useLiveComments(id, user?.id, !!idea.data);
   const comments = useQuery({ queryKey: ["comments", id, user?.id], queryFn: ({ signal }) => fetchComments(id, signal), enabled: !!user && !!idea.data, refetchInterval: liveInterval, refetchOnWindowFocus: "always", refetchOnReconnect: "always" });
+  useReadComments(id,user?.id,!!idea.data?.joined,comments.data);
   const join = useMutation({ mutationFn: () => api<Idea>(`/ideas/${encodeURIComponent(id)}/join`, { method: "POST" }), onSuccess: joined => { client.setQueryData(["idea", id], joined); client.invalidateQueries({ queryKey: ["ideas"] }); } });
   useEffect(() => { joinAttempted.current = false; }, [id, user?.id]);
   useEffect(() => { if (user && idea.data && !idea.data.joined && !joinAttempted.current) { joinAttempted.current = true; join.mutate(); } }, [user, idea.data, join]);

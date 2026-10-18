@@ -11,6 +11,7 @@ import { getRecapService, type RecapService } from "./recaps";
 import { z } from "zod";
 import { CloudinaryAvatars, readAvatar } from "./cloudinary";
 import { googleConfigured } from "./google-oauth";
+import { applicationCache } from "./redis-cache";
 import { commentStream } from "./comment-stream";
 
 export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars()): Promise<Response> {
@@ -33,7 +34,8 @@ export async function handleApi(request: Request, path: string[], repository?: I
       await auth.limit(`avatar:${user.id}`,10,900);await auth.limit("avatar:global",200,86400);
       if(!avatars.configured())throw new AppError(503,"AVATAR_CONFIG","Chức năng ảnh đại diện chưa kết nối Cloudinary");
       const image=await readAvatar(request),url=await avatars.upload(user.id,image);
-      return json({user:await auth.setAvatar(user.id,url),storage:storageMode()});
+      const updated=await auth.setAvatar(user.id,url);await applicationCache.invalidate();
+      return json({user:updated,storage:storageMode()});
     }
     if ((route === "auth/profile" || route === "auth/password") && method === "POST") {
       const user=await auth.user(token);
@@ -41,7 +43,8 @@ export async function handleApi(request: Request, path: string[], repository?: I
       await auth.limit(`${route}:${user.id}`,route.endsWith("password")?5:20,900);
       if(route.endsWith("profile")){
         const input=await readJson(request,profileSchema);
-        return json({user:await auth.updateName(user.id,input.name),storage:storageMode()});
+        const updated=await auth.updateName(user.id,input.name);await applicationCache.invalidate();
+        return json({user:updated,storage:storageMode()});
       }
       const result=await auth.changePassword(user,await readJson(request,passwordChangeSchema));
       return json({user:result.user,storage:storageMode()},200,{"Set-Cookie":sessionCookie(result.token)});
@@ -71,11 +74,16 @@ export async function handleApi(request: Request, path: string[], repository?: I
       }
       return json({ user: result.user, storage: storageMode() }, route.endsWith("register") ? 201 : 200, { "Set-Cookie": sessionCookie(result.token) });
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|comments(?:\/stream)?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if(route==="unread"){
+      const user=await auth.user(token);if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để xem tin chưa đọc");
+      if(method!=="GET")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405,{Allow:"GET"});
+      return json(await (repository??getRepository()).unreadCounts(user.id));
+    }
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|comments(?:\/stream)?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
     if ((method === "POST" || path[2] === "comments" || path[2] === "recaps") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
-    if (method === "POST") rateLimit(`${user!.id}:write`);
+    if (method === "POST") rateLimit(`${user!.id}:${path[2]==="read"?"read":"write"}`,path[2]==="read"?120:30);
     if (path.length === 1) {
       if (method === "GET") return json(await repo.listIdeas(viewerId, ideaQuerySchema.parse(Object.fromEntries(url.searchParams))));
       return json(await repo.createIdea(user!, await readJson(request, createIdeaSchema)), 201);
@@ -96,6 +104,11 @@ export async function handleApi(request: Request, path: string[], repository?: I
       return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Recap được tạo tự động theo ngày và tuần có thảo luận" } }, 405, { Allow: "GET" });
     }
     if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
+    if(path[2]==="read"){
+      if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405,{Allow:"POST"});
+      const body=await readJson(request,z.object({commentId:z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/)}).strict());
+      await repo.markRead(id,user!.id,body.commentId);return json({ok:true});
+    }
     if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));
     if (path[2] === "comments") {
       if (path[3] === "stream") {
@@ -104,7 +117,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
         const initial = await repo.getIdea(id, user!.id);
         return commentStream(request, initial, async () => {
           const viewer = await auth.user(token);
-          return viewer ? repo.getIdea(id, viewer.id) : null;
+          return viewer ? repo.getActivity(id) : null;
         });
       }
       if (method === "GET") { const query = commentQuerySchema.parse(Object.fromEntries(url.searchParams)); return json(await repo.listComments(id, query.cursor, query.limit)); }

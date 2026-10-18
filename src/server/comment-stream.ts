@@ -1,10 +1,10 @@
-import type { Idea } from "@/lib/domain";
+import type { RoomActivity } from "@/lib/domain";
 
 /** Read shared storage, rather than an instance-local event bus, for Vercel compatibility. */
 export function commentStream(
   request: Request,
-  initial: Idea,
-  read: () => Promise<Idea | null>,
+  initial: RoomActivity,
+  read: () => Promise<RoomActivity | null>,
   { interval = 1000, duration = 50000 } = {},
 ) {
   const encoder = new TextEncoder();

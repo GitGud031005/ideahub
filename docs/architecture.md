@@ -37,3 +37,7 @@ Auth hiện có credentials scrypt, phiên có thể thu hồi và limiter Postg
 ## Môi trường và phạm vi kiểm tra
 
 Typecheck, production build và kiểm thử chạy trong workspace. SQL adapter và auth store được kiểm tra trên PGlite với toàn bộ migration; schema thật đã áp dụng trên Supabase và xác minh quyền server-only. Tài khoản local memory dành cho phát triển; production bắt buộc PostgreSQL. Kiểm thử pg driver ngoài vẫn cần `TEST_DATABASE_URL` riêng. Tài liệu kiểm tra giao diện nằm ở `tests/ui/` và sử dụng fixture tách khỏi production API.
+
+## Unread và cache Redis
+
+Trạng thái đã đọc lưu trên membership PostgreSQL, không lưu vào Redis. Dashboard lấy số chưa đọc theo session bằng một truy vấn tổng hợp. Lớp `CachedIdeaRepository` chỉ cache trang bình luận và aggregate hoạt động dùng cho SSE; không cache auth, danh sách cá nhân hoặc mốc đọc. Upstash REST hoạt động tùy chọn qua hai biến server-side; revision invalidation và TTL ngắn bảo vệ cache giữa các instance, Redis lỗi thì đọc DB. Xem [cấu hình và giới hạn](redis-unread.md).

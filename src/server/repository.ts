@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Author, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage } from "@/lib/domain";
+import type { Author, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage, UnreadCounts, RoomActivity } from "@/lib/domain";
 import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { DataState, IdeaRecord, StateStore } from "./state";
@@ -13,13 +13,24 @@ export interface IdeaRepository {
   joinIdea(id: string, userId: string): Promise<Idea>;
   listComments(ideaId: string, cursor?: string, limit?: number): Promise<CommentsPage>;
   createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment>;
+  getActivity(ideaId:string):Promise<RoomActivity>;
+  unreadCounts(userId:string):Promise<UnreadCounts>;
+  markRead(ideaId:string,userId:string,commentId:string):Promise<void>;
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
-  const { members, memberJoinedAt: _joinedAt, ...record } = idea;
+  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, ...record } = idea;
   return { ...record, memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
+  getActivity(id:string){return this.store.read(state=>{const idea=state.ideas.find(i=>i.id===id);if(!idea)throw notFound();return {commentCount:state.comments.filter(c=>c.ideaId===id).length,memberCount:idea.members.length};});}
+  unreadCounts(userId:string){return this.store.read(state=>Object.fromEntries(state.ideas.filter(i=>i.members.includes(userId)).map(i=>[i.id,state.comments.filter((c,n)=>c.ideaId===i.id&&c.author.id!==userId&&BigInt(c.readCursor??String(n+1))>BigInt(i.memberReadCursor?.[userId]??"0")).length])));}
+  markRead(ideaId:string,userId:string,commentId:string){return this.store.transact(state=>{
+    const idea=state.ideas.find(i=>i.id===ideaId);if(!idea)throw notFound();if(!idea.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng trước khi đánh dấu đã đọc");
+    const index=state.comments.findIndex(c=>c.ideaId===ideaId&&c.id===commentId);if(index<0)throw new AppError(400,"INVALID_COMMENT","Bình luận không thuộc ý tưởng này");
+    const cursor=state.comments[index].readCursor??String(index+1),current=idea.memberReadCursor?.[userId]??"0";
+    (idea.memberReadCursor??={})[userId]=BigInt(cursor)>BigInt(current)?cursor:current;
+  });}
   async listIdeas(userId: string, query: IdeaQuery) {
     const cursor = readIdeaCursor(userId, query);
     return this.store.read(state => {
@@ -52,7 +63,7 @@ export class StateIdeaRepository implements IdeaRepository {
   joinIdea(id: string, userId: string) {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();
-      if (!idea.members.includes(userId)) { idea.members.push(userId); (idea.memberJoinedAt ??= {})[userId] = new Date().toISOString(); }
+      if (!idea.members.includes(userId)) { idea.members.push(userId); (idea.memberJoinedAt ??= {})[userId] = new Date().toISOString(); (idea.memberReadCursor??={})[userId]=String(state.comments.reduce((max,c,n)=>c.ideaId===id?Math.max(max,Number(c.readCursor??n+1)):max,0)); }
       return present(idea, state, userId);
     });
   }
@@ -62,7 +73,7 @@ export class StateIdeaRepository implements IdeaRepository {
       const all = state.comments.filter(c => c.ideaId === ideaId).sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id.localeCompare(b.id));
       const index = cursor ? all.findIndex(c => c.id === cursor) : -1;
       if (cursor && index < 0) throw new AppError(400, "INVALID_CURSOR", "Vị trí bình luận không hợp lệ");
-      const items = all.slice(index + 1, index + 1 + limit);
+      const items = all.slice(index + 1, index + 1 + limit).map(c=>({...c,readCursor:c.readCursor??String(state.comments.indexOf(c)+1)}));
       return { items, total: all.length, nextCursor: index + 1 + items.length < all.length ? items.at(-1)?.id ?? null : null };
     });
   }
@@ -82,8 +93,8 @@ export class StateIdeaRepository implements IdeaRepository {
         if (seen.has(parent) || ++depth > 12) throw new AppError(422, "MAX_DEPTH", "Nhánh trả lời đã quá sâu, hãy trả lời một bình luận gần hơn");
         seen.add(parent); parent = entry.parentId;
       }
-      const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString() };
-      if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); }
+      const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString(),readCursor:String(state.comments.length+1) };
+      if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); (idea.memberReadCursor??={})[user.id]=String(state.comments.length); }
       state.comments.push(comment); return comment;
     });
   }

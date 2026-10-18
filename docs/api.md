@@ -7,6 +7,8 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 | Method | Endpoint | Hành vi |
 | --- | --- | --- |
 | GET | `/health` | `{status, storage, persistent}`; postgres có query kiểm tra DB, lỗi kết nối trả 503; không thay thế kiểm tra session |
+| GET | `/unread` | Cần đăng nhập; map `{ideaId: unreadCount}` chỉ của user trong session, không cache HTTP |
+| POST | `/ideas/:id/read` | `{commentId}` snapshot đã tải; yêu cầu đã tham gia, mốc chỉ tiến lên |
 | GET | `/session` | Lấy tài khoản hiện tại hoặc null; không tự tạo phiên |
 | POST | `/auth/register` | `{username,fullName,password}`; tạo tài khoản và phiên, 201 |
 | POST | `/auth/login` | `{username,password}`; cấp phiên mới, thu hồi cookie cũ, 200 |
@@ -52,7 +54,7 @@ Client web dùng keyset cursor theo thứ hạng, thời gian tạo và ID; tổ
 { "text": "Mình có thể phụ trách phần làm sạch dữ liệu", "parentId": "m-1-0" }
 ```
 
-Text 1–2000 ký tự sau trim. Bỏ `parentId` hoặc dùng `null` cho bình luận gốc. Parent phải tồn tại trong cùng idea. Reply depth tối đa 12; không có vote. Response comment: `{id, ideaId, parentId, author: {id,name,initial}, text, createdAt}`.
+Text 1–2000 ký tự sau trim. Bỏ `parentId` hoặc dùng `null` cho bình luận gốc. Parent phải tồn tại trong cùng idea. Reply depth tối đa 12; không có vote. Response comment: `{id, ideaId, parentId, author: {id,name,initial}, text, createdAt, readCursor}`. `readCursor` là bigint dạng chuỗi để UI chọn ID bình luận mới nhất cho xác nhận đã đọc; server không nhận cursor từ client.
 
 List response: `{items: Comment[], total: number, nextCursor: string|null}`. Cursor là ID cuối của trang trước, không phải offset. Client tải các trang theo thứ tự để dựng cây đủ parent/child. Sắp xếp cũ/mới được thực hiện ở UI cho cả bình luận gốc và từng nhánh trả lời.
 
