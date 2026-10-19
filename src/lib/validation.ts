@@ -9,10 +9,11 @@ export const createIdeaSchema = z.object({
     .transform(tags => [...new Set(tags)]),
 }).strict();
 export const createCommentSchema = z.object({
-  text: z.string().trim().min(1, "Nội dung không được để trống").max(2000, "Bình luận tối đa 2000 ký tự"),
+  text: z.string().trim().max(2000, "Bình luận tối đa 2000 ký tự"),
+  attachmentIds: z.array(z.string().uuid()).max(5).refine(ids=>new Set(ids).size===ids.length).optional(),
   clientId: z.string().uuid().optional(),
   parentId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).nullable().optional(),
-}).strict();
+}).strict().refine(input=>!!input.text||(input.attachmentIds?.length??0)>0,{message:"Nhập nội dung hoặc chọn tệp đính kèm"});
 export const ideaQuerySchema = z.object({
   q: z.string().trim().max(120).default(""),
   view: z.enum(["all", "joined", "mine"]).default("all"),

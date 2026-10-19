@@ -13,7 +13,7 @@ export function commentStream(
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false, timer: ReturnType<typeof setTimeout> | undefined;
-      let version = `${initial.commentCount}:${initial.memberCount}`, ticks = 0;
+      let version = `${initial.commentCount}:${initial.memberCount}:${initial.version??"0"}`, ticks = 0;
       const deadline = setTimeout(() => stop(), duration);
       stop = () => {
         if (closed) return;
@@ -31,7 +31,7 @@ export function commentStream(
           if (!idea) { send("auth-required"); stop(); return; }
           // A stalled client must not retain an unbounded stream buffer.
           if (controller.desiredSize !== null && controller.desiredSize <= 0) { stop(); return; }
-          const next = `${idea.commentCount}:${idea.memberCount}`;
+          const next = `${idea.commentCount}:${idea.memberCount}:${idea.version??"0"}`;
           if (next !== version) { version = next; send("comments-changed"); }
           else if (++ticks % 10 === 0) controller.enqueue(encoder.encode(": heartbeat\n\n"));
           timer = setTimeout(poll, interval);

@@ -34,6 +34,22 @@ function readEvents(response: Response) {
   };
 }
 
+test("pin-only changes trigger live refresh without changing message count",async()=>{
+  const repo=new StateIdeaRepository(new MemoryStore());
+  const initial=await repo.getActivity("1"),comment=(await repo.listComments("1")).items[0];
+  await repo.joinIdea("1",actor.id);
+  const before=await repo.getActivity("1");
+  const events=readEvents(commentStream(new Request("https://ideahub.test"),before,()=>repo.getActivity("1"),{interval:5,duration:200}));
+  try{
+    assert.equal(await events.next(),"comments-changed");
+    await repo.pinComment("1",comment.id,actor.id,true);
+    assert.equal(await events.next(),"comments-changed");
+    assert.equal((await repo.getActivity("1")).commentCount,initial.commentCount);
+    await repo.pinComment("1",comment.id,actor.id,false);
+    assert.equal(await events.next(),"comments-changed");
+  }finally{await events.reader.cancel();}
+});
+
 test("stream detects another user's root and nested reply in shared storage without a page reload", { timeout: 5000 }, async () => {
   const repository = new StateIdeaRepository(new MemoryStore());
   const response = commentStream(new Request("https://ideahub.test"), await repository.getIdea("1", actor.id), () => repository.getIdea("1", actor.id), { interval: 10, duration: 600 });

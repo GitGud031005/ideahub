@@ -5,6 +5,8 @@ import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { IdeaRepository } from "./repository";
 import { readIdeaCursor, writeIdeaCursor } from "./idea-pagination";
+import type { Attachment } from "@/lib/domain";
+import type { StoredAttachment } from "./attachment-record";
 
 export interface DatabaseExecutor {
   query<Row extends QueryResultRow = QueryResultRow>(sql: string, values?: unknown[]): Promise<{ rows: Row[]; rowCount: number | null }>;
@@ -21,6 +23,7 @@ interface IdeaRow {
 interface CommentRow {
   id: string; idea_id: string; parent_id: string | null; author_id: string;
   display_name: string; initial: string; avatar_url: string | null; body: string; created_at: Date; read_sequence:string;
+  attachments:Attachment[]; pinned_at:Date|null;
 }
 const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.creator_id,
   u.display_name, u.initial, u.avatar_url, i.created_at,
@@ -30,7 +33,7 @@ const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.
   EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1) AS joined,
   i.creator_id = $1 AS mine
   FROM public.ideas i JOIN public.users u ON u.id = i.creator_id`;
-const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body, c.created_at, c.read_sequence::text,
+const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body, c.created_at, c.read_sequence::text,c.attachments,c.pinned_at,
   u.display_name, u.initial, u.avatar_url FROM public.comments c JOIN public.users u ON u.id = c.author_id`;
 function idea(row: IdeaRow): Idea {
   return { id: row.id, title: row.title, description: row.description, category: row.category, tags: row.tags,
@@ -39,7 +42,8 @@ function idea(row: IdeaRow): Idea {
 }
 function comment(row: CommentRow): Comment {
   return { id: row.id, ideaId: row.idea_id, parentId: row.parent_id, text: row.body,
-    author: { id: row.author_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),readCursor:row.read_sequence };
+    author: { id: row.author_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),readCursor:row.read_sequence,
+    ...(row.attachments?.length?{attachments:row.attachments}:{}),...(row.pinned_at?{pinnedAt:row.pinned_at.toISOString()}:{}) };
 }
 async function ensureUser(db: Executor, user: Author) {
   await db.query(`INSERT INTO public.users (id, display_name, initial) VALUES ($1, $2, $3)
@@ -145,10 +149,29 @@ export class PostgresIdeaRepository implements IdeaRepository {
     const items = rows.slice(0, limit).map(comment);
     return { items, total: metadata.total, nextCursor: rows.length > limit ? items.at(-1)?.id ?? null : null };
   }
-  getActivity(ideaId:string){return this.pool.query<{comment_count:number;member_count:number}>(`SELECT
+  getActivity(ideaId:string){return this.pool.query<{comment_count:number;member_count:number;version:string}>(`SELECT i.discussion_version::text AS version,
     (SELECT count(*)::int FROM public.comments c WHERE c.idea_id=i.id) AS comment_count,
     (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id=i.id) AS member_count
-    FROM public.ideas i WHERE i.id=$1`,[ideaId]).then(r=>{if(!r.rows[0])throw notFound();return {commentCount:r.rows[0].comment_count,memberCount:r.rows[0].member_count};});}
+    FROM public.ideas i WHERE i.id=$1`,[ideaId]).then(r=>{if(!r.rows[0])throw notFound();return {commentCount:r.rows[0].comment_count,memberCount:r.rows[0].member_count,version:r.rows[0].version};});}
+  async saveAttachment(a:StoredAttachment){
+    const result=await this.pool.query(`INSERT INTO public.discussion_attachments(id,idea_id,owner_id,asset_id,name,mime,size,kind)
+      SELECT $1,$2,$3,$4,$5,$6,$7,$8 FROM public.memberships WHERE idea_id=$2 AND user_id=$3`,[a.id,a.ideaId,a.ownerId,a.assetId,a.name,a.mime,a.size,a.kind]);
+    if(!result.rowCount)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để gửi tệp");
+  }
+  async getAttachment(ideaId:string,id:string,userId:string):Promise<StoredAttachment>{
+    const r=await this.pool.query(`SELECT * FROM public.discussion_attachments WHERE idea_id=$1 AND id=$2 AND (comment_id IS NOT NULL OR owner_id=$3)`,[ideaId,id,userId]);
+    const a=r.rows[0];if(!a)throw notFound();
+    return {id:a.id,ideaId:a.idea_id,ownerId:a.owner_id,assetId:a.asset_id,name:a.name,mime:a.mime,size:a.size,kind:a.kind,commentId:a.comment_id,createdAt:a.created_at.toISOString(),url:`/api/ideas/${encodeURIComponent(ideaId)}/attachments/${encodeURIComponent(a.id)}`};
+  }
+  pinComment(ideaId:string,commentId:string,userId:string,pinned:boolean){return this.transaction(async db=>{
+    if(!(await db.query("SELECT id FROM public.ideas WHERE id=$1 FOR UPDATE",[ideaId])).rowCount)throw notFound();
+    if(!(await db.query("SELECT 1 FROM public.memberships WHERE idea_id=$1 AND user_id=$2",[ideaId,userId])).rowCount)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để ghim tin nhắn");
+    const found=await db.query<{pinned_at:Date|null}>("SELECT pinned_at FROM public.comments WHERE idea_id=$1 AND id=$2",[ideaId,commentId]);if(!found.rows[0])throw notFound();
+    if(!!found.rows[0].pinned_at===pinned)return;
+    if(pinned&&(await db.query<{total:number}>("SELECT count(*)::int AS total FROM public.comments WHERE idea_id=$1 AND pinned_at IS NOT NULL",[ideaId])).rows[0].total>=50)throw new AppError(422,"PIN_LIMIT","Mỗi cuộc thảo luận ghim tối đa 50 tin nhắn");
+    await db.query("UPDATE public.comments SET pinned_at=CASE WHEN $3 THEN now() ELSE NULL END WHERE idea_id=$1 AND id=$2",[ideaId,commentId,pinned]);
+    await db.query("UPDATE public.ideas SET discussion_version=discussion_version+1 WHERE id=$1",[ideaId]);
+  });}
   async unreadCounts(userId:string):Promise<UnreadCounts>{
     const result=await this.pool.query<{idea_id:string;unread_count:number}>(`SELECT m.idea_id,count(c.id)::int AS unread_count
       FROM public.memberships m LEFT JOIN public.comments c ON c.idea_id=m.idea_id
@@ -179,9 +202,15 @@ export class PostgresIdeaRepository implements IdeaRepository {
       }
       const id = input.clientId ?? randomUUID();
       await ensureUser(db, user);
-      await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text]);
+      const ids=input.attachmentIds??[];
+      const receipts=ids.length?(await db.query(`SELECT id,name,mime,size,kind FROM public.discussion_attachments
+        WHERE idea_id=$1 AND owner_id=$2 AND id=ANY($3::text[]) AND (comment_id IS NULL OR comment_id=$4) FOR UPDATE`,[ideaId,user.id,ids,id])).rows:[];
+      if(receipts.length!==ids.length)throw new AppError(422,"INVALID_ATTACHMENT","Tệp không thuộc bạn hoặc đã được gửi");
+      const attachments=ids.map(id=>{const a=receipts.find(a=>a.id===id)!;return {id:a.id,name:a.name,mime:a.mime,size:a.size,kind:a.kind,url:`/api/ideas/${encodeURIComponent(ideaId)}/attachments/${encodeURIComponent(a.id)}`};});
+      await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body,attachments) VALUES ($1, $2, $3, $4, $5,$6::jsonb) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text,JSON.stringify(attachments)]);
       const existing=(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`,[id])).rows[0];
-      if(!existing||existing.idea_id!==ideaId||existing.author_id!==user.id||existing.parent_id!==parentId||existing.body!==input.text)throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");
+      if(!existing||existing.idea_id!==ideaId||existing.author_id!==user.id||existing.parent_id!==parentId||existing.body!==input.text||JSON.stringify(existing.attachments.map(a=>a.id))!==JSON.stringify(ids))throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");
+      if(ids.length)await db.query("UPDATE public.discussion_attachments SET comment_id=$1 WHERE id=ANY($2::text[])",[id,ids]);
       await db.query("INSERT INTO public.memberships (idea_id, user_id, last_read_sequence) VALUES ($1, $2, COALESCE((SELECT max(read_sequence) FROM public.comments WHERE idea_id=$1),0)) ON CONFLICT DO NOTHING", [ideaId, user.id]);
       const result = await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`, [id]);
       return comment(result.rows[0]);

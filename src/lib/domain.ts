@@ -23,11 +23,14 @@ export interface Comment {
   text: string;
   createdAt: string;
   readCursor?: string;
+  attachments?: Attachment[];
+  pinnedAt?: string | null;
 }
+export interface Attachment { id:string; name:string; mime:string; size:number; kind:"image"|"file"; url:string }
 export type UnreadCounts = Record<string, number>;
-export interface RoomActivity { commentCount:number; memberCount:number }
+export interface RoomActivity { commentCount:number; memberCount:number; version?:string }
 export interface CreateIdeaInput { title: string; description: string; category: Category; tags: string[] }
-export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string }
+export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[] }
 export type IdeaView = "all" | "joined" | "mine";
 export type IdeaSort = "new" | "popular";
 export type CommentSort = "old" | "new";

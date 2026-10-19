@@ -1,5 +1,5 @@
 import type { Comment } from "./domain";
-export interface PendingComment extends Comment { delivery:"sending"|"failed"; deliveryError?:string }
+export interface PendingComment extends Comment { delivery:"sending"|"failed"; deliveryError?:string; localFiles?:File[]; uploadedIds?:string[] }
 export type ThreadComment = Comment & { delivery?:"sending"|"failed"; deliveryError?:string };
 export function outboxKey(ideaId:string,userId:string){return `${userId}:${ideaId}`;}
 export function mergeComments(saved:Comment[],pending:PendingComment[]):ThreadComment[] {

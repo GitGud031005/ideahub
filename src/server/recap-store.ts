@@ -35,7 +35,9 @@ export class RecapStore {
     ), chain AS (
       SELECT id, parent_id FROM selected
       UNION SELECT c.id, c.parent_id FROM public.comments c JOIN chain a ON c.id=a.parent_id WHERE c.idea_id=$1
-    ) SELECT c.id,c.parent_id,c.body,c.created_at,u.display_name, NOT EXISTS(SELECT 1 FROM selected s WHERE s.id=c.id) AS context_only
+    ) SELECT c.id,c.parent_id,concat(c.body,CASE WHEN jsonb_array_length(c.attachments)>0 THEN
+        E'\n[Tệp đính kèm, chỉ có tên; không cung cấp nội dung: '||(SELECT string_agg(a->>'name',', ') FROM jsonb_array_elements(c.attachments) a)||']' ELSE '' END) AS body,
+      c.created_at,u.display_name, NOT EXISTS(SELECT 1 FROM selected s WHERE s.id=c.id) AS context_only
       FROM chain a JOIN public.comments c ON c.id=a.id JOIN public.users u ON u.id=c.author_id ORDER BY c.created_at,c.id COLLATE "C"`, [ideaId, `${start}T00:00:00+07:00`, `${end}T00:00:00+07:00`]);
     const messages: RecapMessage[] = result.rows.map(r => ({ id: r.id, parentId: r.parent_id, author: r.display_name, text: r.body, createdAt: r.created_at.toISOString(), contextOnly: r.context_only }));
     const count = messages.filter(m => !m.contextOnly).length;

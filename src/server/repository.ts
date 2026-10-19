@@ -4,6 +4,7 @@ import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { DataState, IdeaRecord, StateStore } from "./state";
 import { readIdeaCursor, writeIdeaCursor } from "./idea-pagination";
+import { publicAttachment, type StoredAttachment } from "./attachment-record";
 
 /** Shared storage contract implemented by state and PostgreSQL repositories. */
 export interface IdeaRepository {
@@ -16,14 +17,33 @@ export interface IdeaRepository {
   getActivity(ideaId:string):Promise<RoomActivity>;
   unreadCounts(userId:string):Promise<UnreadCounts>;
   markRead(ideaId:string,userId:string,commentId:string):Promise<void>;
+  saveAttachment(attachment:StoredAttachment):Promise<void>;
+  getAttachment(ideaId:string,id:string,userId:string):Promise<StoredAttachment>;
+  pinComment(ideaId:string,commentId:string,userId:string,pinned:boolean):Promise<void>;
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
-  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, ...record } = idea;
+  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, ...record } = idea;
   return { ...record, memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
-  getActivity(id:string){return this.store.read(state=>{const idea=state.ideas.find(i=>i.id===id);if(!idea)throw notFound();return {commentCount:state.comments.filter(c=>c.ideaId===id).length,memberCount:idea.members.length};});}
+  getActivity(id:string){return this.store.read(state=>{const idea=state.ideas.find(i=>i.id===id);if(!idea)throw notFound();return {commentCount:state.comments.filter(c=>c.ideaId===id).length,memberCount:idea.members.length,version:String(idea.discussionVersion??0)};});}
+  saveAttachment(attachment:StoredAttachment){return this.store.transact(state=>{
+    const idea=state.ideas.find(i=>i.id===attachment.ideaId);if(!idea)throw notFound();
+    if(!idea.members.includes(attachment.ownerId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để gửi tệp");
+    (state.attachments??=[]).push(attachment);
+  });}
+  getAttachment(ideaId:string,id:string,userId:string){return this.store.read(state=>{
+    const a=state.attachments?.find(a=>a.id===id&&a.ideaId===ideaId);
+    if(!a||(!a.commentId&&a.ownerId!==userId))throw notFound();return a;
+  });}
+  pinComment(ideaId:string,commentId:string,userId:string,pinned:boolean){return this.store.transact(state=>{
+    const idea=state.ideas.find(i=>i.id===ideaId);if(!idea)throw notFound();
+    if(!idea.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để ghim tin nhắn");
+    const c=state.comments.find(c=>c.ideaId===ideaId&&c.id===commentId);if(!c)throw notFound();
+    if(pinned&&!c.pinnedAt&&state.comments.filter(c=>c.ideaId===ideaId&&c.pinnedAt).length>=50)throw new AppError(422,"PIN_LIMIT","Mỗi cuộc thảo luận ghim tối đa 50 tin nhắn");
+    if(!!c.pinnedAt!==pinned){c.pinnedAt=pinned?new Date().toISOString():null;idea.discussionVersion=(idea.discussionVersion??0)+1;}
+  });}
   unreadCounts(userId:string){return this.store.read(state=>Object.fromEntries(state.ideas.filter(i=>i.members.includes(userId)).map(i=>[i.id,state.comments.filter((c,n)=>c.ideaId===i.id&&c.author.id!==userId&&BigInt(c.readCursor??String(n+1))>BigInt(i.memberReadCursor?.[userId]??"0")).length])));}
   markRead(ideaId:string,userId:string,commentId:string){return this.store.transact(state=>{
     const idea=state.ideas.find(i=>i.id===ideaId);if(!idea)throw notFound();if(!idea.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng trước khi đánh dấu đã đọc");
@@ -83,7 +103,7 @@ export class StateIdeaRepository implements IdeaRepository {
       const parentId = input.parentId ?? null;
       if(input.clientId){
         const existing=state.comments.find(c=>c.id===input.clientId);
-        if(existing){if(existing.ideaId!==ideaId||existing.author.id!==user.id||existing.parentId!==parentId||existing.text!==input.text)throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");return existing;}
+        if(existing){if(existing.ideaId!==ideaId||existing.author.id!==user.id||existing.parentId!==parentId||existing.text!==input.text||JSON.stringify(existing.attachments?.map(a=>a.id)??[])!==JSON.stringify(input.attachmentIds??[]))throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");return existing;}
       }
       let parent = parentId, depth = 0;
       const seen = new Set<string>();
@@ -93,7 +113,9 @@ export class StateIdeaRepository implements IdeaRepository {
         if (seen.has(parent) || ++depth > 12) throw new AppError(422, "MAX_DEPTH", "Nhánh trả lời đã quá sâu, hãy trả lời một bình luận gần hơn");
         seen.add(parent); parent = entry.parentId;
       }
-      const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString(),readCursor:String(state.comments.length+1) };
+      const receipts=(input.attachmentIds??[]).map(id=>{const a=state.attachments?.find(a=>a.id===id&&a.ideaId===ideaId&&a.ownerId===user.id&&!a.commentId);if(!a)throw new AppError(422,"INVALID_ATTACHMENT","Tệp không thuộc bạn hoặc đã được gửi");return a;});
+      const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString(),readCursor:String(state.comments.length+1),...(receipts.length?{attachments:receipts.map(publicAttachment)}:{}) };
+      for(const receipt of receipts)receipt.commentId=comment.id;
       if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); (idea.memberReadCursor??={})[user.id]=String(state.comments.length); }
       state.comments.push(comment); return comment;
     });

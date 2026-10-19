@@ -13,8 +13,11 @@ import { CloudinaryAvatars, readAvatar } from "./cloudinary";
 import { googleConfigured } from "./google-oauth";
 import { applicationCache } from "./redis-cache";
 import { commentStream } from "./comment-stream";
+import { randomUUID } from "node:crypto";
+import { CloudinaryDiscussionFiles, readDiscussionFile } from "./discussion-uploads";
+import { publicAttachment } from "./attachment-record";
 
-export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars()): Promise<Response> {
+export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars(), files = new CloudinaryDiscussionFiles()): Promise<Response> {
   try {
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
@@ -82,9 +85,9 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(method!=="GET")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405,{Allow:"GET"});
       return json(await (repository??getRepository()).unreadCounts(user.id));
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|comments(?:\/stream)?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/pin))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
-    if ((method === "POST" || path[2] === "comments" || path[2] === "recaps") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
+    if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
     if (method === "POST") rateLimit(`${user!.id}:${path[2]==="read"?"read":"write"}`,path[2]==="read"?120:30);
     if (path.length === 1) {
@@ -93,6 +96,20 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     const id = path[1];
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new AppError(400, "INVALID_ID", "Mã ý tưởng không hợp lệ");
+    if(path[2]==="attachments"){
+      if(path.length===4&&method==="GET")return files.download(await repo.getAttachment(id,path[3],user!.id),url.searchParams.get("download")==="1");
+      if(path.length!==3||method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405);
+      if(!(await repo.getIdea(id,user!.id)).joined)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để gửi tệp");
+      await auth.limit(`files:${user!.id}`,60,3600);await auth.limit("files:global",500,86400);
+      const file=await readDiscussionFile(request),assetId=await files.upload(file),attachmentId=randomUUID();
+      const attachment={id:attachmentId,ideaId:id,ownerId:user!.id,assetId,name:file.name,mime:file.mime,size:file.size,kind:file.kind,url:`/api/ideas/${encodeURIComponent(id)}/attachments/${attachmentId}`,commentId:null,createdAt:new Date().toISOString()};
+      await repo.saveAttachment(attachment);return json(publicAttachment(attachment),201);
+    }
+    if(path[2]==="comments"&&path.length===5&&path[4]==="pin"){
+      if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng POST để thay đổi ghim"}},405,{Allow:"POST"});
+      const input=await readJson(request,z.object({pinned:z.boolean()}).strict());
+      await repo.pinComment(id,path[3],user!.id,input.pinned);return json({ok:true});
+    }
     if (path[2] === "recaps") {
       const service = recapping ?? getRecapService();
       if (path.length === 4) {

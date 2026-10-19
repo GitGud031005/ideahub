@@ -1,6 +1,7 @@
 import type { Author, CreateCommentInput, CreateIdeaInput, IdeaQuery } from "@/lib/domain";
 import type { IdeaRepository } from "./repository";
 import { RedisCache } from "./redis-cache";
+import type { StoredAttachment } from "./attachment-record";
 
 /** Never cache authentication, personal read markers, or viewer-specific idea responses. */
 export class CachedIdeaRepository implements IdeaRepository {
@@ -9,6 +10,9 @@ export class CachedIdeaRepository implements IdeaRepository {
   getIdea(id:string,userId:string){return this.inner.getIdea(id,userId);}
   unreadCounts(userId:string){return this.inner.unreadCounts(userId);}
   markRead(id:string,userId:string,commentId:string){return this.inner.markRead(id,userId,commentId);}
+  saveAttachment(a:StoredAttachment){return this.inner.saveAttachment(a);}
+  getAttachment(ideaId:string,id:string,userId:string){return this.inner.getAttachment(ideaId,id,userId);}
+  async pinComment(ideaId:string,id:string,userId:string,pinned:boolean){await this.inner.pinComment(ideaId,id,userId,pinned);await this.cache.invalidate();}
   getActivity(id:string){return this.cache.remember(`activity:${id}`,2,()=>this.inner.getActivity(id));}
   listComments(id:string,cursor?:string,limit=100){return this.cache.remember(`comments:${id}:${cursor??""}:${limit}`,5,()=>this.inner.listComments(id,cursor,limit));}
   async createIdea(user:Author,input:CreateIdeaInput){const idea=await this.inner.createIdea(user,input);await this.cache.invalidate();return idea;}
