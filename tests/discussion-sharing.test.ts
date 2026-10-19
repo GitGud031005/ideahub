@@ -60,6 +60,7 @@ test("uploads validate bytes, type, size and multipart shape; signed private del
     if(String(url).endsWith("/raw/upload")){
       uploadCalls++;const body=init!.body as FormData;
       assert.equal(body.get("type"),"authenticated");assert.equal(body.get("overwrite"),"false");
+      assert.match(String(body.get("public_id")),/\.txt$/);
       const keys=["overwrite","public_id","timestamp","type"];
       assert.equal(body.get("signature"),createHash("sha256").update(keys.map(k=>`${k}=${body.get(k)}`).join('&')+"test-secret").digest("hex"));
       return Response.json({public_id:body.get("public_id"),asset_id:"test-asset",resource_type:"raw",type:"authenticated"});

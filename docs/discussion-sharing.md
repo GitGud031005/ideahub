@@ -38,6 +38,12 @@
 
 ## Kiểm tra
 
-SQL migration được kiểm tra bằng embedded PostgreSQL trước khi áp dụng Supabase. Kiểm tra Data API deny/RLS, không tạo tài khoản/bình luận/file production để thử. Cloudinary upload/download được kiểm tra bằng transport giả lập có xác minh tham số chữ ký, MIME và phản hồi lỗi; cần phân biệt với một lần upload bằng tài khoản thật trên production.
+SQL migration `20261019151144_discussion_sharing.sql` đã được kiểm tra bằng embedded PostgreSQL và áp dụng Supabase. Data API của bảng mới không có quyền đọc, RLS bật; advisor chỉ có INFO về chính sách cố ý để trống ở các bảng server-only.
+
+- 66 tests: 65 pass, một integration PostgreSQL ngoài bỏ qua; typecheck/build pass.
+- UI component thật với API mẫu: không tràn ngang ở 320/390/768/1440 px; đã kiểm tra ghim và số lượng tin ghim, sidebar mobile, mở ảnh lớn, quay lại tin nguồn, chọn tệp/gửi không chữ và tiếp tục gõ tin kế tiếp khi đang gửi.
+- Mock transport xác minh chữ ký, authenticated delivery, MIME, giới hạn tệp, quyền chủ upload/phòng và retry idempotent.
+- Kiểm tra **Cloudinary thật** từ Vercel bằng một TXT tổng hợp riêng: upload=true, tải lại đúng bytes=true, cleanup=true. Không tạo tài khoản/bình luận/membership hoặc attachment receipt của app để thử. Bản kiểm tra phát hiện và sửa yêu cầu giữ extension trong public ID của raw asset; đã thêm regression assertion. Không đọc/xuất credentials.
+- Endpoint chẩn đoán và hai public UI fixture được gỡ trong commit cuối; mã fixture/test tái tạo giữ trong `tests/ui`. Ghim live được kiểm tra thêm khi message count không đổi; recap không suy diễn file bytes.
 
 Tham khảo: [Cloudinary upload API](https://cloudinary.com/documentation/image_upload_api_reference), [upload có chữ ký](https://cloudinary.com/documentation/upload_images), [giới hạn Vercel Functions](https://vercel.com/docs/functions/limitations).

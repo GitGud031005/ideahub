@@ -27,7 +27,6 @@ export async function readDiscussionFile(request:Request){
 
 /** Keep discussion assets authenticated; proxy bytes only after app session authorization. */
 export class CloudinaryDiscussionFiles {
-  private probeDetail:Record<string,unknown>={};
   constructor(private config={cloud:process.env.CLOUDINARY_CLOUD_NAME,key:process.env.CLOUDINARY_API_KEY,secret:process.env.CLOUDINARY_API_SECRET},private transport:typeof fetch=fetch){}
   configured(){return !!(this.config.cloud&&/^[a-zA-Z0-9_-]+$/.test(this.config.cloud)&&this.config.key&&this.config.secret);}
   private signature(fields:Record<string,string>){return createHash("sha256").update(Object.keys(fields).sort().map(k=>`${k}=${fields[k]}`).join('&')+this.config.secret).digest("hex");}
@@ -39,31 +38,11 @@ export class CloudinaryDiscussionFiles {
     body.set("api_key",this.config.key!);body.set("signature",this.signature(fields));body.set("file",file.blob,file.name);
     try{
       const response=await this.transport(`https://api.cloudinary.com/v1_1/${this.config.cloud}/raw/upload`,{method:"POST",body,redirect:"error",signal:AbortSignal.timeout(25000)});
-      if(!response.ok){const details=await response.json().catch(()=>null);const message=String(details?.error?.message??"");this.probeDetail={status:response.status,category:/signature/i.test(message)?"signature":/api.key/i.test(message)?"credentials":/public.id/i.test(message)?"public-id":/type|authenticated|private/i.test(message)?"delivery-type":"upload-rejected"};throw Error();}
+      if(!response.ok){await response.body?.cancel();throw Error();}
       const data=await response.json();
-      this.probeDetail={status:response.status,publicIdMatches:data.public_id===fields.public_id,resourceTypeMatches:data.resource_type==="raw",deliveryTypeMatches:data.type==="authenticated",assetIdValid:typeof data.asset_id==="string"&&/^[a-zA-Z0-9_-]{1,100}$/.test(data.asset_id)};
-      if(Object.values(this.probeDetail).some(v=>v===false))throw Error();
+      if(data.public_id!==fields.public_id||data.resource_type!=="raw"||data.type!=="authenticated"||typeof data.asset_id!=="string"||!/^[a-zA-Z0-9_-]{1,100}$/.test(data.asset_id))throw Error();
       return {assetId:data.asset_id as string,publicId:fields.public_id};
     }catch{throw new AppError(502,"FILE_UPLOAD","Chưa tải được tệp, hãy thử gửi lại");}
-  }
-  /** Temporary isolated provider probe; never touches application receipts or user files. */
-  async verifySyntheticFile(){
-    const result={configured:this.configured(),upload:false,download:false,cleanup:false};
-    if(!result.configured)return result;
-    let asset:{assetId:string;publicId:string}|undefined;
-    const body="IdeaHub isolated file delivery check";
-    try{
-      asset=await this.uploadStored({name:"ideahub-delivery-check.txt",mime:"text/plain",size:body.length,kind:"file",blob:new Blob([body],{type:"text/plain"})});result.upload=true;
-      const r=await this.download({id:"probe",ideaId:"probe",ownerId:"probe",assetId:asset.assetId,name:"check.txt",mime:"text/plain",size:body.length,kind:"file",url:"",commentId:null,createdAt:new Date().toISOString()},true);
-      result.download=(await r.text())===body;
-    }catch{/* Only coarse readiness booleans are exposed. */}
-    finally{if(asset)try{
-      const fields={public_id:asset.publicId,type:"authenticated",timestamp:String(Math.floor(Date.now()/1000))};
-      const form=new FormData();for(const [k,v] of Object.entries(fields))form.set(k,v);form.set("api_key",this.config.key!);form.set("signature",this.signature(fields));
-      const r=await this.transport(`https://api.cloudinary.com/v1_1/${this.config.cloud}/raw/destroy`,{method:"POST",body:form,redirect:"error",signal:AbortSignal.timeout(10000)});
-      result.cleanup=r.ok&&(await r.json()).result==="ok";
-    }catch{}}
-    return {...result,detail:this.probeDetail};
   }
   async download(a:StoredAttachment,attachment:boolean){
     if(!this.configured())throw new AppError(503,"FILE_CONFIG","Chưa kết nối nơi lưu tệp");

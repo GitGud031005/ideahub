@@ -20,7 +20,7 @@ comments.push(...[
 ].map(c=>({...comments[0],...c})));
 const sampleImage='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="700" height="440"><rect width="700" height="440" fill="#e9e9e4"/><rect x="70" y="50" width="560" height="340" rx="12" fill="#fff" stroke="#aaa"/><text x="100" y="98" font-family="sans-serif" font-size="22" fill="#222">ideahub / shared ideas</text><rect x="100" y="125" width="500" height="35" fill="#efefeb"/><rect x="100" y="185" width="145" height="150" rx="6" fill="#ddd"/><rect x="277" y="185" width="145" height="150" rx="6" fill="#c6c6bf"/><rect x="454" y="185" width="145" height="150" rx="6" fill="#32322d"/></svg>');
 const fixtureAttachments:Attachment[]=[{id:"qa-image",name:"phac-thao-giao-dien.png",mime:"image/png",size:245760,kind:"image",url:sampleImage},{id:"qa-file",name:"ke-hoach-san-pham.txt",mime:"text/plain",size:1600,kind:"file",url:'data:text/plain,IdeaHub%20demo%20plan'}];
-comments.unshift({id:"qa-share-root",ideaId:ideas[0].id,parentId:null,author:person,text:"Mình gửi phác thảo và kế hoạch sản phẩm để cả nhóm góp ý. Tài liệu tham khảo: https://developer.mozilla.org/",attachments:fixtureAttachments,pinnedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
+comments.unshift({id:"qa-share-root",ideaId:ideas[0].id,parentId:null,author:person,text:"Mình gửi phác thảo và kế hoạch sản phẩm để cả nhóm góp ý. Tài liệu tham khảo: https://developer.mozilla.org/",attachments:[...fixtureAttachments],pinnedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
 comments.forEach((c,i)=>{c.readCursor=String(i+1);});
 ideas[0].joined=true;ideas[1].joined=true;
 const unread:Record<string,number>={[ideas[0].id]:7,[ideas[1].id]:123};
