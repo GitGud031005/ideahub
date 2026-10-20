@@ -19,7 +19,7 @@ export const updateIdeaStatusSchema = z.object({ status: z.enum(["potential", "a
 export const ideaQuerySchema = z.object({
   q: z.string().trim().max(120).default(""),
   view: z.enum(["all", "new", "potential", "archived", "mine"]).default("all"),
-  sort: z.enum(["new", "popular"]).default("new"),
+  sort: z.enum(["activity", "new", "popular"]).default("activity"),
   limit: z.coerce.number().int().min(1).max(100).default(24),
   offset: z.coerce.number().int().min(0).max(100000).default(0),
   cursor: z.string().min(1).max(2000).optional(),

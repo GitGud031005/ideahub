@@ -7,6 +7,7 @@ const timestamp = z.string().datetime().refine(value => new Date(value).getUTCFu
 const cursorSchema = z.object({
   snapshot: timestamp,
   createdAt: timestamp,
+  activityAt: timestamp.optional(),
   id: z.string().min(1).max(100),
   members: z.number().int().min(0).max(2147483647),
   scope: z.string().max(500),
@@ -19,7 +20,7 @@ export function readIdeaCursor(userId: string, query: IdeaQuery): IdeaCursor | u
   if (!query.cursor) return;
   try {
     const cursor = cursorSchema.parse(JSON.parse(Buffer.from(query.cursor, "base64url").toString("utf8")));
-    if (cursor.scope !== scope(userId, query) || query.offset) throw new Error("Cursor query changed");
+    if (cursor.scope !== scope(userId, query) || query.offset || (query.sort === "activity" && !cursor.activityAt)) throw new Error("Cursor query changed");
     return cursor;
   } catch {
     throw new AppError(400, "INVALID_CURSOR", "Vị trí ý tưởng không hợp lệ, hãy tải lại danh sách");

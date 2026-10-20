@@ -19,7 +19,7 @@ interface IdeaRow {
   id: string; title: string; description: string; category: Category; tags: string[];
   creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
   member_count: number; comment_count: number; joined: boolean; mine: boolean;
-  cursor_time: string; rank_members?: number;
+  cursor_time: string; rank_members?: number; last_comment_at: Date | null; cursor_activity?:string;
 }
 interface CommentRow {
   id: string; idea_id: string; parent_id: string | null; author_id: string;
@@ -31,6 +31,7 @@ const IDEA_SELECT = `SELECT i.id, CASE WHEN viewer.user_id IS NULL THEN 'new' WH
   to_char(i.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time,
   (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id = i.id) AS member_count,
   (SELECT count(*)::int FROM public.comments c WHERE c.idea_id = i.id) AS comment_count,
+  (SELECT c.created_at FROM public.comments c WHERE c.idea_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS last_comment_at,
   (viewer.user_id IS NOT NULL) AS joined,
   i.creator_id = $1 AS mine
   FROM public.ideas i JOIN public.users u ON u.id = i.creator_id
@@ -40,7 +41,7 @@ const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body
 function idea(row: IdeaRow): Idea {
   return { id: row.id, status: row.status, title: row.title, description: row.description, category: row.category, tags: row.tags,
     creator: { id: row.creator_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),
-    memberCount: row.member_count, commentCount: row.comment_count, joined: row.joined, mine: row.mine };
+    memberCount: row.member_count, commentCount: row.comment_count, lastCommentAt: row.last_comment_at?.toISOString()??null, joined: row.joined, mine: row.mine };
 }
 function comment(row: CommentRow): Comment {
   return { id: row.id, ideaId: row.idea_id, parentId: row.parent_id, text: row.body,
@@ -101,19 +102,24 @@ export class PostgresIdeaRepository implements IdeaRepository {
           OR ($3 = 'new' AND viewer.user_id IS NULL)
           OR ($3 = 'potential' AND viewer.user_id IS NOT NULL AND NOT viewer.archived)
           OR ($3 = 'archived' AND viewer.archived))`;
-      // Freeze popularity at the first page; new joins must not move unseen rows across the cursor.
+      // Freeze membership and message activity at the first page so writes do not move rows across its cursor.
       const rank = query.sort === "popular" ? `(SELECT count(*)::int FROM public.memberships m
         WHERE m.idea_id = i.id AND m.joined_at <= $4::timestamptz)` : "0";
-      const result = await db.query<IdeaRow>(`WITH ranked AS (
-        ${IDEA_SELECT.replace("SELECT i.id", `SELECT ${rank} AS rank_members, i.id`).replace("viewer.user_id = $1", "viewer.user_id = $1 AND viewer.joined_at <= $4::timestamptz")} ${where}
-      ) SELECT * FROM ranked WHERE $5::text IS NULL OR rank_members < $6::int
-        OR (rank_members = $6::int AND (created_at < $7::timestamptz
-          OR (created_at = $7::timestamptz AND id COLLATE "C" > $5)))
-        ORDER BY rank_members DESC, created_at DESC, id COLLATE "C" ASC LIMIT $8 OFFSET $9`,
-      [...values, cursor?.id ?? null, cursor?.members ?? 0, cursor?.createdAt ?? null, query.limit + 1, cursor ? 0 : query.offset]);
+      const selection=IDEA_SELECT.replace("SELECT i.id", `SELECT ${rank} AS rank_members, i.id`)
+        .replace("viewer.user_id = $1", "viewer.user_id = $1 AND viewer.joined_at <= $4::timestamptz")
+        .replace("ORDER BY c.created_at DESC LIMIT 1", "AND c.created_at <= $4::timestamptz ORDER BY c.created_at DESC LIMIT 1");
+      const rankTime=query.sort==="activity"?"COALESCE(last_comment_at,created_at)":"created_at";
+      const result = await db.query<IdeaRow>(`WITH base AS (${selection} ${where}), ranked AS (
+        SELECT base.*, ${rankTime} AS rank_time FROM base
+      ) SELECT *,to_char(rank_time AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_activity
+        FROM ranked WHERE $5::text IS NULL OR rank_members < $6::int
+        OR (rank_members = $6::int AND (rank_time < $7::timestamptz
+          OR (rank_time = $7::timestamptz AND id COLLATE "C" > $5)))
+        ORDER BY rank_members DESC, rank_time DESC, id COLLATE "C" ASC LIMIT $8 OFFSET $9`,
+      [...values, cursor?.id ?? null, cursor?.members ?? 0, cursor?.activityAt ?? cursor?.createdAt ?? null, query.limit + 1, cursor ? 0 : query.offset]);
       const rows = result.rows.slice(0, query.limit), last = rows.at(-1);
       return { items: rows.map(idea), total, counts, nextCursor: result.rows.length > query.limit && last
-        ? writeIdeaCursor(userId, query, { snapshot, id: last.id, createdAt: last.cursor_time, members: last.rank_members! }) : null };
+        ? writeIdeaCursor(userId, query, { snapshot, id: last.id, createdAt: last.cursor_time, members: last.rank_members!, ...(query.sort==="activity"?{activityAt:last.cursor_activity!}:{}) }) : null };
     }, true);
   }
   getIdea(id: string, userId: string) { return getIdea(this.pool, id, userId); }

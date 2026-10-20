@@ -12,7 +12,7 @@ const query: IdeaQuery = { q: "", view: "all", sort: "new", limit: 2, offset: 0 
 const input = { title: "Pagination", description: "Cursor regression", category: "Học tập" as const, tags: [] };
 
 for (const storage of ["memory", "postgres"] as const) {
-  test(`${storage}: idea cursors survive inserts and popularity changes without duplicates or missing rows`, async () => {
+  test(`${storage}: idea cursors survive inserts, membership changes and new messages without duplicates or missing rows`, async () => {
     const database = storage === "postgres" ? await embeddedPool() : undefined;
     const state = new MemoryStore({ version: 1, ideas: [], comments: [] });
     const repo = database ? new PostgresIdeaRepository(database.pool) : new StateIdeaRepository(state);
@@ -30,7 +30,14 @@ for (const storage of ["memory", "postgres"] as const) {
           await state.transact(s => { s.ideas.push({ ...row, ...input, title: row.title, createdAt: "2026-01-01T00:00:00.123Z", creator: actor, members: [actor.id] }); });
         }
       }
-      for (const sort of ["new", "popular"] as const) {
+      // Distinct sub-millisecond activity keys must survive cursor serialization.
+      for(const [index,row] of base.entries()){
+        const message=await repo.createComment(row.id,actor,{text:"Historical activity"});
+        const time=database?`2026-02-01T00:00:00.12345${index}Z`:`2026-02-01T00:00:00.12${index}Z`;
+        if(database)await database.pool.query("UPDATE public.comments SET created_at=$2 WHERE id=$1",[message.id,time]);
+        else await state.transact(s=>{s.comments.find(c=>c.id===message.id)!.createdAt=time;});
+      }
+      for (const sort of ["new", "popular", "activity"] as const) {
         const options = { ...query, sort };
         const expected = (await repo.listIdeas(actor.id, { ...options, limit: 100 })).items.map(i => i.id);
         const first = await repo.listIdeas(actor.id, options);
@@ -40,6 +47,10 @@ for (const storage of ["memory", "postgres"] as const) {
         const inserted = await repo.createIdea(actor, input);
         await repo.joinIdea(expected.at(-1)!, `new-member-${sort}`);
         await repo.joinIdea(first.items[0].id, `new-member-first-${sort}`);
+        if(sort==="activity"){
+          while(Date.now()<=Date.parse(inserted.createdAt))await new Promise(resolve=>setTimeout(resolve,1));
+          await repo.createComment(expected.at(-1)!,actor,{text:"Live activity after the page snapshot"});
+        }
         const received = first.items.map(i => i.id);
         let cursor: string | null = first.nextCursor;
         while (cursor) {
@@ -52,6 +63,7 @@ for (const storage of ["memory", "postgres"] as const) {
         assert.equal(new Set(received).size, received.length);
         const refreshed = await repo.listIdeas(actor.id, { ...options, limit: 100 });
         assert(refreshed.items.some(i => i.id === inserted.id));
+        if(sort==="activity")assert.equal(refreshed.items[0].id,expected.at(-1));
         for (const changed of [{ q: "different" }, { view: "mine" as const }, { sort: sort === "new" ? "popular" as const : "new" as const }, { offset: 2 }]) {
           await assert.rejects(repo.listIdeas(actor.id, { ...options, cursor: first.nextCursor, ...changed }), { code: "INVALID_CURSOR" });
         }

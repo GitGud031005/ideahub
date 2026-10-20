@@ -15,6 +15,11 @@ export function relativeTime(value: string, now = Date.now()) {
   if (days < 7) return `${days} ngày trước`;
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(new Date(value));
 }
+/** Chat timestamps keep relative day counts even for older conversations. */
+export function messageTimeAgo(value:string,now=Date.now()){
+  const days=Math.floor(Math.max(0,now-Date.parse(value))/86400000);
+  return days>=1?`${days} ngày trước`:relativeTime(value,now);
+}
 export function buildCommentForest<T extends { id: string; parentId: string | null; createdAt: string }>(items: T[], sort: "old" | "new") {
   const ids = new Set(items.map(item => item.id));
   const children = new Map<string | null, T[]>();

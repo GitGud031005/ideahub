@@ -17,6 +17,7 @@ export interface Idea {
   createdAt: string;
   memberCount: number;
   commentCount: number;
+  lastCommentAt: string | null;
   joined: boolean;
   mine: boolean;
 }
@@ -37,7 +38,7 @@ export interface RoomActivity { commentCount:number; memberCount:number; version
 export interface CreateIdeaInput { title: string; description: string; tags: string[]; /** @deprecated Legacy clients only; never added to tags. */ category?: Category }
 export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[] }
 export type IdeaView = "all" | "new" | "potential" | "archived" | "mine";
-export type IdeaSort = "new" | "popular";
+export type IdeaSort = "activity" | "new" | "popular";
 export type CommentSort = "old" | "new";
 export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number; cursor?: string }
 export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number>; nextCursor: string | null }

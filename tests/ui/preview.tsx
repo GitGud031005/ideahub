@@ -10,7 +10,7 @@ import type { Recap } from "../../src/lib/recaps";
 declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
 const tags = ["Công nghệ", "Data engineering", "Python", "Open source", "Thiết kế", "Teamwork", "PostgreSQL", "Tìm đồng đội", "Mobile", "Product", "Frontend", "Backend"];
-const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "potential" : i === 1 ? "new" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: i === 0, joined: i !== 1 }));
+const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "potential" : i === 1 ? "new" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, lastCommentAt:new Date(Date.now()-(i+1)*3600000).toISOString(), mine: i === 0, joined: i !== 1 }));
 const comments: Comment[] = Array.from({ length: 13 }, (_, i) => ({ id: `qa-comment-${i}`, ideaId: ideas[0].id, parentId: i ? `qa-comment-${i - 1}` : null, author: i % 2 ? { id: "qa-other", name: "Trần Ngọc Bình", initial: "TB" } : person, text: i ? "Mình đồng ý. Cùng bắt đầu từ một phần nhỏ, rồi xây dựng và hoàn thiện từng bước nhé" : "Mình có thể phụ trách phần thu thập dữ liệu và xây dựng pipeline. Mọi người muốn bắt đầu từ nguồn nào?", createdAt: new Date().toISOString() }));
 comments.push(...[
   {id:"qa-sibling-old",parentId:"qa-comment-0",text:"Nhánh cũ: bắt đầu từ nguồn sách",createdAt:"2026-10-15T10:00:00Z"},
@@ -70,6 +70,8 @@ window.fetch = async (input, init) => {
   if(path==="/api/ideas/suggest-tags"&&init?.method==="POST"){await new Promise(resolve=>setTimeout(resolve,1200));return Response.json({tags:["Nông nghiệp đô thị","IoT","Cộng đồng"],model:"gemini-3.8-flash"});}
   if (path === "/api/ideas") {
     const view=url.searchParams.get("view")??"all",q=(url.searchParams.get("q")??"").toLowerCase(),all=ideas.map(project);
+    const sort=url.searchParams.get("sort")??"activity";
+    all.sort((a,b)=>sort==="popular"?b.memberCount-a.memberCount:Date.parse(sort==="activity"?(b.lastCommentAt??b.createdAt):b.createdAt)-Date.parse(sort==="activity"?(a.lastCommentAt??a.createdAt):a.createdAt));
     const items=all.filter(i=>(view==="all"||(view==="mine"?i.mine:i.status===view))&&i.title.toLowerCase().includes(q));
     return Response.json({items,total:items.length,counts:{all:all.length,new:all.filter(i=>i.status==="new").length,potential:all.filter(i=>i.status==="potential").length,archived:all.filter(i=>i.status==="archived").length,mine:all.filter(i=>i.mine).length},nextCursor:null});
   }
@@ -83,7 +85,7 @@ window.fetch = async (input, init) => {
     await new Promise(resolve=>setTimeout(resolve,window.__qaScene==="discussion-slow"?(order===1?6000:2500):200));
     if(input.text.includes("lỗi thử")&&attempt===1)return Response.json({error:{code:"QA_NETWORK",message:"Mất kết nối thử nghiệm"}},{status:503});
     const existing=comments.find(c=>c.id===input.clientId);if(existing)return Response.json(existing);
-    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);return Response.json(comment);
+    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);ideas.find(i=>i.id===path.split("/")[3])!.lastCommentAt=comment.createdAt;return Response.json(comment);
   }
   if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
   if (path.endsWith("/join") && init?.method === "POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;if(!idea.joined){idea.joined=true;idea.status="potential";}return Response.json(project(idea));}

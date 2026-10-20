@@ -44,7 +44,7 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 
 Title 1–80 ký tự sau trim; description 1–240. Tối đa 12 tags từ danh mục có sẵn, mỗi tag 1–28 ký tự. Server loại trùng và lưu đúng tags đã chọn, không tự thêm chủ đề. `category` là trường tùy chọn cho client cũ; form mới chỉ dùng tags.
 
-List response: `{items: Idea[], total: number, counts: {all, joined, mine}, nextCursor: string|null}`. Query `q` tối đa 120 ký tự; `view=all|joined|mine`; `sort=new|popular`; limit 1–100. Trang đầu bỏ `cursor`; trang sau gửi nguyên `nextCursor` và giữ nguyên người xem, từ khóa, bộ lọc, cách sắp xếp. Cursor sai hoặc dùng cho truy vấn khác trả 400 `INVALID_CURSOR`. Các count không phụ thuộc từ khóa hoặc trang hiện tại.
+List response: `{items: Idea[], total: number, counts: {all, joined, mine}, nextCursor: string|null}`. Query `q` tối đa 120 ký tự; `view=all|joined|mine`; `sort=activity|new|popular` (mặc định `activity`); limit 1–100. Trang đầu bỏ `cursor`; trang sau gửi nguyên `nextCursor` và giữ nguyên người xem, từ khóa, bộ lọc, cách sắp xếp. Cursor sai hoặc dùng cho truy vấn khác trả 400 `INVALID_CURSOR`. Các count không phụ thuộc từ khóa hoặc trang hiện tại.
 
 Client web dùng keyset cursor theo thứ hạng, thời gian tạo và ID; tổng kết quả, thứ hạng theo số thành viên và bộ lọc đã tham gia được tính tại mốc thời gian trang đầu. Ý tưởng/lượt tham gia mới được thấy khi danh sách tải lại; không làm dịch vị trí giữa các trang đang xem. PostgreSQL giữ độ chính xác microsecond của cursor; JSON local ghi thời điểm tham gia mới và coi thành viên từ dữ liệu cũ là đã có trước mốc tải. Đây là mốc thời gian dữ liệu, không giữ mở một transaction xuyên nhiều HTTP request. `offset=0..100000` vẫn được hỗ trợ cho client cũ nhưng không dùng cùng cursor; client mới nên dùng cursor để tránh trang bị dịch khi có dữ liệu mới.
 
@@ -79,3 +79,5 @@ Các POST tạo/join/comment và GET bình luận yêu cầu tài khoản thật
 Status: 400 JSON/cursor/parent sai; 401 thiếu/hết phiên hoặc sai credentials; 409 username đã dùng; 403 origin không hợp lệ; 404 không tồn tại; 405 sai method; 413 body lớn hơn 16 KiB; 415 sai content type; 422 validation/depth; 429 quá số ghi; 503 cấu hình secret/storage chưa hợp lệ.
 
 Mutation JSON phải có `Content-Type: application/json`. Request có Origin từ domain khác hoặc `Sec-Fetch-Site: cross-site` bị từ chối. Rate limit tạm thời 30 lần ghi/phút/phiên/instance; đây không phải giới hạn phân tán cho production.
+
+Idea response bổ sung `lastCommentAt: string | null`; `activity` xếp theo tin nhắn gần nhất (gồm trả lời trong nhánh), hoặc thời gian tạo nếu chưa có tin. Xem `docs/idea-activity.md` về snapshot và cập nhật dashboard.

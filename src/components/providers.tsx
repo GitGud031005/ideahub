@@ -17,7 +17,7 @@ interface UiState {
 const UiContext = createContext<UiState | null>(null);
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 15000, retry: 1 }, mutations: { retry: false } } }));
-  const [dashboard, setDashboard] = useState<DashboardState>({ search: "", view: "all", sort: "new", scroll: 0 });
+  const [dashboard, setDashboard] = useState<DashboardState>({ search: "", view: "all", sort: "activity", scroll: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [outbox,setOutbox]=useState<Record<string,PendingComment[]>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});

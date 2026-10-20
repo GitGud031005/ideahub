@@ -25,7 +25,9 @@ export interface IdeaRepository {
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
   const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberReadComments:_receipts, memberArchived:_archived, status:_legacy, ...record } = idea;
-  return { ...record, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
+  const comments=state.comments.filter(c=>c.ideaId===idea.id);
+  const lastCommentAt=comments.reduce<string|null>((last,c)=>!last||Date.parse(c.createdAt)>Date.parse(last)?c.createdAt:last,null);
+  return { ...record, lastCommentAt, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: comments.length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
@@ -67,23 +69,26 @@ export class StateIdeaRepository implements IdeaRepository {
       const snapshot = cursor?.snapshot ?? new Date().toISOString();
       const before = (time?: string) => !time || Date.parse(time) <= Date.parse(snapshot);
       const q = normalize(query.q);
+      const latest=new Map<string,string>();
+      for(const c of state.comments)if(before(c.createdAt)&&(!latest.has(c.ideaId)||Date.parse(c.createdAt)>Date.parse(latest.get(c.ideaId)!)))latest.set(c.ideaId,c.createdAt);
       const ranked = state.ideas.filter(i => before(i.createdAt)).map(i => {
         const item = present(i, state, userId);
         const joined = i.members.includes(userId) && before(i.memberJoinedAt?.[userId]);
-        return { item: { ...item, joined, status: !joined ? "new" as const : i.memberArchived?.[userId] ? "archived" as const : "potential" as const },
+        return { item: { ...item, lastCommentAt:latest.get(i.id)??null, joined, status: !joined ? "new" as const : i.memberArchived?.[userId] ? "archived" as const : "potential" as const },
+          sortAt:query.sort==="activity"?(latest.get(i.id)??i.createdAt):i.createdAt,
           rank: query.sort === "popular" ? i.members.filter(id => before(i.memberJoinedAt?.[id])).length : 0 };
       });
       const counts = { all: ranked.length, new: ranked.filter(p => p.item.status === "new").length,
         potential: ranked.filter(p => p.item.status === "potential").length, archived: ranked.filter(p => p.item.status === "archived").length,
         mine: ranked.filter(p => p.item.mine).length };
       const filtered = ranked.filter(({ item: i }) => (query.view === "all" || (query.view === "mine" ? i.mine : i.status === query.view)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
-      const compare = (a: {rank: number; createdAt: string; id: string}, b: {rank: number; createdAt: string; id: string}) =>
-        b.rank - a.rank || Date.parse(b.createdAt) - Date.parse(a.createdAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
-      filtered.sort((a, b) => compare({ ...a.item, rank: a.rank }, { ...b.item, rank: b.rank }));
-      const remaining = cursor ? filtered.filter(({ item, rank }) => compare({ ...item, rank }, { ...cursor, rank: cursor.members }) > 0) : filtered.slice(query.offset);
+      const compare = (a: {rank: number; sortAt: string; id: string}, b: {rank: number; sortAt: string; id: string}) =>
+        b.rank - a.rank || Date.parse(b.sortAt) - Date.parse(a.sortAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+      filtered.sort((a, b) => compare({ ...a.item, sortAt:a.sortAt, rank: a.rank }, { ...b.item, sortAt:b.sortAt, rank: b.rank }));
+      const remaining = cursor ? filtered.filter(({ item, rank, sortAt }) => compare({ ...item, rank, sortAt }, { ...cursor, sortAt:cursor.activityAt??cursor.createdAt, rank: cursor.members }) > 0) : filtered.slice(query.offset);
       const page = remaining.slice(0, query.limit), last = page.at(-1);
       return { items: page.map(p => p.item), total: filtered.length, counts,
-        nextCursor: remaining.length > query.limit && last ? writeIdeaCursor(userId, query, { snapshot, createdAt: last.item.createdAt, id: last.item.id, members: last.rank }) : null };
+        nextCursor: remaining.length > query.limit && last ? writeIdeaCursor(userId, query, { snapshot, createdAt: last.item.createdAt, id: last.item.id, members: last.rank, ...(query.sort==="activity"?{activityAt:last.sortAt}:{}) }) : null };
     });
   }
   getIdea(id: string, userId: string) {
