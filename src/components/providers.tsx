@@ -3,11 +3,11 @@ import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tan
 import { createContext, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { api } from "@/lib/api-client";
 import { AuthDialog } from "./auth-dialog";
-import type { Account, IdeaSort, IdeaView, IdeaStatusFilter, Session } from "@/lib/domain";
+import type { Account, IdeaSort, IdeaView, Session } from "@/lib/domain";
 
 import type { PendingComment } from "@/lib/comment-outbox";
 
-interface DashboardState { status: IdeaStatusFilter; search: string; view: IdeaView; sort: IdeaSort; scroll: number }
+interface DashboardState { search: string; view: IdeaView; sort: IdeaSort; scroll: number }
 interface UiState {
   dashboard: DashboardState; setDashboard: Dispatch<SetStateAction<DashboardState>>;
   sidebarOpen: boolean; setSidebarOpen: Dispatch<SetStateAction<boolean>>;
@@ -17,7 +17,7 @@ interface UiState {
 const UiContext = createContext<UiState | null>(null);
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 15000, retry: 1 }, mutations: { retry: false } } }));
-  const [dashboard, setDashboard] = useState<DashboardState>({ status: "active", search: "", view: "all", sort: "new", scroll: 0 });
+  const [dashboard, setDashboard] = useState<DashboardState>({ search: "", view: "all", sort: "new", scroll: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [outbox,setOutbox]=useState<Record<string,PendingComment[]>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});

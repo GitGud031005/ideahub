@@ -297,23 +297,42 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 .ih-unread-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border:1px solid #222;border-radius:999px;background:#222;color:#fff;font-size:10px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;transition:background .2s,color .2s,border-color .2s}
 .ih-idea:hover .ih-unread-badge,.ih-idea:focus-within .ih-unread-badge,.ih-join:focus-visible .ih-unread-badge{background:#fff;color:#222;border-color:#fff}
 
-/* Shared idea classification, compact controls and responsive filter chips. */
-.ih-classification-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:-8px 0 24px}
-.ih-classification-filters button{display:inline-flex;align-items:center;gap:7px;min-height:34px;border:1px solid #e4e4df;border-radius:7px;padding:7px 10px;background:#fff;color:#74746e;font-size:11px;transition:background .18s,color .18s,border-color .18s}
-.ih-classification-filters button:hover{border-color:#aaa;background:#f5f5f2}
-.ih-classification-filters button.ih-filter-selected{background:#252520;border-color:#252520;color:white}
-.ih-classification-filters button span{font-size:10px;opacity:.65;font-variant-numeric:tabular-nums}
-.ih-classification{margin-top:10px;min-width:0;font-size:11px;color:#74746e}
-.ih-classification-value{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 8px;border:1px solid #e5e5df;border-radius:6px;background:#f9f9f6;max-width:100%}
-.ih-classification-value>.ih-picker{min-width:0}
-.ih-classification .ih-picker-trigger{min-height:26px;padding:2px 0;gap:10px;font-size:11px;background:transparent;border:0;color:inherit}
-.ih-classification .ih-picker-trigger:disabled{opacity:.55;cursor:wait}
-.ih-classification-new .ih-classification-value{color:#262620;background:#f0f0ea;border-color:#d7d7cd}
-.ih-classification-new>.ih-classification-value>svg{fill:currentColor;width:7px;margin-inline:2px}
-.ih-classification-archived .ih-classification-value{color:#90908a;background:#fafaf8}
+/* Personal idea states: the same icon is used on the card and in its filter. */
+.ih-status-new{--status-bg:#fbeceb;--status-ink:#a64d49;--status-border:#efd3d0;--status-hover:#f5ddda}
+.ih-status-potential{--status-bg:#edf5ed;--status-ink:#537b59;--status-border:#d4e4d5;--status-hover:#dfedde}
+.ih-status-archived{--status-bg:#f0f0eb;--status-ink:#77786d;--status-border:#deded5;--status-hover:#e6e6df}
+.ih-status-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:24px;height:24px;padding:0;border:1px solid var(--status-border);border-radius:50%;background:var(--status-bg);color:var(--status-ink);transition:background-color .2s,border-color .2s,box-shadow .2s}
+.ih-card-status{position:relative;margin-top:1px;cursor:help}
+.ih-card-status:after{content:attr(data-label);position:absolute;right:0;top:calc(100% + 7px);z-index:3;padding:5px 8px;border:1px solid var(--status-border);border-radius:5px;background:var(--status-bg);color:var(--status-ink);font-size:10px;font-weight:500;white-space:nowrap;opacity:0;visibility:hidden;transition:opacity .15s}
+.ih-card-status:hover:after,.ih-card-status:focus-visible:after{opacity:1;visibility:visible}
+.ih-card-status:focus-visible{outline:2px solid var(--status-ink);outline-offset:3px}
+.ih-idea:hover .ih-card-status,.ih-idea:focus-within .ih-card-status{background:var(--status-hover);border-color:var(--status-ink)}
+.ih-personal-toolbar{gap:16px;flex-wrap:wrap}
+.ih-personal-toolbar .ih-tabs{min-width:0;max-width:100%;gap:clamp(14px,2vw,28px);overflow-x:auto;scrollbar-width:none;justify-content:flex-start}
+.ih-personal-toolbar .ih-tabs::-webkit-scrollbar{display:none}
+.ih-personal-toolbar .ih-tab{gap:7px;flex:0 0 auto}
+.ih-personal-toolbar .ih-tab-label{font-size:inherit;color:inherit;background:none;border-radius:0;padding:0}
+.ih-personal-toolbar .ih-tab-count{font-size:10px;padding:1px 5px;background:#efefe8;color:#68685f;border-radius:4px}
+.ih-personal-toolbar .ih-tab.ih-active .ih-tab-label{background:none;color:inherit}
+.ih-personal-toolbar .ih-tab.ih-active .ih-tab-count{background:#2b2b25;color:#fff}
+.ih-personal-toolbar .ih-tab .ih-status-icon{width:20px;height:20px;padding:0;border-radius:50%;background:var(--status-bg);color:var(--status-ink)}
+.ih-personal-toolbar .ih-tab:hover .ih-status-icon{background:var(--status-hover);border-color:var(--status-ink)}
+.ih-picker-label{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.ih-personal-classification{display:inline-flex;flex-direction:column;max-width:100%;margin-top:16px;color:var(--status-ink)}
+.ih-personal-classification>.ih-picker{border:1px solid var(--status-border);border-radius:6px;background:var(--status-bg);transition:background-color .2s,border-color .2s}
+.ih-personal-classification>.ih-picker:hover,.ih-personal-classification>.ih-picker:focus-within{background:var(--status-hover);border-color:var(--status-ink)}
+.ih-personal-classification .ih-picker-trigger{min-height:36px;padding:6px 10px;border:0;color:var(--status-ink);background:transparent}
+.ih-personal-classification .ih-picker-trigger:hover:enabled,.ih-personal-classification .ih-picker-trigger[aria-expanded=true]{color:var(--status-ink);background:transparent}
+.ih-personal-classification .ih-status-icon{width:20px;height:20px;border:0;background:transparent}
+.ih-personal-classification .ih-picker-option{min-height:38px}
 .ih-classification-error{display:block;margin-top:5px;color:#9d2f2f;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-.ih-idea-new{border-color:#a6a69a;box-shadow:inset 3px 0 #292923}
-.ih-idea-archived{background:#fcfcfa}
-.ih-idea .ih-card-meta{margin-top:12px}
-.ih-thread-aside .ih-classification{margin:16px 0 0}
-@media(max-width:560px){.ih-classification-filters{gap:6px;margin-top:0;margin-bottom:18px}.ih-classification-filters button{font-size:10px;min-height:34px;padding:6px 9px}.ih-classification .ih-picker-trigger{min-height:30px}.ih-classification-value{min-height:32px}}
+/* Paint the complete join button, including when its parent card is hovered. */
+.ih-join{isolation:isolate;z-index:0;background:#fff;transition:color .28s,background-color .28s}
+.ih-join:before{inset:0;z-index:0;pointer-events:none;transform:translateX(-101%)}
+.ih-join>span{position:relative;z-index:1}
+.ih-idea:hover .ih-join,.ih-idea:focus-within .ih-join,.ih-join:focus-visible{color:#fff;background:#20201b}
+.ih-idea:hover .ih-join:before,.ih-idea:focus-within .ih-join:before,.ih-join:focus-visible:before{transform:translateX(0)}
+@media(max-width:560px){.ih-personal-toolbar .ih-tabs{width:100%;gap:17px}.ih-personal-toolbar .ih-tab{min-height:48px;font-size:11px}.ih-personal-toolbar .ih-sort-label{padding:5px 0 8px}.ih-personal-toolbar .ih-tab-count{font-size:9px}.ih-personal-classification .ih-picker-trigger{min-height:40px}}
+@media(prefers-reduced-motion:reduce){.ih-status-icon,.ih-card-status:after,.ih-personal-classification>.ih-picker,.ih-join{transition:none}}
+
+.ih-picker-trigger[aria-expanded=true] .ih-status-icon svg{transform:none}

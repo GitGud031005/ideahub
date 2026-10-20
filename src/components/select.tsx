@@ -1,7 +1,7 @@
 "use client";
 import { Check, ChevronDown } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-interface Option<T extends string> { value: T; label: string }
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+interface Option<T extends string> { value: T; label: string; icon?: ReactNode }
 interface Props<T extends string> { label: string; value: T; options: readonly Option<T>[]; onChange: (value: T) => void; disabled?: boolean; wide?: boolean }
 export function Select<T extends string>({ label, value, options, onChange, disabled, wide }: Props<T>) {
   const id = useId(), ref = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
@@ -42,7 +42,7 @@ export function Select<T extends string>({ label, value, options, onChange, disa
     focusOption(event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : (index + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length);
   }
   return <div className={`ih-picker${wide ? " ih-picker-wide" : ""}`} ref={ref} onKeyDown={keydown}>
-    <button ref={trigger} type="button" className="ih-picker-trigger" aria-label={`${label}: ${selected.label}`} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} disabled={disabled} onClick={() => open ? setOpen(false) : show(true)}><span>{selected.label}</span><ChevronDown size={12} aria-hidden="true" /></button>
-    {open && <div className="ih-picker-menu" style={{position:"fixed",...position,right:"auto",bottom:"auto"}} id={id} role="listbox" aria-label={label}>{options.map(option => <button key={option.value} type="button" className="ih-picker-option" role="option" aria-selected={value === option.value} tabIndex={-1} onClick={() => { onChange(option.value); setOpen(false); trigger.current?.focus(); }}><span>{option.label}</span><Check size={12} aria-hidden="true" style={{ visibility: value === option.value ? "visible" : "hidden" }} /></button>)}</div>}
+    <button ref={trigger} type="button" className="ih-picker-trigger" aria-label={`${label}: ${selected.label}`} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} disabled={disabled} onClick={() => open ? setOpen(false) : show(true)}><span className="ih-picker-label">{selected.icon}{selected.label}</span><ChevronDown size={12} aria-hidden="true" /></button>
+    {open && <div className="ih-picker-menu" style={{position:"fixed",...position,right:"auto",bottom:"auto"}} id={id} role="listbox" aria-label={label}>{options.map(option => <button key={option.value} type="button" className="ih-picker-option" role="option" aria-selected={value === option.value} tabIndex={-1} onClick={() => { onChange(option.value); setOpen(false); trigger.current?.focus(); }}><span className="ih-picker-label">{option.icon}{option.label}</span><Check size={12} aria-hidden="true" style={{ visibility: value === option.value ? "visible" : "hidden" }} /></button>)}</div>}
   </div>;
 }

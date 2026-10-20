@@ -49,11 +49,11 @@ test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and 
     assert.deepEqual(idea.tags, ["Học tập", "Bản đồ"]); assert(!("members" in idea));
     const result = await repository.listIdeas(user.id, { ...query, q: "ban do thu vien", view: "mine" });
     assert.equal(result.total, 1); assert.equal(result.items[0].id, idea.id);
-    assert.deepEqual(result.counts, { all: 2, joined: 2, mine: 2 });
+    assert.deepEqual(result.counts, { all: 2, new: 0, potential: 2, archived: 0, mine: 2 });
     assert.equal((await repository.listIdeas(user.id, { ...query, q: "%' OR 1=1 --" })).total, 0);
     await Promise.all(Array.from({ length: 10 }, () => repository.joinIdea(idea.id, other.id)));
     assert.equal((await repository.getIdea(idea.id, other.id)).memberCount, 2);
-    const popular = await repository.listIdeas(other.id, { ...query, sort: "popular", view: "joined" });
+    const popular = await repository.listIdeas(other.id, { ...query, sort: "popular", view: "potential" });
     assert.equal(popular.items[0].id, idea.id); assert.equal(popular.counts.mine, 0);
     const root = await repository.createComment(idea.id, other, { text: "<script>literal</script>" });
     assert.equal(root.author.name, other.name);

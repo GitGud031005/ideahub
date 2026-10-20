@@ -105,8 +105,10 @@ test("idea classification API requires same-origin login and membership, rejects
   assert.equal((await call(path,{},a)).status,405);
   await call(`ideas/${idea.id}/join`,{method:"POST"},b);
   const response=await call(path,post({status:"archived"}),b);assert.equal(response.status,200);assert.equal((await response.json()).status,"archived");
-  assert.equal((await (await call("ideas")).json()).items.some((i:{id:string})=>i.id===idea.id),false);
-  const filtered=await handleApi(request("ideas?status=archived"),["ideas"],repo,auth);
+  assert.equal((await (await call("ideas")).json()).items.some((i:{id:string})=>i.id===idea.id),true);
+  const filtered=await handleApi(request("ideas?view=archived",{},b),["ideas"],repo,auth);
   assert.equal((await filtered.json()).items.some((i:{id:string})=>i.id===idea.id),true);
-  const publicIdea=await (await call(`ideas/${idea.id}`)).json();assert.equal(publicIdea.status,"archived");
+  const publicIdea=await (await call(`ideas/${idea.id}`)).json();assert.equal(publicIdea.status,"new");
+  assert.equal((await (await call(`ideas/${idea.id}`,{},a)).json()).status,"potential");
+  assert.equal((await call(path,post({status:"new"}),b)).status,422);
 });

@@ -6,7 +6,8 @@ export interface IdeaRecord {
   memberJoinedAt?: Record<string, string>;
   memberReadCursor?: Record<string, string>;
   discussionVersion?:number;
-  status?: IdeaStatus;
+  status?: IdeaStatus; // Legacy shared status, no longer projected.
+  memberArchived?: Record<string, boolean>;
 }
 export interface DataState { version: 1; ideas: IdeaRecord[]; comments: Comment[]; attachments?:StoredAttachment[] }
 /** Operations must complete synchronously inside the transaction; no side effects or network I/O. */

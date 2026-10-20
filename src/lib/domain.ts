@@ -1,7 +1,7 @@
 export const CATEGORIES = ["Công nghệ", "Đời sống", "Học tập", "Thiết kế", "Khác"] as const;
 export const IDEA_STATUSES = ["new", "potential", "archived"] as const;
 export type IdeaStatus = (typeof IDEA_STATUSES)[number];
-export type IdeaStatusFilter = IdeaStatus | "active" | "all";
+export type JoinedIdeaStatus = Exclude<IdeaStatus, "new">;
 export const IDEA_STATUS_LABELS: Record<IdeaStatus, string> = { new: "Mới", potential: "Tiềm năng", archived: "Lưu trữ" };
 export type Category = (typeof CATEGORIES)[number];
 export type StorageMode = "json" | "memory" | "postgres";
@@ -36,11 +36,11 @@ export type UnreadCounts = Record<string, number>;
 export interface RoomActivity { commentCount:number; memberCount:number; version?:string }
 export interface CreateIdeaInput { title: string; description: string; category: Category; tags: string[] }
 export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[] }
-export type IdeaView = "all" | "joined" | "mine";
+export type IdeaView = "all" | "new" | "potential" | "archived" | "mine";
 export type IdeaSort = "new" | "popular";
 export type CommentSort = "old" | "new";
-export interface IdeaQuery { status?: IdeaStatusFilter; q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number; cursor?: string }
-export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number>; statusCounts: Record<IdeaStatusFilter, number>; nextCursor: string | null }
+export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number; cursor?: string }
+export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number>; nextCursor: string | null }
 export interface CommentsPage { items: Comment[]; total: number; nextCursor: string | null }
 export interface Account extends Author { username: string; provider?: "password" | "google"; avatarSource?: "initials" | "google" | "custom" }
 export interface Session { user: Account | null; storage: StorageMode }

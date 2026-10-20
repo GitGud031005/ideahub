@@ -13,7 +13,7 @@ const cursorSchema = z.object({
 }).strict();
 export type IdeaCursor = z.infer<typeof cursorSchema>;
 function scope(userId: string, query: IdeaQuery) {
-  return JSON.stringify([userId, normalize(query.q), query.view, query.sort, query.status ?? "active"]);
+  return JSON.stringify([userId, normalize(query.q), "personal-v2", query.view, query.sort]);
 }
 export function readIdeaCursor(userId: string, query: IdeaQuery): IdeaCursor | undefined {
   if (!query.cursor) return;

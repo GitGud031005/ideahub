@@ -10,7 +10,7 @@ import type { Recap } from "../../src/lib/recaps";
 declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
 const tags = ["Công nghệ", "Data engineering", "Python", "Open source", "Thiết kế", "Teamwork", "PostgreSQL", "Tìm đồng đội", "Mobile", "Product", "Frontend", "Backend"];
-const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "new" : i === 1 ? "potential" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: false, joined: false }));
+const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "potential" : i === 1 ? "new" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: i === 0, joined: i !== 1 }));
 const comments: Comment[] = Array.from({ length: 13 }, (_, i) => ({ id: `qa-comment-${i}`, ideaId: ideas[0].id, parentId: i ? `qa-comment-${i - 1}` : null, author: i % 2 ? { id: "qa-other", name: "Trần Ngọc Bình", initial: "TB" } : person, text: i ? "Mình đồng ý. Cùng bắt đầu từ một phần nhỏ, rồi xây dựng và hoàn thiện từng bước nhé" : "Mình có thể phụ trách phần thu thập dữ liệu và xây dựng pipeline. Mọi người muốn bắt đầu từ nguồn nào?", createdAt: new Date().toISOString() }));
 comments.push(...[
   {id:"qa-sibling-old",parentId:"qa-comment-0",text:"Nhánh cũ: bắt đầu từ nguồn sách",createdAt:"2026-10-15T10:00:00Z"},
@@ -22,7 +22,7 @@ const sampleImage='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://w
 const fixtureAttachments:Attachment[]=[{id:"qa-image",name:"phac-thao-giao-dien.png",mime:"image/png",size:245760,kind:"image",url:sampleImage},{id:"qa-file",name:"ke-hoach-san-pham.txt",mime:"text/plain",size:1600,kind:"file",url:'data:text/plain,IdeaHub%20demo%20plan'}];
 comments.unshift({id:"qa-share-root",ideaId:ideas[0].id,parentId:null,author:person,text:"Mình gửi phác thảo và kế hoạch sản phẩm để cả nhóm góp ý. Tài liệu tham khảo: https://developer.mozilla.org/",attachments:[...fixtureAttachments],pinnedAt:new Date().toISOString(),createdAt:new Date().toISOString()});
 comments.forEach((c,i)=>{c.readCursor=String(i+1);});
-ideas[0].joined=true;ideas[1].joined=true;
+
 const unread:Record<string,number>={[ideas[0].id]:7,[ideas[1].id]:123};
 const attempts=new Map<string,number>();let postNumber=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
@@ -48,13 +48,13 @@ window.fetch = async (input, init) => {
     current={...current!,avatarUrl:URL.createObjectURL(file)};return Response.json({user:current,storage:"postgres"});
   }
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
+  const project = (idea:Idea):Idea => ({...idea,joined:!!current&&idea.joined,mine:!!current&&idea.mine,status:!current||!idea.joined?"new":idea.status==="archived"?"archived":"potential"});
   if (path === "/api/ideas") {
-    const status=url.searchParams.get("status")??"active",view=url.searchParams.get("view")??"all",q=(url.searchParams.get("q")??"").toLowerCase();
-    const visible=ideas.filter(i=>(view==="all"||(view==="joined"?i.joined:i.mine))&&i.title.toLowerCase().includes(q));
-    const items=visible.filter(i=>status==="all"||(status==="active"?i.status!=="archived":i.status===status));
-    return Response.json({items:items.map(i=>({...i,joined:!!current&&i.joined,mine:!!current&&i.mine})),total:items.length,counts:{all:items.length,joined:items.filter(i=>i.joined).length,mine:items.filter(i=>i.mine).length},statusCounts:{all:visible.length,active:visible.filter(i=>i.status!=="archived").length,new:visible.filter(i=>i.status==="new").length,potential:visible.filter(i=>i.status==="potential").length,archived:visible.filter(i=>i.status==="archived").length},nextCursor:null});
+    const view=url.searchParams.get("view")??"all",q=(url.searchParams.get("q")??"").toLowerCase(),all=ideas.map(project);
+    const items=all.filter(i=>(view==="all"||(view==="mine"?i.mine:i.status===view))&&i.title.toLowerCase().includes(q));
+    return Response.json({items,total:items.length,counts:{all:all.length,new:all.filter(i=>i.status==="new").length,potential:all.filter(i=>i.status==="potential").length,archived:all.filter(i=>i.status==="archived").length,mine:all.filter(i=>i.mine).length},nextCursor:null});
   }
-  if (path.endsWith("/status")&&init?.method==="POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;idea.status=JSON.parse(String(init.body)).status;return Response.json(idea);}
+  if (path.endsWith("/status")&&init?.method==="POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;idea.status=JSON.parse(String(init.body)).status;return Response.json(project(idea));}
   if (path.endsWith("/recaps/qa-recap")) return Response.json(recap);
   if (path.endsWith("/recaps")) return Response.json({items:[recap],nextOffset:null,aiConfigured:true});
   if(path.endsWith('/pin')&&init?.method==='POST') {const c=comments.find(c=>c.id===path.split('/').at(-2));if(c)c.pinnedAt=JSON.parse(String(init.body)).pinned?new Date().toISOString():null;return Response.json({ok:true});}
@@ -67,13 +67,13 @@ window.fetch = async (input, init) => {
     const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);return Response.json(comment);
   }
   if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
-  if (path.endsWith("/join") && init?.method === "POST") return Response.json({ ...ideas[0], joined: true });
-  if (path.startsWith("/api/ideas/")) return Response.json(ideas[0]);
+  if (path.endsWith("/join") && init?.method === "POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;if(!idea.joined){idea.joined=true;idea.status="potential";}return Response.json(project(idea));}
+  if (path.startsWith("/api/ideas/")) return Response.json(project(ideas.find(i=>i.id===path.split("/")[3])??ideas[0]));
   return Response.json({ error: { code: "QA_ONLY", message: "Đây là fixture UI; không gửi dữ liệu thật" } }, { status: 400 });
 };
 function App() {
   const [route, setRoute] = useState(window.__qaScene.startsWith("discussion") ? `/ideas/${ideas[0].id}` : window.__qaScene.startsWith("profile") ? "/profile" : "/");
   window.__qaNavigate = setRoute;
-  return <Providers><div id="ih-app">{route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion id={ideas[0].id}/> : <Dashboard/>}</div></Providers>;
+  return <Providers><div id="ih-app">{route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion id={route.split("/")[2]}/> : <Dashboard/>}</div></Providers>;
 }
 createRoot(document.getElementById("root")!).render(<App/>);
