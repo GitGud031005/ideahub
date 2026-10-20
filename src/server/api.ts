@@ -16,8 +16,10 @@ import { commentStream } from "./comment-stream";
 import { randomUUID } from "node:crypto";
 import { CloudinaryDiscussionFiles, readDiscussionFile } from "./discussion-uploads";
 import { publicAttachment } from "./attachment-record";
+import { GeminiTagSuggester, type TagSuggester } from "./gemini-tags";
+import { tagSuggestionInputSchema } from "@/lib/validation";
 
-export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars(), files = new CloudinaryDiscussionFiles()): Promise<Response> {
+export async function handleApi(request: Request, path: string[], repository?: IdeaRepository, authentication?: AuthService, recapping?: RecapService, avatars = new CloudinaryAvatars(), files = new CloudinaryDiscussionFiles(), tagger:TagSuggester = new GeminiTagSuggester()): Promise<Response> {
   try {
     const method = request.method, route = path.join("/");
     if (method !== "GET" && method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ" } }, 405, { Allow: "GET, POST" });
@@ -79,6 +81,14 @@ export async function handleApi(request: Request, path: string[], repository?: I
         result = await auth.login(input, token);
       }
       return json({ user: result.user, storage: storageMode() }, route.endsWith("register") ? 201 : 200, { "Set-Cookie": sessionCookie(result.token) });
+    }
+    if(route==="ideas/suggest-tags"){
+      const user=await auth.user(token);if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để gợi ý tags");
+      if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng POST để gợi ý tags"}},405,{Allow:"POST"});
+      const input=await readJson(request,tagSuggestionInputSchema);
+      await auth.limit(`tag-suggestions:${user.id}`,12,3600);
+      await auth.limit("tag-suggestions:global",150,86400);
+      return json(await tagger.suggest(input));
     }
     if(route==="unread"){
       const user=await auth.user(token);if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để xem tin chưa đọc");

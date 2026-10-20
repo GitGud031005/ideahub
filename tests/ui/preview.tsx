@@ -67,6 +67,7 @@ window.fetch = async (input, init) => {
   }
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
   const project = (idea:Idea):Idea => ({...idea,joined:!!current&&idea.joined,mine:!!current&&idea.mine,status:!current||!idea.joined?"new":idea.status==="archived"?"archived":"potential"});
+  if(path==="/api/ideas/suggest-tags"&&init?.method==="POST"){await new Promise(resolve=>setTimeout(resolve,1200));return Response.json({tags:["Nông nghiệp đô thị","IoT","Cộng đồng"],model:"gemini-3.8-flash"});}
   if (path === "/api/ideas") {
     const view=url.searchParams.get("view")??"all",q=(url.searchParams.get("q")??"").toLowerCase(),all=ideas.map(project);
     const items=all.filter(i=>(view==="all"||(view==="mine"?i.mine:i.status===view))&&i.title.toLowerCase().includes(q));

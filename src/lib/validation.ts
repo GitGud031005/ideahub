@@ -1,11 +1,12 @@
 import { z } from "zod";
 import { CATEGORIES } from "./domain";
+import { IDEA_TAG_SET } from "./idea-tags";
 
 export const createIdeaSchema = z.object({
   title: z.string().trim().min(1, "Nhập tên ý tưởng").max(80, "Tên ý tưởng tối đa 80 ký tự"),
   description: z.string().trim().min(1, "Nhập mô tả ý tưởng").max(240, "Mô tả tối đa 240 ký tự"),
   category: z.enum(CATEGORIES),
-  tags: z.array(z.string().trim().min(1).max(28)).max(12).default([])
+  tags: z.array(z.string().trim().min(1).max(28).refine(tag=>IDEA_TAG_SET.has(tag),"Chọn tag trong danh mục có sẵn")).max(12).default([])
     .transform(tags => [...new Set(tags)]),
 }).strict();
 export const createCommentSchema = z.object({
@@ -27,3 +28,5 @@ export const commentQuerySchema = z.object({
   cursor: z.string().max(100).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(100),
 });
+
+export const tagSuggestionInputSchema=createIdeaSchema.pick({title:true,description:true}).strict();
