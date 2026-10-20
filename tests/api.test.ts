@@ -19,7 +19,7 @@ function fixture() {
 }
 const post = (body: unknown): RequestInit => ({ method: "POST", body: JSON.stringify(body) });
 const cookie = (r: Response) => r.headers.get("set-cookie")!.split(";")[0].slice(SESSION_COOKIE.length + 1);
-const ideaInput = { title: "Hello", description: "An idea", category: "Công nghệ", tags: ["Python"] };
+const ideaInput = { title: "Hello", description: "An idea", tags: ["Python"] };
 
 test("same-origin checks use the actual Host when Next canonicalizes local URLs and reject forged forwarded hosts", () => {
   const check = (headers: Record<string,string>, url = "http://localhost:3000/api/auth/logout") => assertSameOrigin(new Request(url, { method:"POST", headers }));
@@ -56,7 +56,7 @@ test("register/login/logout use real identities, rotate sessions and revoke old 
   assert.match(register.headers.get("set-cookie")!, /HttpOnly/); assert.match(register.headers.get("set-cookie")!, /SameSite=Lax/);
   assert.equal((await call("session", {}, first)).status, 200);
   assert.equal((await (await call("auth/register", post(payload))).json()).error.code, "USERNAME_TAKEN");
-  const created = await call("ideas", post(ideaInput), first); assert.equal(created.status, 201); const idea = await created.json(); assert.equal(idea.creator.id, data.user.id);
+  const created = await call("ideas", post(ideaInput), first); assert.equal(created.status, 201); const idea = await created.json(); assert.equal(idea.creator.id, data.user.id); assert.deepEqual(idea.tags, ["Python"]);
   const reply = await call(`ideas/${idea.id}/comments`, post({ text: "A comment" }), first); assert.equal(reply.status, 201); assert.equal((await reply.json()).author.name, payload.fullName);
   const join = await call(`ideas/${idea.id}/join`, { method: "POST" }, first); assert.equal((await join.json()).memberCount, 1);
   const login = await call("auth/login", post({ username: "MINHAN", password: payload.password }), first); assert.equal(login.status, 200); const second = cookie(login); assert.notEqual(first, second);

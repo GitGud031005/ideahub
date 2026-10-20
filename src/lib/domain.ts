@@ -34,7 +34,7 @@ export interface Comment {
 export interface Attachment { id:string; name:string; mime:string; size:number; kind:"image"|"file"; url:string }
 export type UnreadCounts = Record<string, number>;
 export interface RoomActivity { commentCount:number; memberCount:number; version?:string }
-export interface CreateIdeaInput { title: string; description: string; category: Category; tags: string[] }
+export interface CreateIdeaInput { title: string; description: string; tags: string[]; /** @deprecated Legacy clients only; never added to tags. */ category?: Category }
 export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[] }
 export type IdeaView = "all" | "new" | "potential" | "archived" | "mine";
 export type IdeaSort = "new" | "popular";

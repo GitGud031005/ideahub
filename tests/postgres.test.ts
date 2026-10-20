@@ -37,16 +37,16 @@ test("comment pages use one database statement and retain metadata for empty/end
 test("PostgreSQL SQL contract: search, counts, joins, nested cursor replies and rollback", async () => {
   const embedded = await embeddedPool(), repository = new PostgresIdeaRepository(embedded.pool);
   const user = { id: "actor-a", name: "Người A", initial: "A" }, other = { id: "actor-b", name: "Người B", initial: "B" };
-  const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", category: "Học tập" as const, tags: ["Bản đồ", "Bản đồ"] };
+  const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", tags: ["Bản đồ", "Bản đồ"] };
   const query = { q: "", view: "all" as const, sort: "new" as const, limit: 24, offset: 0 };
   try {
     // Real sessions already have a profile before joining; repository writes must
     // preserve that profile rather than replacing it with the request snapshot.
     await embedded.pool.query("INSERT INTO public.users(id,display_name,initial) VALUES ($1,$2,$3)", [other.id, other.name, other.initial]);
     const idea = await repository.createIdea(user, input);
-    const second = await repository.createIdea(user, { ...input, title: "Phòng khác" });
+    const second = await repository.createIdea(user, { ...input, category: "Học tập", title: "Phòng khác" });
     assert.equal(idea.memberCount, 1); assert.equal(idea.mine, true); assert.equal(idea.joined, true);
-    assert.deepEqual(idea.tags, ["Học tập", "Bản đồ"]); assert(!("members" in idea));
+    assert.deepEqual(idea.tags, ["Bản đồ"]); assert.deepEqual(second.tags, ["Bản đồ"]); assert(!("members" in idea));
     const result = await repository.listIdeas(user.id, { ...query, q: "ban do thu vien", view: "mine" });
     assert.equal(result.total, 1); assert.equal(result.items[0].id, idea.id);
     assert.deepEqual(result.counts, { all: 2, new: 0, potential: 2, archived: 0, mine: 2 });

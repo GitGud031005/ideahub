@@ -38,12 +38,11 @@ Khách có thể đọc idea mà không có cookie. `GET /api/session` trả use
 {
   "title": "Data crawling lab",
   "description": "Cùng xây pipeline thử nghiệm",
-  "category": "Công nghệ",
   "tags": ["Python", "Data engineering"]
 }
 ```
 
-Title 1–80 ký tự sau trim; description 1–240; category là một trong `Công nghệ`, `Đời sống`, `Học tập`, `Thiết kế`, `Khác`. Tối đa 12 tags, mỗi tag 1–28 ký tự. Server loại trùng và thêm category vào tags, giữ tổng tối đa 12.
+Title 1–80 ký tự sau trim; description 1–240. Tối đa 12 tags từ danh mục có sẵn, mỗi tag 1–28 ký tự. Server loại trùng và lưu đúng tags đã chọn, không tự thêm chủ đề. `category` là trường tùy chọn cho client cũ; form mới chỉ dùng tags.
 
 List response: `{items: Idea[], total: number, counts: {all, joined, mine}, nextCursor: string|null}`. Query `q` tối đa 120 ký tự; `view=all|joined|mine`; `sort=new|popular`; limit 1–100. Trang đầu bỏ `cursor`; trang sau gửi nguyên `nextCursor` và giữ nguyên người xem, từ khóa, bộ lọc, cách sắp xếp. Cursor sai hoặc dùng cho truy vấn khác trả 400 `INVALID_CURSOR`. Các count không phụ thuộc từ khóa hoặc trang hiện tại.
 

@@ -13,13 +13,13 @@ test("Postgres adapter persists and enforces the repository contract", { skip: !
   const user = { id: `test-${randomUUID()}`, name: "Integration A", initial: "A" };
   const other = { id: `test-${randomUUID()}`, name: "Integration B", initial: "B" };
   const failed = { id: `test-${randomUUID()}`, name: "Rollback", initial: "R" };
-  const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", category: "Học tập" as const, tags: ["Bản đồ", "Bản đồ"] };
+  const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", tags: ["Bản đồ", "Bản đồ"] };
   const query = { q: "", view: "all" as const, sort: "new" as const, limit: 24, offset: 0 };
   try {
     const idea = await repository.createIdea(user, input);
-    const second = await repository.createIdea(user, { ...input, title: "Phòng khác" });
+    const second = await repository.createIdea(user, { ...input, category: "Học tập", title: "Phòng khác" });
     assert.equal(idea.memberCount, 1); assert.equal(idea.joined, true); assert.equal(idea.mine, true);
-    assert.deepEqual(idea.tags, ["Học tập", "Bản đồ"]); assert(!("members" in idea));
+    assert.deepEqual(idea.tags, ["Bản đồ"]); assert.deepEqual(second.tags, ["Bản đồ"]); assert(!("members" in idea));
     const search = await repository.listIdeas(user.id, { ...query, q: "ban do thu vien", view: "mine" });
     assert(search.items.some(i => i.id === idea.id));
     assert.equal((await repository.listIdeas(user.id, { ...query, q: "%' OR 1=1 --", view: "mine" })).total, 0);

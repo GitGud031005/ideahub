@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { IDEA_TAGS, IDEA_TAG_GROUPS, MAX_IDEA_TAGS, searchIdeaTags, tagsWithCategory } from "../src/lib/idea-tags";
+import { IDEA_TAGS, IDEA_TAG_GROUPS, MAX_IDEA_TAGS, searchIdeaTags } from "../src/lib/idea-tags";
 import { CATEGORIES } from "../src/lib/domain";
 import { createIdeaSchema } from "../src/lib/validation";
 import { GeminiTagSuggester } from "../src/server/gemini-tags";
@@ -19,10 +19,12 @@ test("curated tags span fields, fit stored limits, and support unaccented search
   assert(searchIdeaTags("nong nghiep").some(g=>g.tags.includes("Nông nghiệp đô thị")));
   assert(searchIdeaTags("PYTHON").some(g=>g.tags.includes("Python")));
   assert.deepEqual(searchIdeaTags("khong-co-tag-nay"),[]);
-  const selected=tagsWithCategory(["Python","Python",...IDEA_TAGS],"Học tập");
-  assert.equal(selected[0],"Học tập");assert.equal(selected.length,MAX_IDEA_TAGS);assert.equal(new Set(selected).size,selected.length);
-  assert(createIdeaSchema.safeParse({...input,category:"Công nghệ",tags:["IoT","Nông nghiệp đô thị"]}).success);
-  assert(!createIdeaSchema.safeParse({...input,category:"Công nghệ",tags:["invented-tag"]}).success);
+  const selected=createIdeaSchema.parse({...input,tags:["Python","Python","Học tập"]});
+  assert.deepEqual(selected.tags,["Python","Học tập"]);
+  assert(createIdeaSchema.safeParse({...input,tags:IDEA_TAGS.slice(0,MAX_IDEA_TAGS)}).success);
+  assert(!createIdeaSchema.safeParse({...input,tags:IDEA_TAGS.slice(0,MAX_IDEA_TAGS+1)}).success);
+  assert.deepEqual(createIdeaSchema.parse({...input,tags:[]}).tags,[]);
+  assert(!createIdeaSchema.safeParse({...input,tags:["invented-tag"]}).success);
 });
 test("Gemini suggests only catalog tags using existing model fallbacks, with bounded structured output",async()=>{
   const called:string[]=[];let output:unknown={tags:["IoT","Nông nghiệp đô thị","IoT"]},status=429;
@@ -80,5 +82,16 @@ test("Google configuration diagnostics never reflect provider secrets or draft t
   ] as const){
     const transport:typeof fetch=async url=>String(url).includes("?pageSize=")?Response.json({models:[{name:"models/gemini-3.8-flash",supportedGenerationMethods:["generateContent"]}]}):Response.json({error:details},{status:400});
     await assert.rejects(()=>new GeminiTagSuggester({key:`diagnostics-${code}`},transport).suggest(input),(error:unknown)=>error instanceof AppError&&error.code===code&&!error.message.includes("private"));
+  }
+});
+
+
+test("legacy category does not force tags in newly created ideas",async()=>{
+  const repo=new StateIdeaRepository(new MemoryStore()),user={id:"tag-only-user",name:"Tag tester",initial:"T"};
+  for(const category of [undefined,"Công nghệ"] as const){
+    const idea=await repo.createIdea(user,createIdeaSchema.parse({...input,category,tags:["Nông nghiệp đô thị"]}));
+    assert.deepEqual(idea.tags,["Nông nghiệp đô thị"]);
+    const empty=await repo.createIdea(user,createIdeaSchema.parse({...input,category,tags:[]}));
+    assert.deepEqual(empty.tags,[]);
   }
 });

@@ -91,7 +91,7 @@ export class StateIdeaRepository implements IdeaRepository {
   }
   createIdea(user: Author, input: CreateIdeaInput) {
     return this.store.transact(state => {
-      const idea: IdeaRecord = { ...input, id: randomUUID(), creator: user, createdAt: new Date().toISOString(), tags: [...new Set([input.category, ...input.tags])].slice(0, 12), members: [user.id] };
+      const idea: IdeaRecord = { ...input, category: input.category ?? "Khác", id: randomUUID(), creator: user, createdAt: new Date().toISOString(), tags: [...new Set(input.tags)].slice(0, 12), members: [user.id] };
       state.ideas.push(idea); return present(idea, state, user.id);
     });
   }

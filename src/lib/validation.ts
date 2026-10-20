@@ -5,7 +5,7 @@ import { IDEA_TAG_SET } from "./idea-tags";
 export const createIdeaSchema = z.object({
   title: z.string().trim().min(1, "Nhập tên ý tưởng").max(80, "Tên ý tưởng tối đa 80 ký tự"),
   description: z.string().trim().min(1, "Nhập mô tả ý tưởng").max(240, "Mô tả tối đa 240 ký tự"),
-  category: z.enum(CATEGORIES),
+  category: z.enum(CATEGORIES).optional(),
   tags: z.array(z.string().trim().min(1).max(28).refine(tag=>IDEA_TAG_SET.has(tag),"Chọn tag trong danh mục có sẵn")).max(12).default([])
     .transform(tags => [...new Set(tags)]),
 }).strict();

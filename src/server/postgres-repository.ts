@@ -119,10 +119,10 @@ export class PostgresIdeaRepository implements IdeaRepository {
   getIdea(id: string, userId: string) { return getIdea(this.pool, id, userId); }
   async createIdea(user: Author, input: CreateIdeaInput): Promise<Idea> {
     return this.transaction(async db => {
-      const id = randomUUID(), tags = [...new Set([input.category, ...input.tags])].slice(0, 12);
+      const id = randomUUID(), tags = [...new Set(input.tags)].slice(0, 12);
       await ensureUser(db, user);
       await db.query(`INSERT INTO public.ideas (id, title, description, category, tags, search_text, creator_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)`, [id, input.title, input.description, input.category, tags, normalize([input.title, input.description, ...tags].join(" ")), user.id]);
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`, [id, input.title, input.description, input.category ?? "Khác", tags, normalize([input.title, input.description, ...tags].join(" ")), user.id]);
       await db.query("INSERT INTO public.memberships (idea_id, user_id) VALUES ($1, $2)", [id, user.id]);
       return getIdea(db, id, user.id);
     });

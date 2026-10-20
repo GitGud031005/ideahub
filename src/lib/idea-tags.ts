@@ -24,6 +24,3 @@ export function searchIdeaTags(query:string){
   const terms=normalize(query.trim()).split(/\s+/).filter(Boolean);
   return IDEA_TAG_GROUPS.map(group=>({name:group.name,tags:group.tags.filter(tag=>terms.every(term=>normalize(`${group.name} ${tag}`).includes(term)))})).filter(group=>group.tags.length);
 }
-export function tagsWithCategory(tags:readonly string[],category:string){
-  return [...new Set([category,...tags])].filter(tag=>IDEA_TAG_SET.has(tag)).slice(0,MAX_IDEA_TAGS);
-}

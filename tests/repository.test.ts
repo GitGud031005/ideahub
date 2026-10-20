@@ -11,14 +11,14 @@ import { createIdeaSchema, createCommentSchema } from "../src/lib/validation";
 import { buildCommentForest } from "../src/lib/format";
 
 const user = { id: "user-a", name: "Bạn A", initial: "A" }, other = { id: "user-b", name: "Bạn B", initial: "B" };
-const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", category: "Học tập" as const, tags: ["Bản đồ", "Bản đồ"] };
+const input = { title: "Bản đồ thư viện", description: "Cùng tìm nơi học", tags: ["Bản đồ", "Bản đồ"] };
 const query = { q: "", view: "all" as const, sort: "new" as const, limit: 24, offset: 0 };
 function repo() { return new StateIdeaRepository(new MemoryStore(createSeed())); }
 
 test("idea creation, accent-insensitive search, ownership and private membership projection", async () => {
   const repository = repo(), idea = await repository.createIdea(user, createIdeaSchema.parse(input));
   assert.equal(idea.memberCount, 1); assert.equal(idea.mine, true); assert.equal(idea.joined, true);
-  assert.deepEqual(idea.tags, ["Học tập", "Bản đồ"]); assert(!("members" in idea));
+  assert.deepEqual(idea.tags, ["Bản đồ"]); assert(!("members" in idea));
   const found = await repository.listIdeas(user.id, { ...query, q: "ban do thu vien", view: "mine" });
   assert.equal(found.total, 1); assert.equal(found.items[0].id, idea.id);
   assert.equal((await repository.getIdea(idea.id, other.id)).mine, false);
