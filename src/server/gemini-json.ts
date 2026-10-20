@@ -47,7 +47,17 @@ export class GeminiJsonClient {
         console.warn("IdeaHub Gemini transport unavailable",{model,code});continue;
       }
       if(!response.ok){
-        const status=response.status;await response.body?.cancel();
+        const status=response.status;
+        if(status===400){
+          const data=await boundedJson(response).catch(()=>null),detail=data?.error;
+          const reasons=Array.isArray(detail?.details)?detail.details.map((d:{reason?:string})=>d.reason):[];
+          if(reasons.some((r:string)=>["API_KEY_INVALID","API_KEY_EXPIRED","API_KEY_SERVICE_BLOCKED"].includes(r)))throw new AppError(503,"AI_AUTH","Google chưa chấp nhận API key hoặc quyền truy cập của project");
+          if(detail?.status==="FAILED_PRECONDITION")throw new AppError(503,"AI_PROJECT_SETUP","Project Google chưa đáp ứng điều kiện sử dụng model AI");
+          const message=typeof detail?.message==="string"?detail.message:"";
+          const issue=/thinking/i.test(message)?"THINKING":/schema|enum|states|constraint/i.test(message)?"SCHEMA":/location|country|region/i.test(message)?"REGION":"UNKNOWN";
+          throw new AppError(502,`AI_REQUEST_${issue}`,"Google chưa chấp nhận cấu hình yêu cầu AI");
+        }
+        await response.body?.cancel();
         if(status===401||status===403)throw new AppError(503,"AI_AUTH","Google chưa chấp nhận API key hoặc quyền truy cập của project");
         if(status===404||status===429||status>=500){last=new AppError(status===429?429:502,"AI_UNAVAILABLE",status===429?"Các model Google đang giới hạn lượt gọi, hãy thử lại sau":"Chưa nhận được kết quả với các model dự phòng");continue;}
         throw new AppError(502,"AI_REQUEST_CONFIG","Google chưa chấp nhận cấu hình yêu cầu AI");

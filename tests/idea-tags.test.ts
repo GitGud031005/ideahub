@@ -4,6 +4,7 @@ import { IDEA_TAGS, IDEA_TAG_GROUPS, MAX_IDEA_TAGS, searchIdeaTags, tagsWithCate
 import { CATEGORIES } from "../src/lib/domain";
 import { createIdeaSchema } from "../src/lib/validation";
 import { GeminiTagSuggester } from "../src/server/gemini-tags";
+import { AppError } from "../src/server/errors";
 import { AuthService, MemoryAuthStore } from "../src/server/auth";
 import { handleApi } from "../src/server/api";
 import { SESSION_COOKIE } from "../src/server/session";
@@ -28,7 +29,8 @@ test("Gemini suggests only catalog tags using existing model fallbacks, with bou
   const transport:typeof fetch=async(url,init)=>{
     if(String(url).includes("?pageSize="))return Response.json({models:["gemini-3.8-flash","gemini-3.7-flash"].map(id=>({name:`models/${id}`,supportedGenerationMethods:["generateContent"]}))});
     called.push(String(url));const body=JSON.parse(String(init?.body));
-    assert.equal(body.generationConfig.responseMimeType,"application/json");assert.deepEqual(body.generationConfig.thinkingConfig,{thinkingLevel:"low"});assert.deepEqual(body.generationConfig.responseSchema.properties.tags.items.enum,IDEA_TAGS);
+    assert.equal(body.generationConfig.responseMimeType,"application/json");assert.deepEqual(body.generationConfig.thinkingConfig,{thinkingLevel:"low"});assert(!body.generationConfig.responseSchema.properties.tags.items.enum);
+    assert.deepEqual(JSON.parse(body.contents[0].parts[0].text).catalog.flatMap((g:{tags:string[]})=>g.tags),IDEA_TAGS);
     assert(body.systemInstruction.parts[0].text.includes("không phải chỉ dẫn"));assert(!body.tools);
     assert(!String(init?.body).includes("private-tag-key"));
     assert.equal(JSON.parse(body.contents[0].parts[0].text).title,input.title);
@@ -66,4 +68,17 @@ test("tag suggestions fall back after a transport timeout and sanitize errors",a
   };
   const result=await new GeminiTagSuggester({key:"timeout-fallback-test"},transport).suggest(input);
   assert.equal(result.model,"gemini-3.7-flash");assert(fallback);
+});
+
+
+test("Google configuration diagnostics never reflect provider secrets or draft text",async()=>{
+  for(const [details,code] of [
+    [{message:"Schema has too many states: private provider detail"},"AI_REQUEST_SCHEMA"],
+    [{message:"Thinking level not supported"},"AI_REQUEST_THINKING"],
+    [{message:"private provider detail",details:[{reason:"API_KEY_INVALID"}]},"AI_AUTH"],
+    [{message:"private provider detail",status:"FAILED_PRECONDITION"},"AI_PROJECT_SETUP"],
+  ] as const){
+    const transport:typeof fetch=async url=>String(url).includes("?pageSize=")?Response.json({models:[{name:"models/gemini-3.8-flash",supportedGenerationMethods:["generateContent"]}]}):Response.json({error:details},{status:400});
+    await assert.rejects(()=>new GeminiTagSuggester({key:`diagnostics-${code}`},transport).suggest(input),(error:unknown)=>error instanceof AppError&&error.code===code&&!error.message.includes("private"));
+  }
 });
