@@ -10,7 +10,7 @@ import type { Recap } from "../../src/lib/recaps";
 declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
 const tags = ["Công nghệ", "Data engineering", "Python", "Open source", "Thiết kế", "Teamwork", "PostgreSQL", "Tìm đồng đội", "Mobile", "Product", "Frontend", "Backend"];
-const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: false, joined: false }));
+const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "new" : i === 1 ? "potential" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, mine: false, joined: false }));
 const comments: Comment[] = Array.from({ length: 13 }, (_, i) => ({ id: `qa-comment-${i}`, ideaId: ideas[0].id, parentId: i ? `qa-comment-${i - 1}` : null, author: i % 2 ? { id: "qa-other", name: "Trần Ngọc Bình", initial: "TB" } : person, text: i ? "Mình đồng ý. Cùng bắt đầu từ một phần nhỏ, rồi xây dựng và hoàn thiện từng bước nhé" : "Mình có thể phụ trách phần thu thập dữ liệu và xây dựng pipeline. Mọi người muốn bắt đầu từ nguồn nào?", createdAt: new Date().toISOString() }));
 comments.push(...[
   {id:"qa-sibling-old",parentId:"qa-comment-0",text:"Nhánh cũ: bắt đầu từ nguồn sách",createdAt:"2026-10-15T10:00:00Z"},
@@ -48,7 +48,13 @@ window.fetch = async (input, init) => {
     current={...current!,avatarUrl:URL.createObjectURL(file)};return Response.json({user:current,storage:"postgres"});
   }
   if (path === "/api/auth/logout") { current = null; return Response.json({ user: null, storage: "postgres" }); }
-  if (path === "/api/ideas") return Response.json({ items: ideas, total: 3, counts: { all: 3, joined: 2, mine: 1 },nextCursor:null });
+  if (path === "/api/ideas") {
+    const status=url.searchParams.get("status")??"active",view=url.searchParams.get("view")??"all",q=(url.searchParams.get("q")??"").toLowerCase();
+    const visible=ideas.filter(i=>(view==="all"||(view==="joined"?i.joined:i.mine))&&i.title.toLowerCase().includes(q));
+    const items=visible.filter(i=>status==="all"||(status==="active"?i.status!=="archived":i.status===status));
+    return Response.json({items:items.map(i=>({...i,joined:!!current&&i.joined,mine:!!current&&i.mine})),total:items.length,counts:{all:items.length,joined:items.filter(i=>i.joined).length,mine:items.filter(i=>i.mine).length},statusCounts:{all:visible.length,active:visible.filter(i=>i.status!=="archived").length,new:visible.filter(i=>i.status==="new").length,potential:visible.filter(i=>i.status==="potential").length,archived:visible.filter(i=>i.status==="archived").length},nextCursor:null});
+  }
+  if (path.endsWith("/status")&&init?.method==="POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;idea.status=JSON.parse(String(init.body)).status;return Response.json(idea);}
   if (path.endsWith("/recaps/qa-recap")) return Response.json(recap);
   if (path.endsWith("/recaps")) return Response.json({items:[recap],nextOffset:null,aiConfigured:true});
   if(path.endsWith('/pin')&&init?.method==='POST') {const c=comments.find(c=>c.id===path.split('/').at(-2));if(c)c.pinnedAt=JSON.parse(String(init.body)).pinned?new Date().toISOString():null;return Response.json({ok:true});}

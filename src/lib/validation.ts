@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CATEGORIES } from "./domain";
+import { CATEGORIES, IDEA_STATUSES } from "./domain";
 
 export const createIdeaSchema = z.object({
   title: z.string().trim().min(1, "Nhập tên ý tưởng").max(80, "Tên ý tưởng tối đa 80 ký tự"),
@@ -14,7 +14,9 @@ export const createCommentSchema = z.object({
   clientId: z.string().uuid().optional(),
   parentId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).nullable().optional(),
 }).strict().refine(input=>!!input.text||(input.attachmentIds?.length??0)>0,{message:"Nhập nội dung hoặc chọn tệp đính kèm"});
+export const updateIdeaStatusSchema = z.object({ status: z.enum(IDEA_STATUSES) }).strict();
 export const ideaQuerySchema = z.object({
+  status: z.enum(["active", "all", ...IDEA_STATUSES]).default("active"),
   q: z.string().trim().max(120).default(""),
   view: z.enum(["all", "joined", "mine"]).default("all"),
   sort: z.enum(["new", "popular"]).default("new"),

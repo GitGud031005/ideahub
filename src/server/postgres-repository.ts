@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { QueryResultRow } from "pg";
-import type { Author, Category, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage, UnreadCounts } from "@/lib/domain";
+import type { Author, Category, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage, IdeaStatus, IdeaStatusFilter, UnreadCounts } from "@/lib/domain";
 import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { IdeaRepository } from "./repository";
@@ -15,6 +15,7 @@ export interface DatabaseClient extends DatabaseExecutor { release(destroy?: boo
 export interface DatabasePool extends DatabaseExecutor { connect(): Promise<DatabaseClient> }
 type Executor = DatabaseExecutor;
 interface IdeaRow {
+  status: IdeaStatus;
   id: string; title: string; description: string; category: Category; tags: string[];
   creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
   member_count: number; comment_count: number; joined: boolean; mine: boolean;
@@ -25,7 +26,7 @@ interface CommentRow {
   display_name: string; initial: string; avatar_url: string | null; body: string; created_at: Date; read_sequence:string;
   attachments:Attachment[]; pinned_at:Date|null;
 }
-const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.creator_id,
+const IDEA_SELECT = `SELECT i.id, i.status, i.title, i.description, i.category, i.tags, i.creator_id,
   u.display_name, u.initial, u.avatar_url, i.created_at,
   to_char(i.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time,
   (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id = i.id) AS member_count,
@@ -36,7 +37,7 @@ const IDEA_SELECT = `SELECT i.id, i.title, i.description, i.category, i.tags, i.
 const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body, c.created_at, c.read_sequence::text,c.attachments,c.pinned_at,
   u.display_name, u.initial, u.avatar_url FROM public.comments c JOIN public.users u ON u.id = c.author_id`;
 function idea(row: IdeaRow): Idea {
-  return { id: row.id, title: row.title, description: row.description, category: row.category, tags: row.tags,
+  return { id: row.id, status: row.status, title: row.title, description: row.description, category: row.category, tags: row.tags,
     creator: { id: row.creator_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),
     memberCount: row.member_count, commentCount: row.comment_count, joined: row.joined, mine: row.mine };
 }
@@ -80,27 +81,36 @@ export class PostgresIdeaRepository implements IdeaRepository {
     return this.transaction(async db => {
       const snapshot = cursor?.snapshot ?? (await db.query<{ snapshot: string }>(`SELECT
         to_char(transaction_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS snapshot`)).rows[0].snapshot;
-      // Counts describe the full dashboard, independently of the current search/filter.
+      const status = query.status ?? "active";
+      const statusWhere = `($5 = 'all' OR ($5 = 'active' AND i.status <> 'archived') OR i.status = $5)`;
+      // View counts follow classification; status counts follow the selected view/search.
       const counts = (await db.query<{ all: number; joined: number; mine: number }>(`SELECT count(*)::int AS all,
         count(*) FILTER (WHERE EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1))::int AS joined,
-        count(*) FILTER (WHERE i.creator_id = $1)::int AS mine FROM public.ideas i`, [userId])).rows[0];
-      const where = `WHERE strpos(i.search_text, $2) > 0 AND i.created_at <= $4::timestamptz
-        AND ($3 = 'all' OR ($3 = 'mine' AND i.creator_id = $1)
+        count(*) FILTER (WHERE i.creator_id = $1)::int AS mine FROM public.ideas i
+        WHERE ($2 = 'all' OR ($2 = 'active' AND i.status <> 'archived') OR i.status = $2)`, [userId, status])).rows[0];
+      const viewWhere = `($3 = 'all' OR ($3 = 'mine' AND i.creator_id = $1)
           OR ($3 = 'joined' AND EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $1 AND m.joined_at <= $4::timestamptz)))`;
-      const values = [userId, normalize(query.q), query.view, snapshot];
-      const total = (await db.query<{ total: number }>(`SELECT count(*)::int AS total FROM public.ideas i ${where}`, values)).rows[0].total;
+      const baseWhere = `WHERE strpos(i.search_text, $2) > 0 AND i.created_at <= $4::timestamptz AND ${viewWhere}`;
+      const where = `${baseWhere} AND ${statusWhere}`;
+      const values = [userId, normalize(query.q), query.view, snapshot, status];
+      const statusCounts = (await db.query<Record<IdeaStatusFilter, number>>(`SELECT count(*)::int AS all,
+        count(*) FILTER (WHERE i.status <> 'archived')::int AS active,
+        count(*) FILTER (WHERE i.status = 'new')::int AS new,
+        count(*) FILTER (WHERE i.status = 'potential')::int AS potential,
+        count(*) FILTER (WHERE i.status = 'archived')::int AS archived FROM public.ideas i ${baseWhere}`, values.slice(0,4))).rows[0];
+      const total = statusCounts[status];
       // Freeze popularity at the first page; new joins must not move unseen rows across the cursor.
       const rank = query.sort === "popular" ? `(SELECT count(*)::int FROM public.memberships m
         WHERE m.idea_id = i.id AND m.joined_at <= $4::timestamptz)` : "0";
       const result = await db.query<IdeaRow>(`WITH ranked AS (
         ${IDEA_SELECT.replace("SELECT i.id", `SELECT ${rank} AS rank_members, i.id`)} ${where}
-      ) SELECT * FROM ranked WHERE $5::text IS NULL OR rank_members < $6::int
-        OR (rank_members = $6::int AND (created_at < $7::timestamptz
-          OR (created_at = $7::timestamptz AND id COLLATE "C" > $5)))
-        ORDER BY rank_members DESC, created_at DESC, id COLLATE "C" ASC LIMIT $8 OFFSET $9`,
+      ) SELECT * FROM ranked WHERE $6::text IS NULL OR rank_members < $7::int
+        OR (rank_members = $7::int AND (created_at < $8::timestamptz
+          OR (created_at = $8::timestamptz AND id COLLATE "C" > $6)))
+        ORDER BY rank_members DESC, created_at DESC, id COLLATE "C" ASC LIMIT $9 OFFSET $10`,
       [...values, cursor?.id ?? null, cursor?.members ?? 0, cursor?.createdAt ?? null, query.limit + 1, cursor ? 0 : query.offset]);
       const rows = result.rows.slice(0, query.limit), last = rows.at(-1);
-      return { items: rows.map(idea), total, counts, nextCursor: result.rows.length > query.limit && last
+      return { items: rows.map(idea), total, counts, statusCounts, nextCursor: result.rows.length > query.limit && last
         ? writeIdeaCursor(userId, query, { snapshot, id: last.id, createdAt: last.cursor_time, members: last.rank_members! }) : null };
     }, true);
   }
@@ -113,6 +123,15 @@ export class PostgresIdeaRepository implements IdeaRepository {
         VALUES ($1, $2, $3, $4, $5, $6, $7)`, [id, input.title, input.description, input.category, tags, normalize([input.title, input.description, ...tags].join(" ")), user.id]);
       await db.query("INSERT INTO public.memberships (idea_id, user_id) VALUES ($1, $2)", [id, user.id]);
       return getIdea(db, id, user.id);
+    });
+  }
+  async setIdeaStatus(id: string, userId: string, status: IdeaStatus): Promise<Idea> {
+    return this.transaction(async db => {
+      await requireIdea(db, id);
+      const result = await db.query(`UPDATE public.ideas i SET status = $3 WHERE i.id = $1
+        AND EXISTS (SELECT 1 FROM public.memberships m WHERE m.idea_id = i.id AND m.user_id = $2) RETURNING i.id`, [id, userId, status]);
+      if (!result.rowCount) throw new AppError(403, "NOT_JOINED", "Tham gia ý tưởng để thay đổi phân loại");
+      return getIdea(db, id, userId);
     });
   }
   async joinIdea(id: string, userId: string): Promise<Idea> {

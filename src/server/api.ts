@@ -1,4 +1,4 @@
-import { commentQuerySchema, createCommentSchema, createIdeaSchema, ideaQuerySchema } from "@/lib/validation";
+import { commentQuerySchema, createCommentSchema, createIdeaSchema, ideaQuerySchema, updateIdeaStatusSchema } from "@/lib/validation";
 import type { IdeaRepository } from "./repository";
 import { getRepository, storageMode } from "./container";
 import { AppError } from "./errors";
@@ -85,7 +85,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(method!=="GET")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405,{Allow:"GET"});
       return json(await (repository??getRepository()).unreadCounts(user.id));
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/pin))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|status|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/pin))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
     if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
@@ -96,6 +96,11 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     const id = path[1];
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new AppError(400, "INVALID_ID", "Mã ý tưởng không hợp lệ");
+    if (path[2] === "status") {
+      if (method !== "POST") return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng POST để thay đổi phân loại"}},405,{Allow:"POST"});
+      const input = await readJson(request, updateIdeaStatusSchema);
+      return json(await repo.setIdeaStatus(id, user!.id, input.status));
+    }
     if(path[2]==="attachments"){
       if(path.length===4&&method==="GET")return files.download(await repo.getAttachment(id,path[3],user!.id),url.searchParams.get("download")==="1");
       if(path.length!==3||method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405);

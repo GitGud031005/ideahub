@@ -1,4 +1,4 @@
-import type { Author, CreateCommentInput, CreateIdeaInput, IdeaQuery } from "@/lib/domain";
+import type { Author, CreateCommentInput, CreateIdeaInput, IdeaQuery, IdeaStatus } from "@/lib/domain";
 import type { IdeaRepository } from "./repository";
 import { RedisCache } from "./redis-cache";
 import type { StoredAttachment } from "./attachment-record";
@@ -7,6 +7,7 @@ import type { StoredAttachment } from "./attachment-record";
 export class CachedIdeaRepository implements IdeaRepository {
   constructor(private inner:IdeaRepository,private cache:RedisCache){}
   listIdeas(userId:string,query:IdeaQuery){return this.inner.listIdeas(userId,query);}
+  setIdeaStatus(id:string,userId:string,status:IdeaStatus){return this.inner.setIdeaStatus(id,userId,status);}
   getIdea(id:string,userId:string){return this.inner.getIdea(id,userId);}
   unreadCounts(userId:string){return this.inner.unreadCounts(userId);}
   markRead(id:string,userId:string,commentId:string){return this.inner.markRead(id,userId,commentId);}

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Author, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage, UnreadCounts, RoomActivity } from "@/lib/domain";
+import type { Author, Comment, CommentsPage, CreateCommentInput, CreateIdeaInput, Idea, IdeaQuery, IdeasPage, IdeaStatus, UnreadCounts, RoomActivity } from "@/lib/domain";
 import { normalize } from "@/lib/format";
 import { AppError, notFound } from "./errors";
 import type { DataState, IdeaRecord, StateStore } from "./state";
@@ -12,6 +12,7 @@ export interface IdeaRepository {
   getIdea(id: string, userId: string): Promise<Idea>;
   createIdea(user: Author, input: CreateIdeaInput): Promise<Idea>;
   joinIdea(id: string, userId: string): Promise<Idea>;
+  setIdeaStatus(id: string, userId: string, status: IdeaStatus): Promise<Idea>;
   listComments(ideaId: string, cursor?: string, limit?: number): Promise<CommentsPage>;
   createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment>;
   getActivity(ideaId:string):Promise<RoomActivity>;
@@ -23,7 +24,7 @@ export interface IdeaRepository {
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
   const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, ...record } = idea;
-  return { ...record, memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
+  return { ...record, status: idea.status ?? "potential", memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
@@ -56,18 +57,22 @@ export class StateIdeaRepository implements IdeaRepository {
     return this.store.read(state => {
       const snapshot = cursor?.snapshot ?? new Date().toISOString();
       const all = state.ideas.map(i => present(i, state, userId));
-      const q = normalize(query.q);
+      const q = normalize(query.q), status = query.status ?? "active";
+      const matchesStatus = (i: Idea) => status === "all" || (status === "active" ? i.status !== "archived" : i.status === status);
+      const visible = all.filter(i => (query.view === "all" || (query.view === "joined" ? i.joined : i.mine)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
+      const statusCounts = { all: visible.length, active: visible.filter(i => i.status !== "archived").length, new: visible.filter(i => i.status === "new").length, potential: visible.filter(i => i.status === "potential").length, archived: visible.filter(i => i.status === "archived").length };
+      const counted = all.filter(matchesStatus);
       const before = (time?: string) => !time || Date.parse(time) <= Date.parse(snapshot);
       const ranked = state.ideas.map(i => ({ item: present(i, state, userId),
         joined: i.members.includes(userId) && before(i.memberJoinedAt?.[userId]),
         rank: query.sort === "popular" ? i.members.filter(id => before(i.memberJoinedAt?.[id])).length : 0 }));
-      const filtered = ranked.filter(({ item: i, joined }) => before(i.createdAt) && (query.view === "all" || (query.view === "joined" ? joined : i.mine)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
+      const filtered = ranked.filter(({ item: i, joined }) => before(i.createdAt) && matchesStatus(i) && (query.view === "all" || (query.view === "joined" ? joined : i.mine)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
       const compare = (a: {rank: number; createdAt: string; id: string}, b: {rank: number; createdAt: string; id: string}) =>
         b.rank - a.rank || Date.parse(b.createdAt) - Date.parse(a.createdAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
       filtered.sort((a, b) => compare({ ...a.item, rank: a.rank }, { ...b.item, rank: b.rank }));
       const remaining = cursor ? filtered.filter(({ item, rank }) => compare({ ...item, rank }, { ...cursor, rank: cursor.members }) > 0) : filtered.slice(query.offset);
       const page = remaining.slice(0, query.limit), last = page.at(-1);
-      return { items: page.map(p => p.item), total: filtered.length, counts: { all: all.length, joined: all.filter(i => i.joined).length, mine: all.filter(i => i.mine).length },
+      return { items: page.map(p => p.item), total: filtered.length, counts: { all: counted.length, joined: counted.filter(i => i.joined).length, mine: counted.filter(i => i.mine).length }, statusCounts,
         nextCursor: remaining.length > query.limit && last ? writeIdeaCursor(userId, query, { snapshot, createdAt: last.item.createdAt, id: last.item.id, members: last.rank }) : null };
     });
   }
@@ -76,8 +81,15 @@ export class StateIdeaRepository implements IdeaRepository {
   }
   createIdea(user: Author, input: CreateIdeaInput) {
     return this.store.transact(state => {
-      const idea: IdeaRecord = { ...input, id: randomUUID(), creator: user, createdAt: new Date().toISOString(), tags: [...new Set([input.category, ...input.tags])].slice(0, 12), members: [user.id] };
+      const idea: IdeaRecord = { ...input, status: "new", id: randomUUID(), creator: user, createdAt: new Date().toISOString(), tags: [...new Set([input.category, ...input.tags])].slice(0, 12), members: [user.id] };
       state.ideas.push(idea); return present(idea, state, user.id);
+    });
+  }
+  setIdeaStatus(id: string, userId: string, status: IdeaStatus) {
+    return this.store.transact(state => {
+      const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();
+      if (!idea.members.includes(userId)) throw new AppError(403, "NOT_JOINED", "Tham gia ý tưởng để thay đổi phân loại");
+      idea.status = status; return present(idea, state, userId);
     });
   }
   joinIdea(id: string, userId: string) {
