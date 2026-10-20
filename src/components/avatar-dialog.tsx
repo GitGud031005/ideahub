@@ -2,10 +2,9 @@
 
 import { Camera, ImagePlus, Minus, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { avatarFileError } from "./avatar";
-import { avatarCrop, type AvatarPan } from "@/lib/avatar-crop";
+import { avatarCrop, avatarFileError, type AvatarPan } from "@/lib/avatar-crop";
 
-export function AvatarDialog({onClose,onSave}:{onClose:()=>void;onSave:(file:File)=>Promise<void>}) {
+export function AvatarDialog({onClose,onSave,confirmLabel="Lưu ảnh đại diện"}:{onClose:()=>void;onSave:(file:File)=>Promise<void>;confirmLabel?:string}) {
   const dialog=useRef<HTMLDialogElement>(null),input=useRef<HTMLInputElement>(null),image=useRef<HTMLImageElement>(null),viewport=useRef<HTMLDivElement>(null);
   const [file,setFile]=useState<File|null>(null),[url,setUrl]=useState(""),[size,setSize]=useState({w:0,h:0}),[edge,setEdge]=useState(280);
   const [zoom,setZoom]=useState(1),[pan,setPan]=useState<AvatarPan>({x:0,y:0}),[error,setError]=useState(""),[busy,setBusy]=useState(false),[over,setOver]=useState(false);
@@ -27,7 +26,7 @@ export function AvatarDialog({onClose,onSave}:{onClose:()=>void;onSave:(file:Fil
       await onSave(cropped);onClose();
     }catch(e){setError(e instanceof Error?e.message:"Chưa lưu được ảnh, hãy thử lại");setBusy(false);}
   }
-  return <dialog ref={dialog} className="ih-avatar-dialog" aria-labelledby="avatar-dialog-title" aria-busy={busy} onCancel={e=>{e.preventDefault();if(!busy)onClose();}} onClick={e=>{const r=e.currentTarget.getBoundingClientRect();if(e.target===e.currentTarget&&!busy&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))onClose();}}>
+  return <dialog ref={dialog} className="ih-avatar-dialog" aria-labelledby="avatar-dialog-title" aria-busy={busy} onCancel={e=>{e.preventDefault();e.stopPropagation();if(!busy)onClose();}} onClick={e=>{const r=e.currentTarget.getBoundingClientRect();if(e.target===e.currentTarget&&!busy&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom))onClose();}}>
     <div className="ih-dialog-top"><span className="ih-eyebrow">ẢNH ĐẠI DIỆN</span><button className="ih-icon-button" type="button" aria-label="Đóng chỉnh ảnh" disabled={busy} onClick={onClose}><X size={18}/></button></div>
     <h2 id="avatar-dialog-title">{url?"Căn lại một chút cho vừa":"Chọn một hình ảnh của bạn"}</h2><p className="ih-avatar-dialog-copy">{url?"Kéo ảnh để căn vị trí, thu phóng để chọn khung hình":"Chọn từ máy hoặc kéo thả ảnh vào khung bên dưới"}</p>
     <input hidden ref={input} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Tệp ảnh để cắt" disabled={busy} onChange={e=>{choose(e.target.files?.[0]);e.target.value="";}}/>
@@ -42,6 +41,6 @@ export function AvatarDialog({onClose,onSave}:{onClose:()=>void;onSave:(file:Fil
       <button type="button" className="ih-avatar-replace" disabled={busy} onClick={()=>input.current?.click()}><Camera size={14}/>Chọn ảnh khác</button>
     </>}
     {error&&<p className="ih-form-error" role="alert">{error}</p>}
-    <div className="ih-form-footer"><button className="ih-secondary" type="button" disabled={busy} onClick={onClose}>Hủy</button><button className="ih-primary" type="button" disabled={busy||!size.w} onClick={()=>void save()}>{busy?"Đang lưu ảnh...":"Lưu ảnh đại diện"}</button></div>
+    <div className="ih-form-footer"><button className="ih-secondary" type="button" disabled={busy} onClick={onClose}>Hủy</button><button className="ih-primary" type="button" disabled={busy||!size.w} onClick={()=>void save()}>{busy?"Đang lưu ảnh...":confirmLabel}</button></div>
   </dialog>;
 }
