@@ -368,5 +368,5 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 
 /* Unread totals include every descendant, even inside collapsed reply levels. */
 .ih-replies-toggle{max-width:100%;flex-wrap:wrap;row-gap:3px;text-align:left}
-.ih-branch-unread{display:inline-flex;align-items:center;gap:5px;color:#73736b;font-size:11px;font-weight:500;white-space:normal}
-.ih-branch-unread>span{color:#77796a;font-size:12px;line-height:1}
+.ih-branch-unread{display:inline-flex;align-items:center;gap:5px;color:#a64d49;font-size:11px;font-weight:500;white-space:normal}
+.ih-branch-unread>span{color:inherit;font-size:12px;line-height:1}
