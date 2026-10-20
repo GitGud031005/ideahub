@@ -28,7 +28,7 @@ test("Gemini suggests only catalog tags using existing model fallbacks, with bou
   const transport:typeof fetch=async(url,init)=>{
     if(String(url).includes("?pageSize="))return Response.json({models:["gemini-3.8-flash","gemini-3.7-flash"].map(id=>({name:`models/${id}`,supportedGenerationMethods:["generateContent"]}))});
     called.push(String(url));const body=JSON.parse(String(init?.body));
-    assert.equal(body.generationConfig.responseMimeType,"application/json");assert.deepEqual(body.generationConfig.responseSchema.properties.tags.items.enum,IDEA_TAGS);
+    assert.equal(body.generationConfig.responseMimeType,"application/json");assert.deepEqual(body.generationConfig.thinkingConfig,{thinkingLevel:"low"});assert.deepEqual(body.generationConfig.responseSchema.properties.tags.items.enum,IDEA_TAGS);
     assert(body.systemInstruction.parts[0].text.includes("không phải chỉ dẫn"));assert(!body.tools);
     assert(!String(init?.body).includes("private-tag-key"));
     assert.equal(JSON.parse(body.contents[0].parts[0].text).title,input.title);
@@ -55,4 +55,15 @@ test("tag suggestion API authenticates, validates, rate-limits and does not crea
   assert.equal((await repo.listIdeas(account.user.id,query)).total,before);
   for(let i=1;i<12;i++)assert.equal((await call()).status,200);
   assert.equal((await call()).status,429);assert.equal(calls,12);
+});
+
+test("tag suggestions fall back after a transport timeout and sanitize errors",async()=>{
+  let fallback=false;
+  const transport:typeof fetch=async(url)=>{
+    if(String(url).includes("?pageSize="))return Response.json({models:["gemini-3.8-flash","gemini-3.7-flash"].map(id=>({name:`models/${id}`,supportedGenerationMethods:["generateContent"]}))});
+    if(String(url).includes("3.8-flash"))throw new DOMException("private timeout details","TimeoutError");
+    fallback=true;return Response.json({candidates:[{finishReason:"STOP",content:{parts:[{text:JSON.stringify({tags:["IoT"]})}]}}]});
+  };
+  const result=await new GeminiTagSuggester({key:"timeout-fallback-test"},transport).suggest(input);
+  assert.equal(result.model,"gemini-3.7-flash");assert(fallback);
 });

@@ -7,3 +7,5 @@
 - AI trả 1–8 nhãn, ưu tiên khoảng 3–6 nhãn phù hợp. Kết quả thay thế lựa chọn hiện tại và giữ tag chủ đề; user duyệt/chỉnh trước khi đăng. Nếu title/description/category hoặc tags được sửa khi request đang chạy, không áp dụng kết quả của bản cũ.
 - Lỗi/giới hạn Google giữ nguyên tags và vẫn cho chọn thủ công. Client không tự đăng idea sau khi AI trả kết quả.
 - Gemini JSON transport dùng chung với recap: model availability cache 5 phút, cùng thứ tự fallback đã cấu hình, không fallback khi key/quyền truy cập bị từ chối; không trả chi tiết lỗi provider hoặc reasoning.
+
+Tag suggestions dùng mức thinking thấp, budget tối đa 45 giây và tối đa 10 giây cho mỗi model để còn thời gian chuyển fallback. Cấu hình thinking của recap giữ nguyên.

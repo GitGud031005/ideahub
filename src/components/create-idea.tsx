@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, ArrowUpRight, Sparkles, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { CATEGORIES, type Category, type CreateIdeaInput, type Idea } from "@/lib/domain";
 import { tagsWithCategory } from "@/lib/idea-tags";
 import { TagPicker } from "./tag-picker";
@@ -85,7 +85,7 @@ export function CreateIdea({ onClose }: { onClose: () => void }) {
       <TagPicker value={tags} category={category} onChange={value=>{setTags(value);edited();clearError("tags");}} disabled={mutation.isPending} error={errors.tags}/>
       <div className="ih-ai-tags"><button type="button" className="ih-secondary ih-suggest-tags" disabled={mutation.isPending||suggest.isPending} onClick={suggestTags}>{suggest.isPending?<LoaderCircle className="ih-ai-spinner" size={14} aria-hidden="true"/>:<Sparkles size={14} aria-hidden="true"/>}{suggest.isPending?"Đang chọn tags phù hợp...":"Gợi ý tags bằng AI"}</button><p>AI đọc tên và mô tả để cập nhật các tags đang chọn</p></div>
       {suggestionNote&&<p className="ih-ai-tags-note" role="status">{suggestionNote}</p>}
-      {suggest.error&&<p className="ih-field-error" role="alert">{suggest.error.message}. Bạn vẫn có thể tự chọn tags</p>}
+      {suggest.error&&<p className="ih-field-error" role="alert" data-ai-error-code={suggest.error instanceof ApiError?suggest.error.code:undefined}>{suggest.error.message}. Bạn vẫn có thể tự chọn tags</p>}
 
       {session.data?.storage === "memory" && <p className="ih-demo-note">Dữ liệu thử nghiệm có thể được đặt lại</p>}
       {mutation.error && <p className="ih-form-error" role="alert">{mutation.error.message}</p>}

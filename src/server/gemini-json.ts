@@ -26,7 +26,7 @@ export class GeminiJsonClient {
       if(catalogs.size>20)catalogs.clear();catalogs.set(hash,{expires:Date.now()+300000,ids});return ids;
     }catch(error){if(error instanceof AppError)throw error;return null;}
   }
-  async generate<T>(request:{instructions:string;input:unknown;schema:unknown;parse:(value:unknown)=>T;maxOutputTokens?:number;timeoutMs?:number}){
+  async generate<T>(request:{instructions:string;input:unknown;schema:unknown;parse:(value:unknown)=>T;maxOutputTokens?:number;timeoutMs?:number;attemptTimeoutMs?:number;fast?:boolean}){
     if(!this.configured())throw new AppError(503,"AI_NOT_CONFIGURED","Chức năng AI chưa được kết nối, bạn vẫn có thể tự chọn tags hoặc xem recap đã lưu");
     let ordered:string[];try{ordered=geminiModelOrder(this.settings.model,this.settings.fallbacks);}catch{throw new AppError(503,"AI_CONFIG","Model AI phải thuộc danh sách đã cấu hình cho IdeaHub");}
     const deadline=Date.now()+(request.timeoutMs??45000),available=await this.available(),models=available?ordered.filter(id=>available.has(id)):ordered;
@@ -36,9 +36,16 @@ export class GeminiJsonClient {
       const remaining=deadline-Date.now();if(remaining<1500)break;
       let response:Response;
       try{response=await this.transport(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
-        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":this.settings.key!.trim()},signal:AbortSignal.timeout(Math.min(25000,remaining)),
-        body:JSON.stringify({systemInstruction:{parts:[{text:request.instructions}]},contents:[{role:"user",parts:[{text:JSON.stringify(request.input)}]}],generationConfig:{responseMimeType:"application/json",responseSchema:request.schema,maxOutputTokens:request.maxOutputTokens??8000}}),
-      });}catch{continue;}
+        method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":this.settings.key!.trim()},signal:AbortSignal.timeout(Math.min(request.attemptTimeoutMs??25000,remaining)),
+        body:JSON.stringify({systemInstruction:{parts:[{text:request.instructions}]},contents:[{role:"user",parts:[{text:JSON.stringify(request.input)}]}],generationConfig:{responseMimeType:"application/json",responseSchema:request.schema,maxOutputTokens:request.maxOutputTokens??8000,...(request.fast&&model.startsWith("gemini-3")?{thinkingConfig:{thinkingLevel:"low"}}:request.fast&&model.startsWith("gemini-2.5")?{thinkingConfig:{thinkingBudget:model.includes("pro")?128:0}}:{})}}),
+      });}catch(error){
+        const cause=(error as {cause?:{code?:string}})?.cause?.code;
+        const timeout=(error instanceof Error&&["TimeoutError","AbortError"].includes(error.name))||cause?.includes("TIMEOUT");
+        const known=["UND_ERR_CONNECT_TIMEOUT","ENOTFOUND","ECONNRESET","ECONNREFUSED","ETIMEDOUT","EAI_AGAIN","UNABLE_TO_VERIFY_LEAF_SIGNATURE"];
+        const code=timeout?"AI_TIMEOUT":`AI_CONNECTION_${cause&&known.includes(cause)?cause:"FAILED"}`;
+        last=new AppError(timeout?504:502,code,timeout?"Google đang phản hồi chậm, hãy thử lại sau":"Chưa kết nối được với Google, hãy thử lại sau");
+        console.warn("IdeaHub Gemini transport unavailable",{model,code});continue;
+      }
       if(!response.ok){
         const status=response.status;await response.body?.cancel();
         if(status===401||status===403)throw new AppError(503,"AI_AUTH","Google chưa chấp nhận API key hoặc quyền truy cập của project");
