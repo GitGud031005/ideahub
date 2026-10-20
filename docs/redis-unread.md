@@ -3,9 +3,9 @@
 ## Tin chưa đọc
 
 - Mỗi membership lưu mốc đọc bền vững trong PostgreSQL. Tin của chính người xem không tính, trả lời trong các nhánh vẫn tính.
-- Tài khoản vừa tham gia bắt đầu ở cuối lịch sử hiện có. Khi triển khai tính năng, thành viên cũ cũng bắt đầu từ lịch sử hiện tại, tránh báo hàng loạt tin cũ.
+- Tham gia phòng không đánh dấu lịch sử là đã đọc. User mới vẫn thấy số tin chưa đọc trong các nhánh đang đóng; chỉ các cấp đã mở mới được xác nhận bằng receipt. Mốc lịch sử của thành viên từ bản cũ được giữ để không khôi phục sai các lần đọc không còn đủ dữ liệu. Migration sửa riêng các lượt tham gia mới từ lúc triển khai receipt theo từng tin (2026-10-20 04:21:03 UTC), giữ mọi receipt đã có.
 - Badge nằm trên nút chat của các idea đã tham gia, giới hạn hiển thị `99+`; nhãn trợ năng giữ số thật. Dashboard tự cập nhật mỗi 5 giây và khi lấy lại focus/kết nối.
-- Khi phòng có focus, client xác nhận chính xác các bình luận đang được render ở những cấp đã mở, theo lô tối đa 200 ID. Nhánh con còn đóng và tab ẩn không bị đánh dấu. Vòng đọc mới không đẩy mốc sequence: `last_read_sequence` chỉ còn là baseline lịch sử/khi tham gia; các lần đọc mới lưu ở `comment_read_receipts`.
+- Khi phòng có focus, client xác nhận chính xác các bình luận đang được render ở những cấp đã mở, theo lô tối đa 200 ID. Nhánh con còn đóng và tab ẩn không bị đánh dấu. Vòng đọc mới không đẩy mốc sequence: `last_read_sequence` chỉ còn là baseline lịch sử của bản cũ; các lần đọc mới lưu ở `comment_read_receipts`.
 - `GET /api/unread` trả map số chưa đọc; `GET /api/ideas/:id/read` trả `{unreadIds}` của user trong session. `POST /api/ideas/:id/read` nhận `{commentIds}` (1–200 ID), vẫn hỗ trợ `{commentId}` cho client cũ nhưng chỉ đọc đúng tin đó. Session, same-origin và membership bắt buộc; lô có ID sai bị từ chối toàn bộ. Cả hai loại kết quả cá nhân đều không dùng Redis.
 - Nút nhánh hiển thị `Xem N trả lời • X tin chưa đọc`, cộng mọi cấp phía dưới, không tính chính node cha. Mở một cấp chỉ đọc node hiện ra; số còn lại truyền lên các nhánh tổ tiên. Poll/focus/reconnect đồng bộ đọc từ phiên khác; SSE đồng bộ tin mới.
 - Ghi bình luận cùng phòng được tuần tự bằng row lock để sequence phản ánh thứ tự commit; request dùng marker theo ID nên không mất độ chính xác microsecond hoặc bigint qua JavaScript.

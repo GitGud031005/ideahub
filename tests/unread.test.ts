@@ -11,7 +11,9 @@ import { SESSION_COOKIE } from "../src/server/session";
 const a={id:"reader-a",name:"A",initial:"A"},b={id:"reader-b",name:"B",initial:"B"},c={id:"reader-c",name:"C",initial:"C"};
 async function contract(repo:IdeaRepository){
   const idea=await repo.createIdea(a,{title:"Unread room",description:"Read markers",category:"Công nghệ",tags:[]});
-  await repo.createComment(idea.id,a,{text:"Old history"});await repo.joinIdea(idea.id,b.id);
+  const history=await repo.createComment(idea.id,a,{text:"Old history"});await repo.joinIdea(idea.id,b.id);
+  assert.equal((await repo.unreadCounts(b.id))[idea.id],1);
+  await repo.markRead(idea.id,b.id,history.id);
   assert.equal((await repo.unreadCounts(b.id))[idea.id],0);
   const root=await repo.createComment(idea.id,a,{text:"New message"});
   const reply=await repo.createComment(idea.id,b,{text:"Own reply",parentId:root.id});
@@ -29,7 +31,7 @@ async function contract(repo:IdeaRepository){
   const loaded=await repo.listComments(idea.id);assert(loaded.items.every(c=>/^\d+$/.test(c.readCursor!)));
   assert(!JSON.stringify(await repo.getIdea(idea.id,b.id)).includes("memberReadCursor"));
 }
-test("memory unread markers isolate users, skip prior history, count replies and never rewind",async()=>contract(new StateIdeaRepository(new MemoryStore())));
+test("memory unread markers isolate users, keep unseen history, count replies and never rewind",async()=>contract(new StateIdeaRepository(new MemoryStore())));
 test("PostgreSQL unread markers persist across repository instances and stale concurrent acknowledgements",async()=>{
   const db=await embeddedPool();try{await contract(new PostgresIdeaRepository(db.pool));
     const restarted=new PostgresIdeaRepository(db.pool),counts=await restarted.unreadCounts(b.id);assert(Object.values(counts).every(n=>n===0));
@@ -52,4 +54,22 @@ test("read API requires session, own membership, same-origin, and rejects caller
   assert.equal((await call(`ideas/${room.id}/read`,{commentIds:[comment.id],userId:b.id},login.token)).status,422);
   assert.equal((await call(`ideas/${room.id}/read`,{commentIds:[comment.id]},login.token)).status,200);
   const response=await call("unread",undefined,login.token);assert.equal(response.status,200);assert.equal((await response.json())[room.id],0);assert.match(response.headers.get("cache-control")!,/no-store/);
+});
+
+test("register a fresh account, join an existing room via API, and read only visible roots",async()=>{
+  const repo=new StateIdeaRepository(new MemoryStore()),auth=new AuthService(new MemoryAuthStore());
+  const room=await repo.createIdea(a,{title:"Existing room for fresh account",description:"Regression for history being read on join",category:"Khác",tags:[]});
+  const root=await repo.createComment(room.id,a,{text:"Existing root"});
+  const child=await repo.createComment(room.id,a,{text:"Existing child",parentId:root.id});
+  const leaf=await repo.createComment(room.id,a,{text:"Existing hidden leaf",parentId:child.id});
+  const account=await auth.register({username:"fresh_branch_reader",fullName:"Fresh reader",password:"Test2026"},null);
+  const call=(suffix:string,body?:unknown)=>handleApi(new Request(`https://ideahub.test/api/ideas/${room.id}/${suffix}`,{
+    method:body?"POST":"GET",headers:{origin:"https://ideahub.test","content-type":"application/json",cookie:`${SESSION_COOKIE}=${account.token}`},body:body?JSON.stringify(body):undefined,
+  }),["ideas",room.id,suffix],repo,auth);
+  assert.equal((await call("join",{})).status,200);
+  assert.deepEqual(new Set((await (await call("read")).json()).unreadIds),new Set([root.id,child.id,leaf.id]));
+  assert.equal((await call("read",{commentIds:[root.id]})).status,200);
+  assert.deepEqual(new Set((await (await call("read")).json()).unreadIds),new Set([child.id,leaf.id]));
+  assert.equal((await call("read",{commentIds:[child.id]})).status,200);
+  assert.deepEqual((await (await call("read")).json()).unreadIds,[leaf.id]);
 });

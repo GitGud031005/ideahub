@@ -105,7 +105,7 @@ export class StateIdeaRepository implements IdeaRepository {
   joinIdea(id: string, userId: string) {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();
-      if (!idea.members.includes(userId)) { idea.members.push(userId); (idea.memberJoinedAt ??= {})[userId] = new Date().toISOString(); (idea.memberReadCursor??={})[userId]=String(state.comments.reduce((max,c,n)=>c.ideaId===id?Math.max(max,Number(c.readCursor??n+1)):max,0)); }
+      if (!idea.members.includes(userId)) { idea.members.push(userId); (idea.memberJoinedAt ??= {})[userId] = new Date().toISOString(); (idea.memberReadCursor??={})[userId]="0"; }
       return present(idea, state, userId);
     });
   }
@@ -138,7 +138,7 @@ export class StateIdeaRepository implements IdeaRepository {
       const receipts=(input.attachmentIds??[]).map(id=>{const a=state.attachments?.find(a=>a.id===id&&a.ideaId===ideaId&&a.ownerId===user.id&&!a.commentId);if(!a)throw new AppError(422,"INVALID_ATTACHMENT","Tệp không thuộc bạn hoặc đã được gửi");return a;});
       const comment: Comment = { id: input.clientId ?? randomUUID(), ideaId, parentId, author: user, text: input.text, createdAt: new Date().toISOString(),readCursor:String(state.comments.length+1),...(receipts.length?{attachments:receipts.map(publicAttachment)}:{}) };
       for(const receipt of receipts)receipt.commentId=comment.id;
-      if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); (idea.memberReadCursor??={})[user.id]=String(state.comments.length); }
+      if (!idea.members.includes(user.id)) { idea.members.push(user.id); (idea.memberJoinedAt ??= {})[user.id] = new Date().toISOString(); (idea.memberReadCursor??={})[user.id]="0"; }
       state.comments.push(comment); return comment;
     });
   }

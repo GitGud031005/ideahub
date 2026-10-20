@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -55,6 +56,8 @@ async function exactReadContract(repo:IdeaRepository){
   const room=await repo.createIdea(writer,{title:"Thread reads",description:"Exact branch receipts",category:"Khác",tags:[]});
   const history=await repo.createComment(room.id,writer,{text:"Prior history"});
   await repo.joinIdea(room.id,reader.id);
+  assert.deepEqual(await repo.unreadCommentIds(room.id,reader.id),[history.id]);
+  await repo.markRead(room.id,reader.id,history.id);
   const root=await repo.createComment(room.id,writer,{text:"Root"});
   const left=await repo.createComment(room.id,writer,{text:"Left",parentId:root.id});
   const right=await repo.createComment(room.id,writer,{text:"Right",parentId:root.id});
@@ -103,4 +106,52 @@ test("personal branch read state bypasses shared Redis cache",async()=>{
   await cached.markRead(room.id,reader.id,[leaf.id]);
   assert.equal((await cached.unreadCounts(reader.id))[room.id],0);
   assert.equal(calls,0);
+});
+
+async function newMemberHistoryContract(repo:IdeaRepository){
+  const room=await repo.createIdea(writer,{title:"Existing conversation",description:"Existing replies must stay unread for a new member",category:"Khác",tags:[]});
+  const saved=new Map<string,Comment>();
+  for(const c of fixture){saved.set(c.id,await repo.createComment(room.id,writer,{text:c.text,parentId:c.parentId?saved.get(c.parentId)!.id:null}));}
+  // All seven comments already exist before this account joins.
+  await repo.joinIdea(room.id,reader.id);
+  assert.equal((await repo.unreadCounts(reader.id))[room.id],7);
+  const readVisible=async(expanded:Set<string>)=>{
+    const data=[...saved.values()],actual=new Set([...expanded].map(id=>saved.get(id)!.id));
+    await repo.markRead(room.id,reader.id,visibleCommentIds(data,actual));
+    return branchCommentCounts(buildCommentForest(data,"old"),new Set(await repo.unreadCommentIds(room.id,reader.id)));
+  };
+  assert.equal((await readVisible(new Set())).get(saved.get("root")!.id)?.unread,6);
+  assert.equal((await readVisible(new Set(["root"]))).get(saved.get("root")!.id)?.unread,4);
+  assert.equal((await readVisible(new Set(["root","a"]))).get(saved.get("root")!.id)?.unread,2);
+  await repo.joinIdea(room.id,reader.id); // Re-entry must not change read state.
+  assert.equal((await repo.unreadCounts(reader.id))[room.id],2);
+  // Posting from another account must not consume its room history either.
+  await repo.createComment(room.id,{id:"implicit-new-reader",name:"Implicit",initial:"I"},{text:"A first reply",parentId:saved.get("root")!.id});
+  assert.equal((await repo.unreadCounts("implicit-new-reader"))[room.id],7);
+}
+test("brand-new member sees existing collapsed replies unread and consumes one level at a time (memory)",async()=>{
+  await newMemberHistoryContract(new StateIdeaRepository(new MemoryStore()));
+});
+test("brand-new member and implicit join preserve unread history across PostgreSQL joins",async()=>{
+  const db=await embeddedPool();try{await newMemberHistoryContract(new PostgresIdeaRepository(db.pool));}finally{await db.close();}
+});
+
+test("join repair preserves legacy markers and exact receipts while restoring affected new members",async()=>{
+  const db=await embeddedPool();try{
+    const repo=new PostgresIdeaRepository(db.pool),old={id:"legacy-reader",name:"Legacy",initial:"L"};
+    const room=await repo.createIdea(writer,{title:"Repair history",description:"Migration repair",category:"Khác",tags:[]});
+    const root=await repo.createComment(room.id,writer,{text:"Root before joins"});
+    const leaf=await repo.createComment(room.id,writer,{text:"Unread leaf",parentId:root.id});
+    await repo.joinIdea(room.id,reader.id);await repo.joinIdea(room.id,old.id);
+    await repo.markRead(room.id,reader.id,root.id);
+    await db.pool.query("UPDATE public.memberships SET last_read_sequence=(SELECT max(read_sequence) FROM public.comments WHERE idea_id=$1),joined_at=CASE WHEN user_id=$2 THEN '2026-10-19'::timestamptz ELSE '2026-10-20 04:26:33+00'::timestamptz END WHERE idea_id=$1",[room.id,old.id]);
+    assert.equal((await repo.unreadCounts(reader.id))[room.id],0);
+    const repair=await readFile(new URL("../supabase/migrations/20261020043248_preserve_unread_history_on_join.sql",import.meta.url),"utf8");
+    await db.pool.query(repair);
+    assert.deepEqual(await repo.unreadCommentIds(room.id,reader.id),[leaf.id]);
+    assert.equal((await repo.unreadCounts(old.id))[room.id],0);
+    assert.equal((await db.pool.query("SELECT count(*)::int AS total FROM public.comment_read_receipts WHERE idea_id=$1 AND user_id=$2",[room.id,reader.id])).rows[0].total,1);
+    await db.pool.query(repair); // Idempotent: receipts and older members survive re-run.
+    assert.deepEqual(await repo.unreadCommentIds(room.id,reader.id),[leaf.id]);
+  }finally{await db.close();}
 });
