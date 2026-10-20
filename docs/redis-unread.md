@@ -5,8 +5,9 @@
 - Mỗi membership lưu mốc đọc bền vững trong PostgreSQL. Tin của chính người xem không tính, trả lời trong các nhánh vẫn tính.
 - Tài khoản vừa tham gia bắt đầu ở cuối lịch sử hiện có. Khi triển khai tính năng, thành viên cũ cũng bắt đầu từ lịch sử hiện tại, tránh báo hàng loạt tin cũ.
 - Badge nằm trên nút chat của các idea đã tham gia, giới hạn hiển thị `99+`; nhãn trợ năng giữ số thật. Dashboard tự cập nhật mỗi 5 giây và khi lấy lại focus/kết nối.
-- Khi phòng đang hiển thị và có focus, client xác nhận snapshot đã tải bằng ID bình luận có `readCursor` cao nhất. Tab ẩn không đánh dấu. Tab cũ không thể kéo mốc đọc lùi, tin đến sau snapshot vẫn chưa đọc.
-- `GET /api/unread` chỉ trả map số chưa đọc cho user trong session. `POST /api/ideas/:id/read` chỉ nhận `{commentId}`, yêu cầu session, same-origin và membership. Không nhận user ID/cursor tùy ý.
+- Khi phòng có focus, client xác nhận chính xác các bình luận đang được render ở những cấp đã mở, theo lô tối đa 200 ID. Nhánh con còn đóng và tab ẩn không bị đánh dấu. Vòng đọc mới không đẩy mốc sequence: `last_read_sequence` chỉ còn là baseline lịch sử/khi tham gia; các lần đọc mới lưu ở `comment_read_receipts`.
+- `GET /api/unread` trả map số chưa đọc; `GET /api/ideas/:id/read` trả `{unreadIds}` của user trong session. `POST /api/ideas/:id/read` nhận `{commentIds}` (1–200 ID), vẫn hỗ trợ `{commentId}` cho client cũ nhưng chỉ đọc đúng tin đó. Session, same-origin và membership bắt buộc; lô có ID sai bị từ chối toàn bộ. Cả hai loại kết quả cá nhân đều không dùng Redis.
+- Nút nhánh hiển thị `Xem N trả lời • X tin chưa đọc`, cộng mọi cấp phía dưới, không tính chính node cha. Mở một cấp chỉ đọc node hiện ra; số còn lại truyền lên các nhánh tổ tiên. Poll/focus/reconnect đồng bộ đọc từ phiên khác; SSE đồng bộ tin mới.
 - Ghi bình luận cùng phòng được tuần tự bằng row lock để sequence phản ánh thứ tự commit; request dùng marker theo ID nên không mất độ chính xác microsecond hoặc bigint qua JavaScript.
 
 ## Upstash Redis Free trên Vercel

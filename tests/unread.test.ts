@@ -44,5 +44,12 @@ test("read API requires session, own membership, same-origin, and rejects caller
   assert.equal((await call(`ideas/${room.id}/read`,{commentId:comment.id},login.token,"https://attacker.test")).status,403);
   assert.equal((await call(`ideas/${room.id}/read`,{commentId:comment.id,userId:b.id},login.token)).status,422);
   assert.equal((await call(`ideas/${room.id}/read`,{commentId:comment.id},login.token)).status,200);
+  assert.equal((await call(`ideas/${room.id}/read`)).status,401);
+  const readState=await call(`ideas/${room.id}/read`,undefined,login.token);
+  assert.equal(readState.status,200);assert.deepEqual(await readState.json(),{unreadIds:[]});assert.match(readState.headers.get("cache-control")!,/no-store/);
+  assert.equal((await call(`ideas/${room.id}/read`,{commentIds:[]},login.token)).status,422);
+  assert.equal((await call(`ideas/${room.id}/read`,{commentIds:Array(201).fill(comment.id)},login.token)).status,422);
+  assert.equal((await call(`ideas/${room.id}/read`,{commentIds:[comment.id],userId:b.id},login.token)).status,422);
+  assert.equal((await call(`ideas/${room.id}/read`,{commentIds:[comment.id]},login.token)).status,200);
   const response=await call("unread",undefined,login.token);assert.equal(response.status,200);assert.equal((await response.json())[room.id],0);assert.match(response.headers.get("cache-control")!,/no-store/);
 });

@@ -87,7 +87,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|status|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/pin))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
-    if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
+    if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments" || path[2]==="read") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
     if (method === "POST") rateLimit(`${user!.id}:${path[2]==="read"?"read":"write"}`,path[2]==="read"?120:30);
     if (path.length === 1) {
@@ -130,9 +130,13 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     if (path.length === 2 && method === "GET") return json(await repo.getIdea(id, viewerId));
     if(path[2]==="read"){
-      if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405,{Allow:"POST"});
-      const body=await readJson(request,z.object({commentId:z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/)}).strict());
-      await repo.markRead(id,user!.id,body.commentId);return json({ok:true});
+      if(method==="GET")return json({unreadIds:await repo.unreadCommentIds(id,user!.id)});
+      const commentId=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
+      const body=await readJson(request,z.union([
+        z.object({commentIds:z.array(commentId).min(1).max(200)}).strict(),
+        z.object({commentId}).strict(),
+      ]));
+      await repo.markRead(id,user!.id,"commentIds" in body?body.commentIds:body.commentId);return json({ok:true});
     }
     if (path[2] === "join" && method === "POST") return json(await repo.joinIdea(id, user!.id));
     if (path[2] === "comments") {

@@ -197,15 +197,33 @@ export class PostgresIdeaRepository implements IdeaRepository {
     const result=await this.pool.query<{idea_id:string;unread_count:number}>(`SELECT m.idea_id,count(c.id)::int AS unread_count
       FROM public.memberships m LEFT JOIN public.comments c ON c.idea_id=m.idea_id
       AND c.read_sequence>m.last_read_sequence AND c.author_id<>m.user_id
+      AND NOT EXISTS (SELECT 1 FROM public.comment_read_receipts r WHERE r.user_id=m.user_id AND r.comment_id=c.id)
       WHERE m.user_id=$1 GROUP BY m.idea_id`,[userId]);
     return Object.fromEntries(result.rows.map(r=>[r.idea_id,r.unread_count]));
   }
-  markRead(ideaId:string,userId:string,commentId:string){return this.transaction(async db=>{
+  async unreadCommentIds(ideaId:string,userId:string):Promise<string[]>{
+    const result=await this.pool.query<{idea_exists:boolean;joined:boolean;id:string|null}>(`WITH viewer AS (
+      SELECT EXISTS(SELECT 1 FROM public.ideas WHERE id=$1) AS idea_exists,
+        EXISTS(SELECT 1 FROM public.memberships WHERE idea_id=$1 AND user_id=$2) AS joined
+    ) SELECT viewer.*,c.id FROM viewer LEFT JOIN (
+      SELECT c.id FROM public.comments c JOIN public.memberships m ON m.idea_id=c.idea_id AND m.user_id=$2
+      WHERE c.idea_id=$1 AND c.author_id<>$2 AND c.read_sequence>m.last_read_sequence
+        AND NOT EXISTS (SELECT 1 FROM public.comment_read_receipts r WHERE r.user_id=$2 AND r.comment_id=c.id)
+    ) c ON true`,[ideaId,userId]);
+    if(!result.rows[0].idea_exists)throw notFound();
+    if(!result.rows[0].joined)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để xem tin chưa đọc");
+    return result.rows.flatMap(r=>r.id?[r.id]:[]);
+  }
+  markRead(ideaId:string,userId:string,commentIds:string|string[]){return this.transaction(async db=>{
     await requireIdea(db,ideaId);
     if(!(await db.query("SELECT 1 FROM public.memberships WHERE idea_id=$1 AND user_id=$2",[ideaId,userId])).rowCount)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng trước khi đánh dấu đã đọc");
-    const found=await db.query<{read_sequence:string}>("SELECT read_sequence::text FROM public.comments WHERE idea_id=$1 AND id=$2",[ideaId,commentId]);
-    if(!found.rows[0])throw new AppError(400,"INVALID_COMMENT","Bình luận không thuộc ý tưởng này");
-    await db.query("UPDATE public.memberships SET last_read_sequence=GREATEST(last_read_sequence,$3::bigint) WHERE idea_id=$1 AND user_id=$2",[ideaId,userId,found.rows[0].read_sequence]);
+    const ids=[...new Set(typeof commentIds==="string"?[commentIds]:commentIds)];
+    const found=await db.query("SELECT id FROM public.comments WHERE idea_id=$1 AND id=ANY($2::text[])",[ideaId,ids]);
+    if(found.rows.length!==ids.length)throw new AppError(400,"INVALID_COMMENT","Bình luận không thuộc ý tưởng này");
+    await db.query(`INSERT INTO public.comment_read_receipts(idea_id,user_id,comment_id)
+      SELECT $1,$2,c.id FROM public.comments c JOIN public.memberships m ON m.idea_id=c.idea_id AND m.user_id=$2
+      WHERE c.idea_id=$1 AND c.id=ANY($3::text[]) AND c.author_id<>$2 AND c.read_sequence>m.last_read_sequence
+      ON CONFLICT DO NOTHING`,[ideaId,userId,ids]);
   });}
   async createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment> {
     return this.transaction(async db => {

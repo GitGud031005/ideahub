@@ -10,7 +10,8 @@ export class CachedIdeaRepository implements IdeaRepository {
   setIdeaStatus(id:string,userId:string,status:JoinedIdeaStatus){return this.inner.setIdeaStatus(id,userId,status);}
   getIdea(id:string,userId:string){return this.inner.getIdea(id,userId);}
   unreadCounts(userId:string){return this.inner.unreadCounts(userId);}
-  markRead(id:string,userId:string,commentId:string){return this.inner.markRead(id,userId,commentId);}
+  unreadCommentIds(id:string,userId:string){return this.inner.unreadCommentIds(id,userId);}
+  markRead(id:string,userId:string,commentIds:string|string[]){return this.inner.markRead(id,userId,commentIds);}
   saveAttachment(a:StoredAttachment){return this.inner.saveAttachment(a);}
   getAttachment(ideaId:string,id:string,userId:string){return this.inner.getAttachment(ideaId,id,userId);}
   async pinComment(ideaId:string,id:string,userId:string,pinned:boolean){await this.inner.pinComment(ideaId,id,userId,pinned);await this.cache.invalidate();}

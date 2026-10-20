@@ -17,13 +17,14 @@ export interface IdeaRepository {
   createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment>;
   getActivity(ideaId:string):Promise<RoomActivity>;
   unreadCounts(userId:string):Promise<UnreadCounts>;
-  markRead(ideaId:string,userId:string,commentId:string):Promise<void>;
+  unreadCommentIds(ideaId:string,userId:string):Promise<string[]>;
+  markRead(ideaId:string,userId:string,commentIds:string|string[]):Promise<void>;
   saveAttachment(attachment:StoredAttachment):Promise<void>;
   getAttachment(ideaId:string,id:string,userId:string):Promise<StoredAttachment>;
   pinComment(ideaId:string,commentId:string,userId:string,pinned:boolean):Promise<void>;
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
-  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberArchived:_archived, status:_legacy, ...record } = idea;
+  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberReadComments:_receipts, memberArchived:_archived, status:_legacy, ...record } = idea;
   return { ...record, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: state.comments.filter(c => c.ideaId === idea.id).length, joined: members.includes(userId), mine: idea.creator.id === userId };
 }
 export class StateIdeaRepository implements IdeaRepository {
@@ -45,12 +46,20 @@ export class StateIdeaRepository implements IdeaRepository {
     if(pinned&&!c.pinnedAt&&state.comments.filter(c=>c.ideaId===ideaId&&c.pinnedAt).length>=50)throw new AppError(422,"PIN_LIMIT","Mỗi cuộc thảo luận ghim tối đa 50 tin nhắn");
     if(!!c.pinnedAt!==pinned){c.pinnedAt=pinned?new Date().toISOString():null;idea.discussionVersion=(idea.discussionVersion??0)+1;}
   });}
-  unreadCounts(userId:string){return this.store.read(state=>Object.fromEntries(state.ideas.filter(i=>i.members.includes(userId)).map(i=>[i.id,state.comments.filter((c,n)=>c.ideaId===i.id&&c.author.id!==userId&&BigInt(c.readCursor??String(n+1))>BigInt(i.memberReadCursor?.[userId]??"0")).length])));}
-  markRead(ideaId:string,userId:string,commentId:string){return this.store.transact(state=>{
+  unreadCounts(userId:string){return this.store.read(state=>Object.fromEntries(state.ideas.filter(i=>i.members.includes(userId)).map(i=>[i.id,state.comments.filter((c,n)=>c.ideaId===i.id&&c.author.id!==userId&&BigInt(c.readCursor??String(n+1))>BigInt(i.memberReadCursor?.[userId]??"0")&&!i.memberReadComments?.[userId]?.includes(c.id)).length])));}
+  unreadCommentIds(ideaId:string,userId:string){return this.store.read(state=>{
+    const idea=state.ideas.find(i=>i.id===ideaId);if(!idea)throw notFound();
+    if(!idea.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để xem tin chưa đọc");
+    const read=new Set(idea.memberReadComments?.[userId]??[]);
+    return state.comments.filter((c,n)=>c.ideaId===ideaId&&c.author.id!==userId&&BigInt(c.readCursor??String(n+1))>BigInt(idea.memberReadCursor?.[userId]??"0")&&!read.has(c.id)).map(c=>c.id);
+  });}
+  markRead(ideaId:string,userId:string,commentIds:string|string[]){return this.store.transact(state=>{
     const idea=state.ideas.find(i=>i.id===ideaId);if(!idea)throw notFound();if(!idea.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng trước khi đánh dấu đã đọc");
-    const index=state.comments.findIndex(c=>c.ideaId===ideaId&&c.id===commentId);if(index<0)throw new AppError(400,"INVALID_COMMENT","Bình luận không thuộc ý tưởng này");
-    const cursor=state.comments[index].readCursor??String(index+1),current=idea.memberReadCursor?.[userId]??"0";
-    (idea.memberReadCursor??={})[userId]=BigInt(cursor)>BigInt(current)?cursor:current;
+    const ids=[...new Set(typeof commentIds==="string"?[commentIds]:commentIds)];
+    if(ids.some(id=>!state.comments.some(c=>c.ideaId===ideaId&&c.id===id)))throw new AppError(400,"INVALID_COMMENT","Bình luận không thuộc ý tưởng này");
+    const read=new Set(idea.memberReadComments?.[userId]??[]);
+    for(const id of ids)read.add(id);
+    (idea.memberReadComments??={})[userId]=[...read];
   });}
   async listIdeas(userId: string, query: IdeaQuery) {
     const cursor = readIdeaCursor(userId, query);

@@ -24,6 +24,7 @@ comments.unshift({id:"qa-share-root",ideaId:ideas[0].id,parentId:null,author:per
 comments.forEach((c,i)=>{c.readCursor=String(i+1);});
 
 const unread:Record<string,number>={[ideas[0].id]:7,[ideas[1].id]:123};
+const unreadCommentIds=new Set(comments.filter(c=>c.author.id!==person.id).map(c=>c.id));
 const attempts=new Map<string,number>();let postNumber=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
 class MockSource extends EventTarget {
@@ -37,7 +38,10 @@ window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
   if(path==="/api/unread")return Response.json(unread);
-  if(path.endsWith("/read")&&init?.method==="POST"){unread[path.split("/")[3]]=0;return Response.json({ok:true});}
+  if(path.endsWith("/read")){
+    if(init?.method==="POST"){const body=JSON.parse(String(init.body));for(const id of body.commentIds??[body.commentId])unreadCommentIds.delete(id);unread[path.split("/")[3]]=unreadCommentIds.size;return Response.json({ok:true});}
+    return Response.json({unreadIds:[...unreadCommentIds]});
+  }
   if (path === "/api/session") return Response.json({ user: current, storage: "postgres" });
   if (path === "/api/auth/config") return Response.json({google:true,avatarUpload:true});
   if (path === "/api/auth/register" || path === "/api/auth/login") { current=person;return Response.json({user:current,storage:"postgres"}); }

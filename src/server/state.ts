@@ -4,7 +4,8 @@ export interface IdeaRecord {
   id: string; title: string; description: string; category: Category; tags: string[];
   creator: Author; createdAt: string; members: string[];
   memberJoinedAt?: Record<string, string>;
-  memberReadCursor?: Record<string, string>;
+  memberReadCursor?: Record<string, string>; // Historical baseline; never advance when opening a branch.
+  memberReadComments?: Record<string, string[]>;
   discussionVersion?:number;
   status?: IdeaStatus; // Legacy shared status, no longer projected.
   memberArchived?: Record<string, boolean>;
