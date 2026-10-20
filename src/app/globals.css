@@ -301,7 +301,7 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 .ih-status-new{--status-bg:#fbeceb;--status-ink:#a64d49;--status-border:#efd3d0;--status-hover:#f5ddda}
 .ih-status-potential{--status-bg:#edf5ed;--status-ink:#537b59;--status-border:#d4e4d5;--status-hover:#dfedde}
 .ih-status-archived{--status-bg:#f0f0eb;--status-ink:#77786d;--status-border:#deded5;--status-hover:#e6e6df}
-.ih-status-icon{position:relative;display:inline-grid;place-items:center;flex:0 0 auto;line-height:1;width:24px;height:24px;padding:0;border:1px solid var(--status-border);border-radius:50%;background:var(--status-bg);color:var(--status-ink);transition:background-color .2s,border-color .2s,box-shadow .2s}
+.ih-status-icon{--status-size:24px;position:relative;display:inline-grid;place-items:center;flex:0 0 auto;line-height:1;width:var(--status-size);height:var(--status-size);padding:0;border:1px solid var(--status-border);border-radius:50%;background:var(--status-bg);color:var(--status-ink);transition:background-color .2s,border-color .2s,box-shadow .2s}
 .ih-card-status{position:relative;margin-top:1px;cursor:help}
 .ih-card-status:after{content:attr(data-label);position:absolute;right:0;top:calc(100% + 7px);z-index:3;padding:5px 8px;border:1px solid var(--status-border);border-radius:5px;background:var(--status-bg);color:var(--status-ink);font-size:10px;font-weight:500;white-space:nowrap;opacity:0;visibility:hidden;transition:opacity .15s}
 .ih-card-status:hover:after,.ih-card-status:focus-visible:after{opacity:1;visibility:visible}
@@ -323,7 +323,7 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 .ih-personal-classification>.ih-picker:hover,.ih-personal-classification>.ih-picker:focus-within{background:var(--status-hover);border-color:var(--status-ink)}
 .ih-personal-classification .ih-picker-trigger{min-height:36px;padding:6px 10px;border:0;color:var(--status-ink);background:transparent}
 .ih-personal-classification .ih-picker-trigger:hover:enabled,.ih-personal-classification .ih-picker-trigger[aria-expanded=true]{color:var(--status-ink);background:transparent}
-.ih-personal-classification .ih-status-icon{width:20px;height:20px;border:0;background:transparent}
+.ih-personal-classification .ih-status-icon{--status-size:20px;width:var(--status-size);height:var(--status-size);border:0;background:transparent}
 .ih-personal-classification .ih-picker-option{min-height:38px}
 .ih-classification-error{display:block;margin-top:5px;color:#9d2f2f;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 /* Paint the complete join button, including when its parent card is hovered. */
@@ -347,7 +347,7 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 
 /* Keep glyph geometry identical inside filters, cards and picker controls. */
 .ih-status-icon>svg{display:block;grid-area:1/1;flex:none;width:13px;height:13px;stroke-width:1.5}
-.ih-status-icon>svg.ih-status-ring{position:absolute;inset:50% auto auto 50%;width:24px;height:24px;transform:translate(-50%,-50%);fill:none;stroke:#b8b8ad;stroke-width:1;pointer-events:none;transition:stroke .2s}
+.ih-status-icon>svg.ih-status-ring{position:absolute;inset:50% auto auto 50%;width:var(--status-size);height:var(--status-size);transform:translate(-50%,-50%);fill:none;stroke:#b8b8ad;stroke-width:1;pointer-events:none;transition:stroke .2s}
 .ih-idea:hover .ih-status-ring,.ih-tab:hover .ih-status-ring{stroke:#929286}
 /* Soft hover surfaces and one sliding underline across the filter strip. */
 .ih-personal-toolbar .ih-tabs{position:relative;isolation:isolate}
