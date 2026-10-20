@@ -336,3 +336,11 @@ textarea.ih-field{min-height:116px;resize:none;overflow-y:auto;scrollbar-width:t
 @media(prefers-reduced-motion:reduce){.ih-status-icon,.ih-card-status:after,.ih-personal-classification>.ih-picker,.ih-join{transition:none}}
 
 .ih-picker-trigger[aria-expanded=true] .ih-status-icon svg{transform:none}
+
+/* One ring for new; a transparent dashed ring for archived. */
+.ih-status-icon>span.ih-status-exclamation{display:block;padding:0;border:0;background:none;color:inherit;font-size:13px;font-weight:600;line-height:1}
+#ih-app .ih-status-icon.ih-status-archived{border:1px dashed #b8b8ad;background:transparent}
+/* Keep both sides of the metadata row at the smaller existing gap. */
+.ih-idea>.ih-tags-wrap{margin-top:auto}
+.ih-idea>.ih-card-meta{margin-block:16px}
+.ih-idea>.ih-join{margin-top:0}

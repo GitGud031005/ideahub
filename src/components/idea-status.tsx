@@ -1,13 +1,13 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Archive, Check, CircleAlert } from "lucide-react";
+import { Archive, Check } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { IDEA_STATUS_LABELS, type Idea, type IdeaStatus, type JoinedIdeaStatus } from "@/lib/domain";
 import { Select } from "./select";
 
 export function IdeaStatusIcon({ status, card = false }: { status: IdeaStatus; card?: boolean }) {
-  const Icon = status === "new" ? CircleAlert : status === "archived" ? Archive : Check;
-  return <span className={`ih-status-icon ih-status-${status}${card ? " ih-card-status" : ""}`} data-label={IDEA_STATUS_LABELS[status]} role={card ? "img" : undefined} aria-label={card ? IDEA_STATUS_LABELS[status] : undefined} aria-hidden={card ? undefined : true} tabIndex={card ? 0 : undefined}><Icon size={13} aria-hidden="true"/></span>;
+  const Icon = status === "archived" ? Archive : Check;
+  return <span className={`ih-status-icon ih-status-${status}${card ? " ih-card-status" : ""}`} data-label={IDEA_STATUS_LABELS[status]} role={card ? "img" : undefined} aria-label={card ? IDEA_STATUS_LABELS[status] : undefined} aria-hidden={card ? undefined : true} tabIndex={card ? 0 : undefined}>{status === "new" ? <span className="ih-status-exclamation" aria-hidden="true">!</span> : <Icon size={13} aria-hidden="true"/>}</span>;
 }
 
 /** A member may archive or restore only their own membership. */
