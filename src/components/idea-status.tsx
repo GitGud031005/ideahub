@@ -7,7 +7,7 @@ import { Select } from "./select";
 
 export function IdeaStatusIcon({ status, card = false }: { status: IdeaStatus; card?: boolean }) {
   const Icon = status === "archived" ? Archive : Check;
-  return <span className={`ih-status-icon ih-status-${status}${card ? " ih-card-status" : ""}`} data-label={IDEA_STATUS_LABELS[status]} role={card ? "img" : undefined} aria-label={card ? IDEA_STATUS_LABELS[status] : undefined} aria-hidden={card ? undefined : true} tabIndex={card ? 0 : undefined}>{status === "archived" && <svg className="ih-status-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" pathLength="70" strokeDasharray="3 7"/></svg>}{status === "new" ? <span className="ih-status-exclamation" aria-hidden="true">!</span> : <Icon size={13} aria-hidden="true"/>}</span>;
+  return <span className={`ih-status-icon ih-status-${status}${card ? " ih-card-status" : ""}`} data-label={IDEA_STATUS_LABELS[status]} role={card ? "img" : undefined} aria-label={card ? IDEA_STATUS_LABELS[status] : undefined} aria-hidden={card ? undefined : true} tabIndex={card ? 0 : undefined}>{status === "archived" && <svg className="ih-status-ring" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" pathLength="70" strokeDasharray="3.5 3.5"/></svg>}{status === "new" ? <span className="ih-status-exclamation" aria-hidden="true">!</span> : <Icon size={13} aria-hidden="true"/>}</span>;
 }
 
 /** A member may archive or restore only their own membership. */
