@@ -57,7 +57,8 @@ test("the free pilot is included once in year-one funding and operating costs", 
   const y = financialCase[0];
   assert.equal(y.fixedCashCosts, yearOneFixedCashCosts);
   assert.equal(y.openingCash + y.revenue, y.fixedCashCosts + y.variableCosts + y.investment + y.closingCash);
-  assert.ok(pilotBudgetTotal <= y.openingCash, "The pilot cannot depend on later commercial sales to fund its launch");
+  assert.equal(pilotBudgetTotal + y.investment, 48);
+  assert.ok(pilotBudgetTotal + y.investment <= y.openingCash, "The pilot and its equipment cannot depend on later commercial sales to fund launch");
 });
 
 test("break-even rounds up indivisible units and handles nonpositive margins and invalid inputs", () => {
