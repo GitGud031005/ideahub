@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getStartupLesson, lessonCatalog, searchEntries, startupBase, startupLessons } from "../src/content/business-for-startup/index";
-import { breakEvenUnits, financialCase } from "../src/content/business-for-startup/financial-example";
+import { breakEvenUnits, caseOperatingBudget, financialCase, pilotBudgetTotal, yearOneFixedCashCosts } from "../src/content/business-for-startup/financial-example";
 import { searchStartup } from "../src/lib/startup-search";
 
 test("the curriculum preserves supplied chapters and every searchable anchor resolves", () => {
@@ -38,14 +38,26 @@ test("readers can find accented Vietnamese, plain Vietnamese and body-only terms
 
 test("the worked proposal reconciles sales, pretax profit, cash and the balance sheet", () => {
   assert.deepEqual(financialCase.map(y => y.revenue), [240, 600, 1080]);
+  assert.deepEqual(financialCase.map(y => y.contribution), [192, 480, 864]);
   assert.deepEqual(financialCase.map(y => y.profitBeforeTax), [-60, 108, 372]);
   assert.deepEqual(financialCase.map(y => y.closingCash), [116, 236, 620]);
   assert.deepEqual(financialCase.map(y => y.assets), [140, 248, 620]);
   for (const y of financialCase) {
+    assert.equal(y.contribution - y.fixedCashCosts - y.depreciation, y.profitBeforeTax);
     assert.equal(y.openingCash + y.operatingCash - y.investment, y.closingCash);
     assert.equal(y.profitBeforeTax + y.depreciation, y.operatingCash);
     assert.equal(y.assets, y.liabilities + y.equity);
   }
+});
+
+test("the free pilot is included once in year-one funding and operating costs", () => {
+  assert.equal(pilotBudgetTotal, 12);
+  assert.equal(yearOneFixedCashCosts, 240);
+  assert.ok(caseOperatingBudget.every(item => item.pilot >= 0 && item.pilot <= item.annual));
+  const y = financialCase[0];
+  assert.equal(y.fixedCashCosts, yearOneFixedCashCosts);
+  assert.equal(y.openingCash + y.revenue, y.fixedCashCosts + y.variableCosts + y.investment + y.closingCash);
+  assert.ok(pilotBudgetTotal <= y.openingCash, "The pilot cannot depend on later commercial sales to fund its launch");
 });
 
 test("break-even rounds up indivisible units and handles nonpositive margins and invalid inputs", () => {

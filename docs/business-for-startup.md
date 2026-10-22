@@ -8,6 +8,7 @@ Public Vietnamese entrepreneurship reading area at `/business-for-startup`, link
 - Chapters are condensed original-language explanations, not verbatim slide transcriptions. Barringer/Ireland and the nine-cell BMC are identified separately. Conceptual IP material does not reproduce dated US procedures as Vietnamese legal advice.
 - The AI NextGen case is explicitly hypothetical. Market, pilot and sales quantities are illustrative, with no claimed users, partners or results. All financial amounts are newly authored assumptions in millions of VND, before tax, without inventory, receivables or debt. Tax is not modeled and the simplified case is labeled accordingly.
 - `financial-example.ts` supplies every worked-case table from one model. Equipment cash purchases and depreciation are separated; cash, assets and equity reconcile.
+- The case sells four-week packages completed within each modeled year. Its management statement uses contribution (sales less variable costs), not gross profit. The six-week free pilot's 12m VND budget is included once within year-one fixed cash costs; the proposal includes a sources-and-uses reconciliation. See [final content QA](business-for-startup-content-qa-2026-10-22.md).
 - Illustrations are semantic HTML/CSS and a labeled SVG calculator. No external image request or runtime AI generation is required.
 
 ## Rendering and navigation

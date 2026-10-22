@@ -1,6 +1,8 @@
-import { financialCase } from "./financial-example";
+import { caseOperatingBudget, financialCase, pilotBudgetTotal, yearOneFixedCashCosts } from "./financial-example";
 import { figure, list, note, ordered, p, section, table, template, type StartupLesson } from "./types";
-const values = (key: "revenue" | "variableCosts" | "grossProfit" | "fixedCashCosts" | "depreciation" | "profitBeforeTax" | "operatingCash" | "investment" | "openingCash" | "closingCash" | "netCash" | "equipmentNet" | "assets" | "liabilities" | "capital" | "retained" | "equity") => financialCase.map(y => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(y[key]));
+const money = (n: number) => new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 }).format(n);
+const values = (key: "revenue" | "variableCosts" | "contribution" | "fixedCashCosts" | "depreciation" | "profitBeforeTax" | "operatingCash" | "investment" | "openingCash" | "closingCash" | "netCash" | "equipmentNet" | "assets" | "liabilities" | "capital" | "retained" | "equity") => financialCase.map(y => money(y[key]));
+const firstYear = financialCase[0];
 
 export const proposalLesson: StartupLesson = {
   slug: "proposal-va-quy-trinh", chapter: null, group: 3, title: "Proposal mẫu và quy trình triển khai",
@@ -14,7 +16,7 @@ export const proposalLesson: StartupLesson = {
     section("executive-summary", "1. Executive summary",
       p("AI NextGen Academy đề xuất một dịch vụ luyện Toán trực tuyến cho học sinh lớp 9 tự học trên điện thoại. Giải pháp giúp người học nhận ra lỗi sai qua một lượt kiểm tra ngắn, đọc giải thích được kiểm duyệt và thực hành tiếp theo đúng phần chưa hiểu. Phụ huynh là người chi trả trong mô hình minh họa; học sinh là người sử dụng."),
       p("Nhóm dự kiến bắt đầu với một đơn vị kiến thức, một phân khúc và một pilot có giám sát chuyên môn. Chưa khẳng định đã cải thiện điểm học tập. Bằng chứng cần thu gồm khả năng hoàn thành tác vụ, mức hữu ích của giải thích, hành vi quay lại và sẵn lòng trả tiền trong điều kiện rõ ràng."),
-      p("Mô hình tài chính minh họa dùng gói năm 1,2 triệu đồng, chi phí biến đổi 0,24 triệu đồng/gói-năm và lần lượt 200, 500, 900 gói-năm được bán, phục vụ trọn trong ba năm. Với vốn đầu kỳ 200 triệu đồng và các giả định đơn giản bên dưới, năm đầu có lỗ trước thuế 60 triệu đồng và tiền cuối kỳ 116 triệu đồng. Nhóm đề nghị một vòng pilot để kiểm chứng nhu cầu và chi phí trước khi quyết định mở rộng.")),
+      p("Mô hình tài chính minh họa dùng gói học 4 tuần giá 1,2 triệu đồng, chi phí biến đổi 0,24 triệu đồng/gói và lần lượt 200, 500, 900 gói được bán, phục vụ trọn trong ba năm. Với vốn đầu kỳ 200 triệu đồng và các giả định đơn giản bên dưới, năm đầu có lỗ trước thuế 60 triệu đồng và tiền cuối kỳ 116 triệu đồng. Nhóm đề nghị một vòng pilot để kiểm chứng nhu cầu và chi phí trước khi quyết định mở rộng.")),
     section("van-de-va-co-hoi", "2. Vấn đề và cơ hội",
       p("Giả thuyết vấn đề: học sinh lớp 9 đang tự ôn Toán gặp khó khi quyết định nên luyện gì sau khi làm sai. Các em có thể chuyển giữa video, lời giải và nhóm chat nhưng chưa nhận được một bước luyện tiếp theo phù hợp. Phụ huynh khó đánh giá việc học có tiến triển nếu chỉ thấy thời gian sử dụng ứng dụng."),
       p("Cơ hội nằm ở chuỗi ngắn từ phát hiện lỗi tới giải thích và luyện lại. Nhóm sẽ phỏng vấn về lần tự học gần nhất, quan sát một tác vụ và kiểm tra cách học sinh đang xử lý. Tuyển người có và không có hứng thú với sản phẩm để tránh chỉ ghi nhận lời khen. Chưa dùng nhận định “giáo dục trực tuyến tăng trưởng” như bằng chứng thay thế cho nhu cầu của phân khúc này."),
@@ -25,10 +27,10 @@ export const proposalLesson: StartupLesson = {
       ])),
     section("khach-hang-va-thi-truong", "3. Khách hàng và thị trường",
       p("Phân khúc đầu tiên được giới hạn ở học sinh lớp 9 có điện thoại và thời gian tự ôn Toán; người chi trả là phụ huynh trong nhóm thử. Chỉ chọn nội dung và điều kiện thiết bị mà đội ngũ có thể hỗ trợ. Không đồng thời cam kết phục vụ mọi môn, mọi lứa tuổi và nhu cầu đặc biệt."),
-      table(["Tầng", "Quy mô giả định", "Doanh thu năm cùng mức giá"], [
+      table(["Tầng", "Quy mô giả định", "Doanh thu/năm nếu mỗi người mua một gói"], [
         ["TAM", "50.000 người học phù hợp với phạm vi giả định", "60 tỷ đồng = 50.000 × 1,2 triệu"],
         ["SAM", "5.000 người có thể phục vụ theo nội dung và kênh ban đầu", "6 tỷ đồng = 5.000 × 1,2 triệu"],
-        ["SOM năm đầu", "200 gói-năm bán và cung cấp đầy đủ", "240 triệu đồng = 200 × 1,2 triệu"],
+        ["SOM năm đầu", "200 gói 4 tuần bán và cung cấp đầy đủ trong năm", "240 triệu đồng = 200 × 1,2 triệu"],
       ], "Các số này chỉ minh họa quan hệ TAM ≥ SAM ≥ SOM, không phải ước lượng từ dữ liệu thị trường thực."),
       p("Để dùng trong proposal thật, thay các số bằng nguồn có ngày, phương pháp và phạm vi. SOM cần được kiểm tra bằng khả năng tạo khách phù hợp, chuyển đổi và cung cấp dịch vụ. Số người quan tâm, người đăng ký và gói trả tiền không được dùng lẫn nhau.")),
     section("giai-phap-va-mvp", "4. Giải pháp và prototype/MVP",
@@ -54,7 +56,7 @@ export const proposalLesson: StartupLesson = {
         ["Giá trị", "Biết lỗi và có bước luyện tiếp theo ngắn, có giải thích được kiểm duyệt"],
         ["Kênh", "Website trên điện thoại, nhóm học và giới thiệu từ người đã thử"],
         ["Quan hệ", "Hướng dẫn đầu tiên, hỗ trợ, phản hồi lỗi và tóm tắt tiến bộ dễ hiểu"],
-        ["Doanh thu", "Một gói năm 1,2 triệu đồng; điều kiện giá cần kiểm chứng"],
+        ["Doanh thu", "Một gói 4 tuần giá 1,2 triệu đồng; giá và khả năng mua lại cần kiểm chứng"],
         ["Nguồn lực", "Chuyên môn Toán, nội dung có quyền dùng, phần mềm và quy trình chất lượng"],
         ["Hoạt động", "Tạo/duyệt bài, vận hành, hỗ trợ, nghiên cứu người dùng và thử kênh"],
         ["Đối tác", "Dự kiến tìm người kiểm duyệt, hạ tầng và thanh toán; chưa có cam kết"],
@@ -69,7 +71,7 @@ export const proposalLesson: StartupLesson = {
       ]),
       p("Đây là bảng lựa chọn thay thế theo loại hình, không phải kết luận về tính năng hiện hành của thương hiệu cụ thể. Khi viết proposal thật, trải nghiệm sản phẩm, kiểm tra giá cùng kỳ và ghi nguồn/ngày. Định vị đề xuất: một vòng tự luyện ngắn giúp học sinh biết lỗi và luyện tiếp đúng chỗ, với nội dung được kiểm duyệt.")),
     section("marketing-va-ban", "8. Marketing và bán hàng",
-      p("STP chọn học sinh lớp 9 tự ôn Toán và người chi trả tương ứng. Product tập trung vào chuỗi cốt lõi; Price dùng gói năm làm giả định tính toán; Promotion cho xem một tác vụ thật; Place là website trên điện thoại. Trước bán, nhóm phải có khả năng cung cấp và nêu rõ phạm vi, điều kiện sử dụng."),
+      p("STP chọn học sinh lớp 9 tự ôn Toán và người chi trả tương ứng. Product tập trung vào chuỗi cốt lõi; Price dùng gói 4 tuần làm giả định tính toán; Promotion cho xem một tác vụ thật; Place là website trên điện thoại. Trước bán, nhóm phải có khả năng cung cấp và nêu rõ phạm vi, điều kiện sử dụng."),
       p("Giả định kế hoạch năm đầu cần 8.000 lượt truy cập phù hợp → 1.600 lượt thử → 200 gói trả tiền, tương ứng tỷ lệ thử 20% và trả tiền từ lượt thử 12,5%. Đây là mục tiêu để kiểm tra, chưa phải tỷ lệ đo được. Kế hoạch phải ghi nguồn truy cập, loại trùng và tách khách mới khỏi khách gia hạn."),
       p("Ngân sách marketing năm đầu giả định 60 triệu đồng, tương ứng 300.000 đồng cho mỗi khách mới nếu toàn bộ 200 khách đều mới và ngân sách này bao phủ đúng chi phí đang tính. Không dùng con số CAC này như một kết quả thật. Đo cả mức dùng lại, yêu cầu hỗ trợ, hoàn tiền và lý do rời đi trước khi tăng chi."),
       ordered("Tìm người phù hợp và giới thiệu tác vụ", "Đánh giá nhu cầu của học sinh và người chi trả", "Cho thử, trả lời băn khoăn, xác nhận phạm vi và giá", "Xác nhận giao dịch, hướng dẫn sử dụng, theo dõi giá trị và hỗ trợ")),
@@ -81,17 +83,18 @@ export const proposalLesson: StartupLesson = {
       ]),
       p("Đây là ba nhóm trách nhiệm, không khẳng định đã tuyển đủ ba người. Trước pilot cần xác nhận người đảm nhiệm, thời gian cam kết và phần thuê ngoài. Quy trình phía sau gồm tạo nội dung, duyệt, phát hành, theo dõi phản hồi và sửa; phía khách gồm bắt đầu học, luyện, nhận giải thích và được hỗ trợ.")),
     section("tai-chinh-ba-nam", "10. Tài chính ba năm — giả định minh họa",
-      note("Cách đọc bộ số", "Đơn vị tiền: triệu đồng. Mỗi gói-năm có giá 1,2 và chi phí biến đổi 0,24, được thu tiền và cung cấp trọn trong năm. Không có tồn kho, công nợ hoặc nợ vay trong ví dụ. Chưa mô phỏng thuế; toàn bộ kết quả, dòng tiền và bảng cân đối sau đây là mô hình đơn giản trước thuế, không phải báo cáo để nộp hay sử dụng đầu tư."),
+      note("Cách đọc bộ số", "Đơn vị tiền: triệu đồng. Mỗi gói 4 tuần có giá 1,2 và chi phí biến đổi 0,24; mô hình chỉ tính các gói được thu tiền và cung cấp trọn trong cùng năm. Năm đầu giả định mỗi khách mới mua một gói. Không lấy tiền thu trước cho phần dịch vụ chưa cung cấp làm doanh thu ngay. Không có tồn kho, công nợ hoặc nợ vay trong ví dụ. Chưa mô phỏng thuế; toàn bộ kết quả, dòng tiền và bảng cân đối sau đây là mô hình đơn giản trước thuế, không phải báo cáo để nộp hay sử dụng đầu tư."),
       table(["Giả định", "Năm 1", "Năm 2", "Năm 3"], [
-        ["Gói-năm bán và phục vụ", "200", "500", "900"], ["Giá/gói-năm", "1,2", "1,2", "1,2"],
-        ["Biến phí/gói-năm", "0,24", "0,24", "0,24"], ["Chi phí cố định bằng tiền", ...values("fixedCashCosts")],
+        ["Gói 4 tuần bán và phục vụ trong năm", "200", "500", "900"], ["Giá/gói 4 tuần", "1,2", "1,2", "1,2"],
+        ["Biến phí/gói 4 tuần", "0,24", "0,24", "0,24"], ["Chi phí cố định bằng tiền", ...values("fixedCashCosts")],
         ["Khấu hao thiết bị", ...values("depreciation")],
       ]),
-      p("Vốn giả định đã có ở đầu năm 1: 200 triệu đồng. Mua thiết bị 36 triệu đồng trong năm 1, khấu hao đều 12 triệu đồng mỗi năm trong ví dụ; không đầu tư thêm ở năm 2–3. Chi phí cố định bằng tiền năm đầu gồm nội dung 84, kỹ thuật/vận hành sản phẩm 72, marketing 60 và điều phối/hỗ trợ chung 24, tổng 240. Chi phí biến đổi không tính lại các khoản cố định này."),
-      table(["Kết quả kinh doanh trước thuế", "Năm 1", "Năm 2", "Năm 3"], [
-        ["Doanh thu", ...values("revenue")], ["Chi phí biến đổi", ...values("variableCosts")], ["Lãi gộp", ...values("grossProfit")],
+      p("Vốn giả định đã có ở đầu năm 1: 200 triệu đồng. Ngay đầu năm 1 mua và đưa vào sử dụng thiết bị 36 triệu đồng, khấu hao đều 12 triệu đồng mỗi năm, không có giá trị còn lại sau ba năm trong ví dụ; không đầu tư thêm ở năm 2–3. Chi phí cố định bằng tiền năm đầu gồm nội dung 84, kỹ thuật/vận hành sản phẩm 72, marketing 60 và điều phối/hỗ trợ chung 24, tổng 240. Chi phí biến đổi không tính lại các khoản cố định này."),
+      table(["Kết quả quản trị theo lãi góp, trước thuế", "Năm 1", "Năm 2", "Năm 3"], [
+        ["Doanh thu", ...values("revenue")], ["Chi phí biến đổi", ...values("variableCosts")], ["Lãi góp", ...values("contribution")],
         ["Chi phí cố định bằng tiền", ...values("fixedCashCosts")], ["Khấu hao", ...values("depreciation")], ["Lợi nhuận trước thuế", ...values("profitBeforeTax")],
       ]),
+      p("Bảng trên trình bày theo lãi góp để phục vụ phân tích hòa vốn: trừ toàn bộ biến phí trước, rồi trừ chi phí cố định. Lãi góp không phải lãi gộp. Muốn lập báo cáo theo giá vốn, phải phân loại lại phần chi phí cung cấp dịch vụ và chi phí hoạt động; không chỉ đổi tên dòng trong bảng."),
       table(["Dòng tiền trước thuế", "Năm 1", "Năm 2", "Năm 3"], [
         ["Tiền đầu năm (vốn đã vào đầu năm 1)", ...values("openingCash")], ["Tiền từ hoạt động", ...values("operatingCash")],
         ["Chi mua thiết bị", ...values("investment")], ["Dòng tiền thuần trong năm", ...values("netCash")], ["Tiền cuối năm", ...values("closingCash")],
@@ -101,9 +104,23 @@ export const proposalLesson: StartupLesson = {
         ["Nợ phải trả", ...values("liabilities")], ["Vốn góp", ...values("capital")], ["Lợi nhuận lũy kế trước thuế", ...values("retained")], ["Tổng vốn chủ sở hữu", ...values("equity")],
       ]),
       p("Đối chiếu năm 1: doanh thu 200 × 1,2 = 240; biến phí 200 × 0,24 = 48; lợi nhuận trước thuế 240 − 48 − 240 − 12 = −60. Tiền từ hoạt động = −60 + 12 = −48. Tiền cuối năm = 200 − 48 − 36 = 116. Tài sản = 116 + 24 = 140 = vốn góp 200 cộng lỗ lũy kế −60."),
-      p("Với cấu trúc năm 1, lãi góp mỗi gói là 0,96 triệu. Hòa vốn tiền mặt hoạt động cần 240 / 0,96 = 250 gói-năm; nếu tính cả khấu hao, hòa vốn trước thuế cần làm tròn lên 252 / 0,96 = 262,5 thành 263 gói. Đây không phải thời gian hoàn vốn đầu tư. Chi phí cố định năm sau khác nên phải tính lại."),
-      p("Kịch bản thận trọng năm 1 chỉ bán 100 gói: doanh thu 120, biến phí 24, dòng tiền hoạt động −144; tiền cuối năm sau thiết bị chỉ còn 20. Khoảng an toàn tiền mặt giảm mạnh. Dù cuối năm còn tiền, nhóm vẫn cần lịch theo tháng để kiểm tra có giai đoạn âm tiền hay không. Các mức tăng khách năm 2–3 chưa được chứng minh và cần cập nhật sau pilot.")),
-    section("ip-va-rui-ro", "11. Tài sản trí tuệ và rủi ro",
+      p("Với cấu trúc năm 1, lãi góp mỗi gói là 0,96 triệu. Hòa vốn tiền mặt hoạt động cần 240 / 0,96 = 250 gói trong năm; nếu tính cả khấu hao, hòa vốn trước thuế cần làm tròn lên 252 / 0,96 = 262,5 thành 263 gói. Đây không phải thời gian hoàn vốn đầu tư. Chi phí cố định năm sau khác nên phải tính lại."),
+      p("Kịch bản thận trọng năm 1 chỉ bán 100 gói: doanh thu 120, biến phí 24, dòng tiền hoạt động −144; tiền cuối năm sau thiết bị chỉ còn 20. Khoảng an toàn tiền mặt giảm mạnh. Dù cuối năm còn tiền, nhóm vẫn cần lịch theo tháng để kiểm tra có giai đoạn âm tiền hay không. Các mức tăng lượng gói bán năm 2–3 chưa được chứng minh và cần cập nhật sau pilot.")),
+    section("nguon-va-su-dung-tien", "11. Nguồn và sử dụng tiền năm đầu",
+      table(["Nguồn tiền trong kịch bản", "Triệu đồng", "Tính chất"], [
+        ["Vốn có ở đầu năm", money(firstYear.openingCash), "Giả định vốn góp đã vào trước khi chi; chưa phải vốn thực nhận"],
+        ["Thu từ gói dịch vụ trong năm", money(firstYear.revenue), "Dự kiến thu đủ trong năm theo giả định của mô hình"],
+        ["Tổng tiền có thể sử dụng trong cả năm", money(firstYear.openingCash + firstYear.revenue), "Không có vay hoặc vốn bổ sung trong ví dụ"],
+      ]),
+      table(["Phân bổ tiền năm đầu", "Triệu đồng", "Đối chiếu"], [
+        ["Chi phí cố định bằng tiền", money(firstYear.fixedCashCosts), "Nội dung, kỹ thuật, marketing và điều phối; đã gồm pilot"],
+        ["Biến phí phục vụ gói thương mại", money(firstYear.variableCosts), "200 gói × 0,24 triệu đồng"],
+        ["Mua thiết bị", money(firstYear.investment), "Dòng tiền đầu tư; không cộng thêm khấu hao vào khoản chi này"],
+        ["Tiền giữ lại cuối năm", money(firstYear.closingCash), "Số dư, không phải chi phí"],
+        ["Tổng phân bổ và số dư", money(firstYear.fixedCashCosts + firstYear.variableCosts + firstYear.investment + firstYear.closingCash), "Khớp tổng nguồn tiền trong kịch bản"],
+      ]),
+      p("Nguồn đầu năm là 200 triệu đồng; 240 triệu doanh thu chỉ vào dần nếu bán được. Tổng nguồn cả năm 440 triệu không có nghĩa được chi ngay 440 triệu. Lập lịch theo tháng, giữ mức tiền tối thiểu và giảm phạm vi hoặc tìm nguồn phù hợp nếu tiền đến muộn. Khấu hao 12 triệu đã nằm trong tính lợi nhuận, không phải một khoản trả tiền lần hai.")),
+    section("ip-va-rui-ro", "12. Tài sản trí tuệ và rủi ro",
       p("Danh mục cần quản lý gồm mã nguồn, nội dung Toán, lời giải, thiết kế, tên/logo và dữ liệu thử nghiệm. Trước pilot, xác định quyền sử dụng, tác giả, thành phần bên thứ ba, người được truy cập và hồ sơ bàn giao. Không nhận là đã có sáng chế hoặc công nghệ độc quyền nếu chưa có căn cứ."),
       table(["Rủi ro", "Dấu hiệu", "Hành động và trách nhiệm"], [
         ["Nhu cầu hoặc sẵn lòng trả yếu", "Người thử không quay lại, người chi trả không thấy lợi ích", "Phụ trách khách hàng phỏng vấn lại và thu hẹp/đổi phân khúc"],
@@ -112,20 +129,26 @@ export const proposalLesson: StartupLesson = {
         ["Thiếu quyền với nội dung hoặc dữ liệu", "Không có hồ sơ hoặc phạm vi sử dụng chưa rõ", "Vận hành kiểm kê, ngừng dùng phần chưa xác định và xử lý quyền phù hợp"],
         ["Nguồn lực không đủ", "Chậm duyệt nội dung hoặc lỗi hỗ trợ kéo dài", "Điều phối giảm phạm vi, bổ sung năng lực và cập nhật milestone"],
       ])),
-    section("lo-trinh-va-de-xuat", "12. Lộ trình và đề xuất hỗ trợ",
-      table(["Mốc", "Đầu ra và tiêu chí", "Phụ trách"], [
-        ["Khám phá nhu cầu", "Ghi nhận tình huống tự học và vấn đề; chốt giả định cần thử", "Khách hàng + chuyên môn"],
-        ["Prototype một chủ đề", "Tác vụ cốt lõi có thể thử; nội dung có hồ sơ kiểm duyệt", "Kỹ thuật + chuyên môn"],
-        ["Pilot có giới hạn", "Kết quả tác vụ, lỗi, quay lại và phản hồi người chi trả; tiêu chí chốt trước vòng xác nhận", "Cả nhóm"],
-        ["Quyết định kinh tế", "Cập nhật chi phí thực, kênh, giá, lịch tiền và phạm vi", "Điều phối + khách hàng + kỹ thuật"],
-        ["Mở rộng hoặc điều chỉnh", "Chỉ tăng phạm vi khi có bằng chứng và đủ năng lực phục vụ", "Người chịu trách nhiệm dự án"],
+    section("lo-trinh-va-de-xuat", "13. Pilot 6 tuần và đề xuất hỗ trợ",
+      p("Lịch dưới đây là một phương án giả định cho pilot miễn phí, một chủ đề và 20 học sinh. Tuần được tính từ lúc nhóm xác nhận người phụ trách, nguồn lực và cách tuyển phù hợp. Đây là vòng khám phá khả năng sử dụng và nhu cầu, chưa phải thử nghiệm chứng minh hiệu quả học tập hoặc khả năng bán gói 4 tuần."),
+      table(["Thời điểm", "Mốc và tiêu chí", "Phụ trách"], [
+        ["Tuần 1 · Khám phá", "Phỏng vấn 8 học sinh và 5 người chi trả; ghi tình huống gần nhất, cách đang xử lý và giả định cần thử", "Khách hàng + chuyên môn"],
+        ["Tuần 2–3 · Prototype", "Một chủ đề, chuỗi tác vụ dùng được trên điện thoại; nội dung được duyệt, quyền sử dụng rõ và có cách ghi lỗi", "Kỹ thuật + chuyên môn"],
+        ["Trước tuần 4 · Kiểm tra sẵn sàng", "Xác nhận 20 người tham gia và điều kiện thử; khóa phạm vi, cách đo, ngưỡng 16/20 hoàn thành tác vụ và trần chi", "Điều phối + chuyên môn"],
+        ["Tuần 4–5 · Pilot", "Ghi tác vụ, lỗi, chi phí, dùng lại trong hai tuần và phản hồi người chi trả; dừng phần nội dung có lỗi nghiêm trọng", "Cả nhóm"],
+        ["Tuần 6 · Quyết định", "Đối chiếu kết quả và ngân sách; quyết định sửa, dừng hoặc thiết kế vòng xác nhận có tiêu chí đặt trước", "Người phụ trách dự án"],
       ]),
-      p("Yêu cầu cụ thể của proposal mẫu là cho phép triển khai một pilot nhỏ, tiếp cận người tham gia phù hợp và nhận phản biện chuyên môn. Trước khi cam kết chi, nhóm phải lập ngân sách pilot riêng theo báo giá và nguồn lực thực. Vốn 200 triệu trong bảng là giả định cho kịch bản tài chính, không phải khoản đầu tư đã nhận hoặc yêu cầu gọi vốn được xác lập."),
-      p("Không đặt lịch cố định cho mọi startup. Với dự án thật, thêm thời điểm dự kiến, phụ thuộc và người xác nhận từng mốc. Một quyết định mở rộng cần xem cả kết quả người dùng, chất lượng, chi phí và nguồn tiền; đạt một chỉ số đơn lẻ chưa đủ.")),
-    section("phu-luc-va-bang-chung", "13. Phụ lục và bằng chứng cần bổ sung",
+      table(["Khoản mục", "Trần chi pilot — triệu đồng", "Nằm trong ngân sách năm 1 — triệu đồng"], [
+        ...caseOperatingBudget.map(item => [item.category, money(item.pilot), money(item.annual)]),
+        ["Tổng", money(pilotBudgetTotal), money(yearOneFixedCashCosts)],
+      ], "Ngân sách giả định cho cả 6 tuần, không phải báo giá. Chi pilot là phần nằm trong chi phí cố định năm 1, không cộng thêm lần nữa."),
+      p("Trần chi 12 triệu gồm xây và vận hành vòng thử miễn phí: nội dung 5, kỹ thuật 4, tuyển người thử 2 và điều phối 1. Các khoản này nằm lần lượt trong ngân sách năm đầu 84, 72, 60 và 24; biến phí 48 triệu ở bảng năm đầu dành cho gói thương mại. Người điều phối kiểm tra chi thực và phần còn lại hằng tuần; khoản vượt trần phải được rà lại trước khi cam kết."),
+      p("Đề xuất của mẫu là chấp thuận phạm vi pilot trên, phân bổ tối đa 12 triệu từ vốn đầu kỳ giả định và hỗ trợ tiếp cận người tham gia, chuyên gia phản biện. Trong dự án thật, thay bằng báo giá, người phụ trách có tên và nguồn tiền đã xác nhận. Vốn 200 triệu là giả định cho kịch bản tài chính, không phải khoản đầu tư đã nhận hay một yêu cầu gọi vốn được xác lập."),
+      p("Nếu tuần 3 chưa đạt điều kiện sẵn sàng, lùi pilot thay vì tuyển đủ người rồi bỏ qua chất lượng. Sau tuần 6, chưa mở rộng chỉ vì có 16/20 người làm được tác vụ: cần xem nhu cầu quay lại, phản hồi người chi trả, chi phí và năng lực; khóa tiêu chí trước vòng xác nhận tiếp theo. Lịch 6 tuần và trần 12 triệu là một ví dụ, không phải định mức chung cho startup.")),
+    section("phu-luc-va-bang-chung", "14. Phụ lục và bằng chứng cần bổ sung",
       list("Ghi nhận nghiên cứu: cách tuyển, câu hỏi, quan sát, phát hiện và giới hạn", "Tài liệu thiết kế: luồng MVP, điều đã có, điều dự kiến và kết quả kiểm tra", "Danh sách nội dung/tài sản và cơ sở quyền sử dụng", "Bảng giả định tài chính, cách đo chi phí và lịch tiền theo tháng", "Nguồn thị trường/đối thủ có ngày truy cập và phạm vi so sánh", "Nhật ký quyết định: bằng chứng nào khiến nhóm giữ, đổi hoặc dừng một phương án"),
       p("Báo cáo AI NextGen Academy là nguồn tham khảo cấu trúc tình huống; số liệu thị trường, tuyên bố traction, hợp tác và hiệu quả trong báo cáo không được dùng ở đây như dữ kiện hiện hành. Proposal thật phải thay giả định minh họa bằng nguồn và kết quả của nhóm. Nội dung khóa học được chuyển thành bài trên trang; không có PDF khóa học để tải xuống.")),
-    section("quy-trinh-day-du", "14. Quy trình từ ý tưởng tới pilot",
+    section("quy-trinh-day-du", "15. Quy trình từ ý tưởng tới pilot",
       figure("workflow", "Một quy trình có vòng phản hồi. Khi bằng chứng không đạt, quay lại đúng giả định thay vì tự động đi tiếp."),
       table(["Bước", "Đầu ra trước khi chuyển bước", "Khi cần quay lại"], [
         ["1. Xác định vấn đề", "Khách, tình huống và cách đang xử lý", "Chưa có vấn đề cụ thể → quan sát lại"],
@@ -140,7 +163,7 @@ export const proposalLesson: StartupLesson = {
         ["10. Pilot và cải tiến", "So thực tế với tiêu chí, quyết định mở rộng/đổi/dừng", "Chỉ mở rộng khi cả chất lượng, nhu cầu và nguồn lực phù hợp"],
       ]),
       p("Ở mỗi bước, ghi người phụ trách, thời điểm, ngân sách và tiêu chí hoàn thành. Tiêu chí phải đặt trước vòng thử dùng để xác nhận, không thay sau khi thấy kết quả chỉ để tuyên bố đạt. Khi phép thử nhằm khám phá, ghi rõ chưa kết luận tỷ lệ của toàn thị trường.")),
-    section("khung-tu-viet", "15. Khung proposal để tự viết",
+    section("khung-tu-viet", "16. Khung proposal để tự viết",
       template("Sao chép và thay bằng dữ liệu của nhóm", "TÊN DỰ ÁN\nNgười đọc và quyết định đề nghị: ...\n\n1. EXECUTIVE SUMMARY (viết sau cùng)\nKhách hàng, vấn đề, giải pháp, bằng chứng, mô hình và yêu cầu hỗ trợ: ...\n\n2. VẤN ĐỀ VÀ CƠ HỘI\nTình huống, cách đang xử lý, bằng chứng và giới hạn: ...\n\n3. KHÁCH HÀNG VÀ THỊ TRƯỜNG\nAi dùng/ai trả, phân khúc, TAM/SAM/SOM, nguồn và kỳ: ...\n\n4. GIẢI PHÁP VÀ GIÁ TRỊ\nLợi ích, tác vụ và khác biệt có thể kiểm tra: ...\n\n5. KHẢ THI\nSản phẩm, thị trường, tổ chức, kỹ thuật/vận hành và tài chính: ...\n\n6. PROTOTYPE/MVP\nĐiều đã có, phạm vi thử, tiêu chí, kết quả và điều chưa chứng minh: ...\n\n7. MÔ HÌNH KINH DOANH\nBMC hoặc Barringer/Ireland, giả định và liên hệ giữa các phần: ...\n\n8. CẠNH TRANH VÀ ĐỊNH VỊ\nGiải pháp thay thế, bảng đối thủ, nguồn/ngày và lợi ích khác biệt: ...\n\n9. MARKETING VÀ BÁN HÀNG\nSTP, 4P, kênh, quy trình, ngân sách và cách đo: ...\n\n10. VẬN HÀNH VÀ ĐỘI NGŨ\nQuy trình, vai trò, khoảng trống và cách bổ sung: ...\n\n11. TÀI CHÍNH VÀ VỐN\nBảng giả định, ba báo cáo dự phóng, hòa vốn, lịch tiền, sources & uses: ...\n\n12. IP VÀ RỦI RO\nTài sản/quyền sử dụng, rủi ro, dấu hiệu và người xử lý: ...\n\n13. LỘ TRÌNH VÀ ĐỀ XUẤT\nMilestone, thời điểm, đầu ra, tiêu chí xong, người phụ trách, phụ thuộc: ...\n\n14. PHỤ LỤC VÀ NGUỒN\nNghiên cứu, thiết kế, dữ liệu, giả định và nhật ký quyết định: ..."),
       note("Trước khi gửi", "Kiểm tra cùng một phân khúc, cùng giá/kỳ, doanh thu suy được từ lượng bán, tiền cuối kỳ khớp và tài sản bằng nợ cộng vốn. Nêu rõ điều đã làm, điều dự kiến và điều cần người đọc quyết định.")),
   ],

@@ -44,7 +44,7 @@ export const foundations: StartupLesson[] = [
     sections: [
       section("y-tuong-va-co-hoi", "Ý tưởng và cơ hội khác nhau thế nào?",
         p("Ý tưởng là một suy nghĩ về sản phẩm, dịch vụ hoặc cách làm. Cơ hội là tập hợp điều kiện thuận lợi tạo ra nhu cầu cho sản phẩm hay dịch vụ đó. Bạn có thể có ý tưởng rất mới nhưng thị trường chưa cần, khách không thể tiếp cận hoặc chi phí thực hiện chưa phù hợp."),
-        p("Một cơ hội đáng xem xét có bốn đặc tính: hấp dẫn, đúng thời điểm, đủ bền vững và gắn với giá trị cho người mua hoặc người dùng. Đừng dùng bốn đặc tính như một thang điểm tự chấm để khẳng định thành công. Với mỗi nhận định, hãy hỏi: bằng chứng nào hỗ trợ và điều gì có thể chứng minh mình đang sai?"),
+        p("Một cơ hội đáng xem xét có bốn đặc tính: hấp dẫn, đúng thời điểm, có thể tồn tại đủ lâu để khai thác và gắn với giá trị cho người mua hoặc người dùng. Đừng dùng bốn đặc tính như một thang điểm tự chấm để khẳng định thành công. Với mỗi nhận định, hãy hỏi: bằng chứng nào hỗ trợ và điều gì có thể chứng minh mình đang sai?"),
         figure("opportunity", "Ba nguồn phát hiện cơ hội cùng hướng về một vấn đề khách hàng; bốn điều kiện giúp sàng lọc ý tưởng.")),
       section("ba-cach-tim-co-hoi", "Ba cách tìm cơ hội",
         table(["Cách tìm", "Quan sát điều gì?", "Ví dụ tình huống học tập"], [
@@ -55,6 +55,7 @@ export const foundations: StartupLesson[] = [
         p("Kinh nghiệm trong ngành giúp thấy những bất tiện lặp lại, còn người ngoài ngành có thể mang tới góc nhìn mới. Mạng lưới đa dạng cũng hữu ích: người quen không làm cùng lĩnh vực thường cho bạn thấy cách giải quyết khác với nhóm mình. Ghi lại quan sát trước khi vội gắn nó với một tính năng.")),
       section("brainstorm-co-muc-tieu", "Brainstorm có mục tiêu",
         p("Bắt đầu phiên brainstorm bằng một câu hỏi hẹp, chẳng hạn: làm sao giúp học sinh nhận ra phần kiến thức chưa hiểu sau một buổi tự học? Trong vòng tạo ý tưởng, chưa phê bình, khuyến khích đề xuất khác thường và phát triển ý tưởng từ đề xuất của người khác. Tách vòng tạo ý tưởng khỏi vòng đánh giá để nhóm không loại bỏ quá sớm."),
+        p("Bên cạnh kỹ thuật brainstorm theo nhóm, khóa học mô tả năm giai đoạn sáng tạo của một cá nhân. Đây là cách hiểu quá trình hình thành ý tưởng, có thể lặp lại, không phải năm bước bắt buộc của mọi buổi brainstorm:"),
         ordered("Chuẩn bị: thu thập quan sát và nêu vấn đề cụ thể", "Ủ ý tưởng: để thời gian kết nối thông tin, không ép chốt ngay", "Nảy ra cách giải: ghi lại nhanh các phương án", "Đánh giá: đối chiếu với nhu cầu, nguồn lực và giả định", "Phát triển: mô tả phương án rõ hơn để có thể thử"),
         note("Đừng nhầm đồng thuận với nhu cầu", "Cả nhóm thích một tính năng không có nghĩa khách hàng cần nó. Kết quả brainstorm là các phương án để kiểm tra.")),
       section("di-gap-khach-hang", "Tìm hiểu việc khách hàng đang làm",
@@ -97,6 +98,7 @@ export const foundations: StartupLesson[] = [
         ])),
       section("tien-va-quyet-dinh", "Tiền ban đầu và quyết định tiếp theo",
         p("Tính số tiền cần để chuẩn bị tới lần bán đầu tiên: đầu tư, chi phí một lần và chi phí vận hành trước doanh thu. Tham chiếu doanh nghiệp tương đồng để kiểm tra độ hợp lý, nhưng phải điều chỉnh theo quy mô và cách vận hành của nhóm. Phần này là ước lượng sơ bộ; chưa cần một bộ dự phóng quá phức tạp."),
+        p("Đánh giá thêm sức hấp dẫn tài chính: doanh thu có khả năng lặp lại không, mỗi lần bán còn bao nhiêu để bù chi phí cố định và hoạt động có thể tự tạo tiền để duy trì hoặc tăng trưởng không. Đủ tiền để mở cửa chưa đồng nghĩa mô hình có thể sống được. Các ước lượng này phải ghi rõ giả định và được kiểm tra lại khi có số thực."),
         template("Bảng khả thi", "Khía cạnh: sản phẩm / thị trường / tổ chức / tài chính\nGiả định quan trọng: ...\nBằng chứng hiện có và nguồn: ...\nKhoảng trống/rủi ro: ...\nThử nghiệm tiếp theo và tiêu chí đánh giá: ...\nNgười phụ trách, ngân sách, thời điểm: ...\nQuyết định: tiếp tục / điều chỉnh / dừng\nLý do và điều kiện xem xét lại: ..."),
         p("Không cộng điểm rồi bỏ qua một rào cản sống còn. Nếu dữ liệu cốt lõi không thể sử dụng, chi phí vượt khả năng hoặc khách không có nhu cầu đủ rõ, hãy thay phạm vi, đổi phân khúc hoặc dừng. Quyết định dừng sau một phép thử tốt giúp bảo toàn nguồn lực cho cơ hội khác.")),
     ],
@@ -130,7 +132,7 @@ export const foundations: StartupLesson[] = [
           ["Giá trị đề xuất", "Nhận ra lỗi sai và có bài luyện ngắn tiếp theo phù hợp"],
           ["Kênh", "Website trên điện thoại; giới thiệu qua nhóm học và giáo viên đồng ý tham gia"],
           ["Quan hệ khách hàng", "Hướng dẫn lần đầu, phản hồi trong bài, hỗ trợ và báo cáo tiến bộ"],
-          ["Dòng doanh thu", "Gói sử dụng tháng; mức giá cần kiểm chứng bằng hành vi trả tiền"],
+          ["Dòng doanh thu", "Gói học 4 tuần; mức giá cần kiểm chứng bằng hành vi trả tiền"],
           ["Nguồn lực chính", "Nội dung có quyền sử dụng, kỹ thuật, chuyên môn Toán, dữ liệu được phép xử lý"],
           ["Hoạt động chính", "Biên soạn/duyệt bài, vận hành sản phẩm, đo lỗi và hỗ trợ người học"],
           ["Đối tác chính", "Giáo viên kiểm duyệt, nhà cung cấp hạ tầng và thanh toán"],
@@ -221,6 +223,7 @@ export const foundations: StartupLesson[] = [
         template("Executive summary", "[Tên dự án] giúp [khách hàng] giải quyết [vấn đề].\nBằng chứng ban đầu: ...\nGiải pháp và lợi ích chính: ...\nPhân khúc, lựa chọn thay thế, cơ sở khác biệt: ...\nMô hình doanh thu và chi phí chính: ...\nHiện trạng, đội ngũ, mốc tiếp theo: ...\nNhu cầu hỗ trợ và kết quả dự kiến tạo ra: ...\nGiả định/rủi ro quan trọng nhất: ..."),
         note("Ví dụ cách sửa câu", "Thay “thị trường rất tiềm năng, chúng tôi sẽ dẫn đầu” bằng phạm vi khách hàng, bằng chứng đã quan sát và mục tiêu cụ thể của vòng thử tiếp theo.")),
       section("tu-mvp-den-milestone", "Mô tả MVP, vận hành và milestone",
+        p("Prototype là nguyên mẫu để thử một ý tưởng, luồng sử dụng hoặc cách giải quyết; có thể chỉ là bản mô phỏng. MVP là phiên bản tối thiểu đủ để học từ việc người dùng thực sự trải nghiệm giá trị cốt lõi. Khi đề xuất, nói rõ nhóm đang có bản mô phỏng hay đã cung cấp được tác vụ thật, và mỗi phiên bản kiểm chứng giả định nào."),
         p("Phần phát triển sản phẩm cần tách rõ những gì đang tồn tại, đang xây và chỉ là dự kiến. Nêu rủi ro kỹ thuật, chi phí phát triển và các phụ thuộc quan trọng. Nếu chỉ có prototype, mô tả nó kiểm chứng được gì và chưa kiểm chứng được gì."),
         p("Vận hành nên ngắn nhưng cụ thể: phần khách nhìn thấy như đăng ký, mua và hỗ trợ; phần phía sau như tạo nội dung, kiểm soát chất lượng, giao hàng hoặc quản lý hạ tầng. Đội ngũ phải tương ứng với công việc đó. Mỗi milestone cần đầu ra, người chịu trách nhiệm, thời điểm và tiêu chí hoàn thành."),
         table(["Milestone mơ hồ", "Cách viết kiểm tra được"], [
