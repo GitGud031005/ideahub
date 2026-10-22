@@ -1,5 +1,12 @@
 @import "./hero.css";
 
+.ih-footer-inner{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center}
+.ih-footer-startup{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;padding:11px 15px;border:1px solid #ffffff70;border-radius:5px;color:#fff;font-size:11px;font-weight:500;transition:background .18s,color .18s,border-color .18s}
+.ih-footer-startup:hover{background:#fff;color:#191919;border-color:#fff}
+.ih-footer-startup:focus-visible{outline:2px solid #fff;outline-offset:5px}
+@media(max-width:400px){.ih-footer-inner{gap:14px}.ih-footer-startup{font-size:10px;padding-inline:10px;gap:6px}}
+@media(prefers-reduced-motion:reduce){.ih-footer-startup{transition:none}}
+
 :root{color-scheme:light;--ink:#191919;--muted:#79796f;--line:#e5e5dd;--paper:#fbfbfa;--font-sans:"Montserrat Variable",Montserrat,sans-serif;--content-width:1320px;--page-gutter:clamp(20px,3.5vw,48px);--field-bg:#fafaf9;--field-border:#deded8;--field-placeholder:#74746d;--field-error:#934f46}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;min-width:320px;background:var(--paper)}

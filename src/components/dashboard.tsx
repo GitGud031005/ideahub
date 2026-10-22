@@ -15,6 +15,7 @@ import { ErrorState } from "./status";
 import { AccountMenu } from "./account-menu";
 import { TagStrip } from "./tag-strip";
 import { IdeaStatusIcon } from "./idea-status";
+import { SiteFooter } from "./site-footer";
 
 export function Dashboard() {
   const router = useRouter(), session = useSession(), { user, ready, requestLogin } = useAuth(), { dashboard, setDashboard } = useUi();
@@ -84,7 +85,7 @@ export function Dashboard() {
         {ideas.hasNextPage && <button className="ih-secondary ih-load-more" disabled={ideas.isFetchingNextPage || ideas.isPlaceholderData} onClick={() => ideas.fetchNextPage()}>{ideas.isFetchingNextPage ? "Đang tải..." : "Xem thêm ý tưởng"}</button>}
         <span className="ih-sr" role="status" aria-live="polite">{total} ý tưởng</span>
       </div>{ideas.isPlaceholderData && <span className="ih-sr" role="status">Đang lọc ý tưởng</span>}</>}
-    </section></main><footer className="ih-footer"><div className="ih-footer-inner"><span className="ih-footer-logo">ideahub.</span></div></footer>
+    </section></main><SiteFooter onNavigate={remember}/>
     {create && <CreateIdea onClose={() => { setCreate(false); requestAnimationFrame(() => createButton.current?.focus()); }}/>} 
   </>;
 }
