@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, PanelRightOpen, X, Search, ArrowDown, Bell, BellOff } from "lucide-react";
+import { ChevronLeft, PanelRightOpen, X, Search, ArrowDown, ArrowDownUp, Bell, BellOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { api, fetchComments } from "@/lib/api-client";
@@ -58,7 +58,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     close.current?.focus({preventScroll:true});
     const keyboard=(event:KeyboardEvent)=>{
       if(document.querySelector("dialog[open]"))return;
-      if(event.key==="Escape"){event.preventDefault();setSidebarOpen(false);requestAnimationFrame(()=>reveal.current?.focus());}
+      if(event.key==="Escape"){event.preventDefault();setSidebarOpen(false);setSearchOpen(false);requestAnimationFrame(()=>searchOpen?searchButton.current?.focus():reveal.current?.focus());}
       if(event.key!=="Tab")return;
       const buttons=[...(panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],[tabindex="0"]')??[])].filter(el=>el.getClientRects().length>0);
       const first=buttons[0],last=buttons.at(-1);
@@ -66,7 +66,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
     };
     document.addEventListener("keydown",keyboard);return()=>document.removeEventListener("keydown",keyboard);
-  },[mobile,sidebarOpen,setSidebarOpen]);
+  },[mobile,sidebarOpen,searchOpen,setSidebarOpen]);
   const outbox=useCommentOutbox(id,user);
   const sending=outbox.items.filter(c=>c.delivery==="sending").length;
   const status=sending?`Đang gửi ${sending} bình luận`:outbox.items.some(c=>c.delivery==="failed")?"Có bình luận chưa gửi được":"";
@@ -88,7 +88,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     if(parentId)setExpanded(current=>{const next=new Set(current),seen=new Set<string>();let parent:string|null=parentId;while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=thread.find(c=>c.id===parent)?.parentId??null;}return next;});
     if(!parentId)requestAnimationFrame(()=>document.getElementById(`comment-${entry.id}`)?.scrollIntoView({block:"nearest",behavior:"instant"}));
   }
-  function toggleSidebar(open: boolean) { setSidebarOpen(open); requestAnimationFrame(() => (open ? close : reveal).current?.focus({ preventScroll: true })); }
+  function toggleSidebar(open: boolean) { setSearchOpen(false);setSidebarOpen(open); requestAnimationFrame(() => (open ? close : reveal).current?.focus({ preventScroll: true })); }
   function revealComment(commentId: string) {
     followLatest.current=false;feed.release();setNavigationError("");
     setExpanded(current => {
@@ -107,7 +107,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   function recordScroll(){const box=scrollBox.current;if(!box)return;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;const top=box.getBoundingClientRect().top;const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};}
   const error = session.error || idea.error;
   return <main className="ih-discussion" aria-labelledby="discussion-title"><section className={`ih-discussion-page${!sidebarOpen ? " ih-aside-collapsed" : ""}`}>
-    <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen} onClick={()=>{window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
+    <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
     <button type="button" className="ih-aside-scrim" hidden={!sidebarOpen} aria-label="Đóng thanh thông tin ý tưởng" onClick={() => toggleSidebar(false)}/>
     <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}><section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" onScroll={() => { const box = scrollBox.current; if (box) followLatest.current = sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;recordScroll(); }}>
       {error ? <ErrorState error={error} retry={() => { session.refetch(); idea.refetch(); }}/> : !idea.data ? <LoadingState label="Đang mở thảo luận..."/> : <>

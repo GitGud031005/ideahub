@@ -31,7 +31,7 @@ export function CommentEditor({ draftKey, label, reply, pending, error, onSubmit
     if(files.length+items.length>5){setFileError("Mỗi tin nhắn tối đa 5 tệp");return;}
     setFileError("");setFiles(current=>[...current,...items]);
   }
-  useEffect(() => { if (reply) field.current?.focus(); }, [reply]);
+  useEffect(() => { if (reply) field.current?.focus({preventScroll:true}); }, [reply]);
   useEffect(() => { const el = field.current; if (el) { el.style.height = "auto"; el.style.height = Math.min(160, Math.max(40, el.scrollHeight + 2)) + "px"; } }, [text]);
   function send(){if((!text.trim()&&!files.length)||pending)return;const next=trimmedMessage(text,mentions);onSubmit(next.text,files,next.mentions);if(!editing){setText("");setMentions([]);setFiles([]);setFileError("");}requestAnimationFrame(()=>field.current?.focus({preventScroll:true}));}
   function keydown(event: KeyboardEvent<HTMLTextAreaElement>) {

@@ -420,6 +420,7 @@ button.ih-tag-selected:hover:enabled{border-color:#aaa99e;background:#e9e9e2}
 /* Discussion collaboration: shared surfaces and controls. */
 :where(.ih-mention-options,.ih-notifications-panel,.ih-notification-toast,.ih-room-search,.ih-comment-menu,.ih-comment-delivery-error) button{appearance:none;-webkit-appearance:none;border:0;background:transparent;box-shadow:none;text-decoration:none}
 .ih-thread-main{position:relative;min-width:0}
+.ih-sort-compact-icon{display:none}
 .ih-editor-input{position:relative;min-width:0}
 .ih-editor-input textarea{display:block;width:100%}
 .ih-mention-options{position:absolute;bottom:calc(100% + 8px);left:0;width:min(320px,100%);max-height:min(290px,40dvh);overflow-y:auto;padding:5px;background:#fff;border:1px solid #e3e3dd;border-radius:10px;box-shadow:0 6px 24px #1b1b1610;z-index:45}
@@ -574,5 +575,5 @@ button.ih-tag-selected:hover:enabled{border-color:#aaa99e;background:#e9e9e2}
  .ih-delivery-actions{padding-left:0;gap:4px}
  .ih-delivery-actions button{min-height:32px;font-size:11px!important}
 }
-@media(max-width:400px){.ih-discussion-page{--control-height:30px}.ih-discussion-actions{gap:5px}.ih-discussion-header .ih-notifications{--control-height:30px}.ih-discussion-heading{gap:5px}.ih-discussion-header h1{font-size:12px;gap:5px}.ih-reply-form-footer{flex-wrap:wrap}}
+@media(max-width:400px){.ih-discussion-sort{position:relative}.ih-discussion-sort .ih-picker-trigger{width:var(--control-height);min-width:var(--control-height);padding:0;border:1px solid #e4e4db;border-radius:5px}.ih-discussion-sort .ih-picker-trigger>span,.ih-discussion-sort .ih-picker-trigger>svg{display:none}.ih-sort-compact-icon{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1}.ih-discussion-page{--control-height:34px}.ih-discussion-actions{gap:5px}.ih-discussion-header .ih-notifications{--control-height:34px}.ih-discussion-heading{gap:5px}.ih-discussion-header h1{font-size:12px;gap:5px}.ih-reply-form-footer{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.ih-mention-options>button,.ih-new-messages,.ih-notification-tabs button,.ih-notification-item,.ih-room-search-result{transition:none}}
