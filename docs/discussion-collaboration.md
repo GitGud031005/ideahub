@@ -25,8 +25,8 @@ Push delivery is attempted after comment/edit responses using Next.js `after`. A
 ## Validation
 
 - TypeScript checks and production build pass.
-- Full suite: 96 passed, 1 external-Postgres integration test skipped without its separate test connection.
-- Embedded PostgreSQL verifies migration idempotence, mention/retry deduplication, owner-only edits, version conflicts, accent-insensitive search, viewer isolation and independent receipts. Existing threaded-unread tests pass.
+- Full suite: 97 passed, 1 external-Postgres integration test skipped without its separate test connection.
+- Embedded PostgreSQL verifies migration idempotence, mention/retry deduplication, owner-only edits, version conflicts, accent-insensitive search, viewer isolation and independent receipts. Existing threaded-unread tests pass. A rendered-tree regression test verifies unread badges for buffered messages in collapsed branches.
 - Preview deployment loads with the PostgreSQL backend; server-created tables and RLS were verified on the connected project. Security advisor reported informational no-policy notices for server-only tables, consistent with their revoked Data API access.
 - Authenticated browser interactions and real OS notification delivery still require a signed-in browser and device permission; they have not been claimed as verified.
 

@@ -11,7 +11,7 @@ import { CommentEditor } from "./comment-editor";
 import { Avatar } from "./avatar";
 
 interface Props {
-  unread: ReadonlySet<string>; ideaId: string; creatorId: string; userId: string; children: Map<string | null, ThreadComment[]>;
+  allChildren?:Map<string|null,ThreadComment[]>;unread: ReadonlySet<string>; ideaId: string; creatorId: string; userId: string; children: Map<string | null, ThreadComment[]>;
   expanded: Set<string>; toggle: (id: string) => void; target: string | null; setTarget: (id: string | null) => void;
   retry:(id:string)=>void;dismiss:(id:string)=>void; submit: (text: string, parentId: string | null,files?:File[],mentions?:Mention[]) => void;members?:Author[];onEdit?:(id:string,text:string,mentions:Mention[],revision:number)=>Promise<Comment>;revise?:(id:string,text:string,mentions:Mention[])=>void;
   canPin?:boolean; pinPending?:string; onPin?:(id:string,pinned:boolean)=>void;onImage?:(a:Attachment)=>void;
@@ -20,7 +20,7 @@ export function CommentTree(props: Props) {
   const [editing,setEditing]=useState<string|null>(null),[edit,setEdit]=useState<{isPending:boolean;error?:Error}>({isPending:false});
   async function save(comment:ThreadComment,text:string,mentions:Mention[]){if(!props.onEdit)return;setEdit({isPending:true});try{await props.onEdit(comment.id,text,mentions,comment.revision??0);setEditing(null);setEdit({isPending:false});}catch(e){setEdit({isPending:false,error:e instanceof Error?e:new Error("Chưa lưu được thay đổi")});}}
   function startEdit(id:string){setEdit({isPending:false});setEditing(id);}
-  const counts=useMemo(()=>branchCommentCounts(props.children,props.unread),[props.children,props.unread]);
+  const counts=useMemo(()=>branchCommentCounts(props.allChildren??props.children,props.unread),[props.allChildren,props.children,props.unread]);
   function cancel(id: string) { props.setTarget(null); requestAnimationFrame(() => document.getElementById(`reply-button-${id}`)?.focus({ preventScroll: true })); }
   function branch(parent: string | null, depth = 0): React.ReactNode {
     const comments = props.children.get(parent); if (!comments?.length) return null;
