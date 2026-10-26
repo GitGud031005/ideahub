@@ -31,12 +31,18 @@ export interface Comment {
   readCursor?: string;
   attachments?: Attachment[];
   pinnedAt?: string | null;
+  mentions?:Mention[];editedAt?:string|null;revision?:number;
 }
+export interface Mention {userId:string;name:string;start:number;end:number}
+export interface EditCommentInput {text:string;mentions?:Mention[];revision:number}
+export interface RoomNotification {id:string;userId:string;ideaId:string;ideaTitle:string;commentId:string;actor:Author;kind:"mention"|"reply";excerpt:string;createdAt:string;readAt:string|null}
+export interface NotificationsPage {items:RoomNotification[];unread:number;nextCursor:string|null}
+export interface PushRegistration {endpoint:string;keys:{p256dh:string;auth:string}}
 export interface Attachment { id:string; name:string; mime:string; size:number; kind:"image"|"file"; url:string }
 export type UnreadCounts = Record<string, number>;
 export interface RoomActivity { commentCount:number; memberCount:number; version?:string }
 export interface CreateIdeaInput { title: string; description: string; tags: string[]; /** @deprecated Legacy clients only; never added to tags. */ category?: Category }
-export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[] }
+export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[];mentions?:Mention[] }
 export type IdeaView = "all" | "new" | "potential" | "archived" | "mine";
 export type IdeaSort = "activity" | "new" | "popular";
 export type CommentSort = "old" | "new";

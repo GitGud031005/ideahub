@@ -1,4 +1,4 @@
-import type { Author, CreateCommentInput, CreateIdeaInput, IdeaQuery, JoinedIdeaStatus } from "@/lib/domain";
+import type { Author, EditCommentInput, PushRegistration, CreateCommentInput, CreateIdeaInput, IdeaQuery, JoinedIdeaStatus } from "@/lib/domain";
 import type { IdeaRepository } from "./repository";
 import { RedisCache } from "./redis-cache";
 import type { StoredAttachment } from "./attachment-record";
@@ -6,6 +6,19 @@ import type { StoredAttachment } from "./attachment-record";
 /** Never cache authentication, personal read markers, or viewer-specific idea responses. */
 export class CachedIdeaRepository implements IdeaRepository {
   constructor(private inner:IdeaRepository,private cache:RedisCache){}
+  listMembers(id:string,userId:string){return this.inner.listMembers(id,userId);}
+  searchComments(id:string,userId:string,q:string,authorId:string,offset:number){return this.inner.searchComments(id,userId,q,authorId,offset);}
+  async editComment(id:string,commentId:string,user:Author,input:EditCommentInput){const c=await this.inner.editComment(id,commentId,user,input);await this.cache.invalidate();return c;}
+  listNotifications(userId:string,unreadOnly:boolean,offset:number){return this.inner.listNotifications(userId,unreadOnly,offset);}
+  readNotifications(userId:string,ids:string[]|"all"){return this.inner.readNotifications(userId,ids);}
+  roomMuted(id:string,userId:string){return this.inner.roomMuted(id,userId);}
+  muteRoom(id:string,userId:string,muted:boolean){return this.inner.muteRoom(id,userId,muted);}
+  pushKeys(){return this.inner.pushKeys();}
+  savePush(userId:string,s:PushRegistration){return this.inner.savePush(userId,s);}
+  removePush(userId:string,endpoint:string){return this.inner.removePush(userId,endpoint);}
+  subscriptions(userId:string){return this.inner.subscriptions(userId);}
+  claimPush(){return this.inner.claimPush();}
+  finishPush(id:string,retry:boolean){return this.inner.finishPush(id,retry);}
   listIdeas(userId:string,query:IdeaQuery){return this.inner.listIdeas(userId,query);}
   setIdeaStatus(id:string,userId:string,status:JoinedIdeaStatus){return this.inner.setIdeaStatus(id,userId,status);}
   getIdea(id:string,userId:string){return this.inner.getIdea(id,userId);}
@@ -18,6 +31,6 @@ export class CachedIdeaRepository implements IdeaRepository {
   getActivity(id:string){return this.cache.remember(`activity:${id}`,2,()=>this.inner.getActivity(id));}
   listComments(id:string,cursor?:string,limit=100){return this.cache.remember(`comments:${id}:${cursor??""}:${limit}`,5,()=>this.inner.listComments(id,cursor,limit));}
   async createIdea(user:Author,input:CreateIdeaInput){const idea=await this.inner.createIdea(user,input);await this.cache.invalidate();return idea;}
-  async joinIdea(id:string,userId:string){const idea=await this.inner.joinIdea(id,userId);await this.cache.invalidate();return idea;}
+  async joinIdea(id:string,userId:string,user?:Author){const idea=await this.inner.joinIdea(id,userId,user);await this.cache.invalidate();return idea;}
   async createComment(id:string,user:Author,input:CreateCommentInput){const comment=await this.inner.createComment(id,user,input);await this.cache.invalidate();return comment;}
 }

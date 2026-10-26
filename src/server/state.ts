@@ -10,7 +10,7 @@ export interface IdeaRecord {
   status?: IdeaStatus; // Legacy shared status, no longer projected.
   memberArchived?: Record<string, boolean>;
 }
-export interface DataState { version: 1; ideas: IdeaRecord[]; comments: Comment[]; attachments?:StoredAttachment[] }
+export interface DataState { users?:Author[];notifications?:import("./collaboration").StoredNotification[];mutedRooms?:Record<string,string[]>;pushKeys?:{publicKey:string;privateKey:string};pushSubscriptions?:(import("@/lib/domain").PushRegistration & {userId:string})[]; version: 1; ideas: IdeaRecord[]; comments: Comment[]; attachments?:StoredAttachment[] }
 /** Operations must complete synchronously inside the transaction; no side effects or network I/O. */
 export interface StateStore {
   read<T>(reader: (state: DataState) => T): Promise<T>;

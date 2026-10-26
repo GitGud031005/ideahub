@@ -9,9 +9,12 @@ export const createIdeaSchema = z.object({
   tags: z.array(z.string().trim().min(1).max(28).refine(tag=>IDEA_TAG_SET.has(tag),"Chọn tag trong danh mục có sẵn")).max(12).default([])
     .transform(tags => [...new Set(tags)]),
 }).strict();
+export const mentionSchema=z.object({userId:z.string().min(1).max(100),name:z.string().min(1).max(100),start:z.number().int().min(0).max(2000),end:z.number().int().min(1).max(2000)}).strict();
+export const editCommentSchema=z.object({text:z.string().trim().max(2000),mentions:z.array(mentionSchema).max(20).default([]),revision:z.number().int().min(0)}).strict();
 export const createCommentSchema = z.object({
   text: z.string().trim().max(2000, "Bình luận tối đa 2000 ký tự"),
   attachmentIds: z.array(z.string().uuid()).max(5).refine(ids=>new Set(ids).size===ids.length).optional(),
+  mentions:z.array(mentionSchema).max(20).optional(),
   clientId: z.string().uuid().optional(),
   parentId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).nullable().optional(),
 }).strict().refine(input=>!!input.text||(input.attachmentIds?.length??0)>0,{message:"Nhập nội dung hoặc chọn tệp đính kèm"});
