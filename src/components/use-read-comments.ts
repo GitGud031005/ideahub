@@ -20,7 +20,10 @@ export function useReadComments(ideaId:string,userId:string|undefined,joined:boo
   useEffect(()=>{
     if(joined&&userId&&comments)void client.invalidateQueries({queryKey:["unread-comments",ideaId,userId]});
   },[client,ideaId,userId,joined,comments]);
-  const visible=useMemo(()=>visibleCommentIds(comments??[],expanded),[comments,expanded]);
+  const structural=useMemo(()=>visibleCommentIds(comments??[],expanded),[comments,expanded]);
+  const [inView,setInView]=useState<Set<string>>(()=>new Set());
+  useEffect(()=>{const root=document.querySelector(".ih-thread-comments");if(!root||!active)return;const nodes=structural.map(id=>document.getElementById(`comment-${id}`)).filter((el):el is HTMLElement=>!!el&&el.getClientRects().length>0);const observer=new IntersectionObserver(entries=>{setInView(current=>{const next=new Set(current);for(const entry of entries){const id=entry.target.id.slice(8);if(entry.isIntersecting)next.add(id);else next.delete(id);}return next;});},{root,threshold:0.1});setInView(new Set());for(const node of nodes)observer.observe(node);return()=>observer.disconnect();},[structural,active]);
+  const visible=useMemo(()=>structural.filter(id=>inView.has(id)),[structural,inView]);
   useEffect(()=>{
     if(!joined||!userId||!active)return;
     let disposed=false,timer:ReturnType<typeof setTimeout>|undefined;
