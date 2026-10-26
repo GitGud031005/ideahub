@@ -1,11 +1,13 @@
 "use client";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {useSurface} from "./use-surface";
 interface Option<T extends string> { value: T; label: string; icon?: ReactNode }
 interface Props<T extends string> { label: string; value: T; options: readonly Option<T>[]; onChange: (value: T) => void; disabled?: boolean; wide?: boolean }
 export function Select<T extends string>({ label, value, options, onChange, disabled, wide }: Props<T>) {
   const id = useId(), ref = useRef<HTMLDivElement>(null), trigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
+  useSurface(open,()=>setOpen(false));
   const [position, setPosition] = useState<{left:number;top:number;width:number;maxHeight:number}>();
   const selected = options.find(o => o.value === value) ?? options[0];
   useEffect(() => {

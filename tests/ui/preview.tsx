@@ -5,7 +5,7 @@ import { Providers } from "../../src/components/providers";
 import { Dashboard } from "../../src/components/dashboard";
 import { Discussion } from "../../src/components/discussion";
 import { Profile } from "../../src/components/profile";
-import type { Account, Attachment, Comment, Idea } from "../../src/lib/domain";
+import type { Account, Attachment, Comment, Idea, RoomNotification } from "../../src/lib/domain";
 import type { Recap } from "../../src/lib/recaps";
 declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
@@ -39,18 +39,38 @@ if(window.__qaScene.startsWith("discussion-unread")){
 }
 const unread:Record<string,number>={[ideas[0].id]:7,[ideas[1].id]:123};
 const unreadCommentIds=new Set(window.__qaScene.startsWith("discussion-unread")?["qa-a","qa-b","qa-c","qa-e"]:comments.filter(c=>c.author.id!==person.id).map(c=>c.id));
+const roomMembers=[person,{id:"qa-other",name:"Trần Ngọc Bình",initial:"TB"},{id:"qa-third",name:"Lê Minh Phúc",initial:"LP"}];
+const notifications:RoomNotification[]=[{id:"qa-notification-1",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-0",actor:roomMembers[1],kind:"mention",excerpt:"@Nguyễn Minh An bạn xem giúp hướng tiếp cận này nhé",createdAt:new Date(Date.now()-240000).toISOString(),readAt:null},{id:"qa-notification-2",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-1",actor:roomMembers[2],kind:"reply",excerpt:"Mình có thể góp sức ở bước kiểm tra dữ liệu đầu vào",createdAt:new Date(Date.now()-3600000).toISOString(),readAt:null},{id:"qa-notification-3",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-share-root",actor:roomMembers[1],kind:"reply",excerpt:"Nhóm đã xem phác thảo, cùng thống nhất phần còn bỏ ngỏ nhé",createdAt:new Date(Date.now()-86400000).toISOString(),readAt:new Date().toISOString()}];
+if(window.__qaScene.includes("empty"))notifications.splice(0);
+if(window.__qaScene==="discussion-long")for(let n=0;n<25;n++)comments.push({...comments[0],id:`qa-long-${n}`,parentId:null,attachments:[],pinnedAt:null,text:`Góc nhìn số ${n+1}: cùng xác định vấn đề và kiểm chứng nhu cầu trước khi xây sản phẩm. Mình muốn nghe thêm trải nghiệm của mọi người.`,createdAt:new Date(Date.now()-(30-n)*60000).toISOString()});
+const qaWorker=Object.assign(new EventTarget(),{register:async()=>({active:{postMessage:()=>{}}}),getRegistration:async()=>undefined,ready:Promise.resolve({active:{postMessage:()=>{}},pushManager:{getSubscription:async()=>null}})});
+Object.defineProperty(navigator,"serviceWorker",{configurable:true,value:qaWorker});
+Object.defineProperty(window,"Notification",{configurable:true,value:{permission:window.__qaScene.includes("push-off")?"default":"denied",requestPermission:async()=>"denied"}});
+Object.defineProperty(window,"PushManager",{configurable:true,value:class {}});
+const sources=new Set<EventTarget>();let qaVersion=0,roomMuted=false;
+window.addEventListener("message",event=>{if(event.data!=="QA_ADD_COMMENT")return;comments.push({...comments[0],id:crypto.randomUUID(),author:roomMembers[1],parentId:null,text:"Tin mới: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận",attachments:[],pinnedAt:null,createdAt:new Date().toISOString()});qaVersion++;for(const source of sources)source.dispatchEvent(new MessageEvent("comments-changed",{data:JSON.stringify({commentCount:comments.length,memberCount:3,version:String(qaVersion)})}));});
 const attempts=new Map<string,number>();let postNumber=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
 class MockSource extends EventTarget {
   onopen:((event:Event)=>void)|null=null;onerror:((event:Event)=>void)|null=null;
-  constructor(_url:string){super();setTimeout(()=>this.onopen?.(new Event("open")),10);}
-  close(){}
+  constructor(_url:string){super();sources.add(this);setTimeout(()=>this.onopen?.(new Event("open")),10);}
+  close(){sources.delete(this);}
 }
 window.EventSource=MockSource as unknown as typeof EventSource;
 let current: Account|null = window.__qaScene === "guest" ? null : { ...person, provider:window.__qaScene === "profile-google"?"google":"password" };
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
+  if(path==="/api/notifications"){
+    if(window.__qaScene.includes("loading"))await new Promise(r=>setTimeout(r,20000));
+    if(window.__qaScene.includes("error"))return Response.json({error:{code:"QA_NETWORK",message:"Kết nối đang gián đoạn. Hãy thử lại sau ít phút"}},{status:503});
+    const filtered=notifications.filter(n=>url.searchParams.get("unread")!=="1"||!n.readAt);return Response.json({items:filtered,unread:notifications.filter(n=>!n.readAt).length,nextCursor:null});
+  }
+  if(path==="/api/notifications/read"){const body=JSON.parse(String(init?.body));for(const n of notifications)if(body.ids==="all"||body.ids.includes(n.id))n.readAt=new Date().toISOString();return Response.json({ok:true});}
+  if(path.endsWith("/members"))return Response.json(roomMembers);
+  if(path.endsWith("/notification-settings")){if(init?.method==="POST")roomMuted=JSON.parse(String(init.body)).muted;return Response.json({muted:roomMuted});}
+  if(path.endsWith("/search")){await new Promise(r=>setTimeout(r,350));const q=(url.searchParams.get("q")||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d"),author=url.searchParams.get("author"),items=comments.filter(c=>(!author||c.author.id===author)&&c.text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").includes(q));return Response.json({items,total:items.length,nextCursor:null});}
+  if(path.endsWith("/edit")&&init?.method==="POST"){const body=JSON.parse(String(init.body)),c=comments.find(c=>c.id===path.split("/").at(-2))!;await new Promise(r=>setTimeout(r,900));if(body.text.includes("lỗi sửa"))return Response.json({error:{code:"QA_CONFLICT",message:"Chưa lưu được thay đổi. Nội dung đang sửa vẫn được giữ lại"}},{status:409});Object.assign(c,{text:body.text,mentions:body.mentions,editedAt:new Date().toISOString(),revision:(c.revision??0)+1});return Response.json(c);}
   if(path==="/api/unread")return Response.json(unread);
   if(path.endsWith("/read")){
     if(init?.method==="POST"){const body=JSON.parse(String(init.body));for(const id of body.commentIds??[body.commentId])unreadCommentIds.delete(id);unread[path.split("/")[3]]=unreadCommentIds.size;return Response.json({ok:true});}
@@ -85,7 +105,7 @@ window.fetch = async (input, init) => {
     await new Promise(resolve=>setTimeout(resolve,window.__qaScene==="discussion-slow"?(order===1?6000:2500):200));
     if(input.text.includes("lỗi thử")&&attempt===1)return Response.json({error:{code:"QA_NETWORK",message:"Mất kết nối thử nghiệm"}},{status:503});
     const existing=comments.find(c=>c.id===input.clientId);if(existing)return Response.json(existing);
-    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);ideas.find(i=>i.id===path.split("/")[3])!.lastCommentAt=comment.createdAt;return Response.json(comment);
+    const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,mentions:input.mentions,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);ideas.find(i=>i.id===path.split("/")[3])!.lastCommentAt=comment.createdAt;return Response.json(comment);
   }
   if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
   if (path.endsWith("/join") && init?.method === "POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;if(!idea.joined){idea.joined=true;idea.status="potential";}return Response.json(project(idea));}
