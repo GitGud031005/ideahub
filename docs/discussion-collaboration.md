@@ -31,3 +31,11 @@ Push delivery is attempted after comment/edit responses using Next.js `after`. A
 - Authenticated browser interactions and real OS notification delivery still require a signed-in browser and device permission; they have not been claimed as verified.
 
 On iOS/iPadOS, Web Push requires a supported OS and launching the installed home-screen web app. Device permissions, focus modes and browser settings can suppress system notifications.
+
+## Automatic notification invitation — 27 October 2026
+
+Signed-in members receive a device notification invitation after the page settles. It waits while another dialog is open or the member is typing. “Bật thông báo” requests browser permission directly from the click; “Để sau”, close and Escape defer the invitation for seven days on that device/account. Already subscribed devices, blocked permission and explicit manual disable are respected.
+
+iPhone/iPad browser sessions receive an installation guide. Its dismissal is stored separately so opening the installed home-screen app can still offer notification permission immediately. Permission and subscription are shared with the existing notification bell; failures keep the invitation retryable.
+
+Validation: production build, TypeScript and 110 tests passed (one external-Postgres test skipped). Browser fixtures verified desktop, Android 360px, iPhone 375/390px and the scrollable 320px guide, including enable success, deferred reload, denial, previously blocked permission, and recovery after a failed subscription request. Mobile platform APIs were simulated; physical-device OS banners were not tested in this pass.
