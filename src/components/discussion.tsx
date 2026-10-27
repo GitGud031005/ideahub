@@ -46,6 +46,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     onSuccess:(_result,{commentId,pinned})=>{client.setQueryData<Comment[]>(["comments",id,user?.id],current=>current?.map(c=>c.id===commentId?{...c,pinnedAt:pinned?new Date().toISOString():null}:c));void client.invalidateQueries({queryKey:["comments",id,user?.id]});},
   });
   const join = useMutation({ mutationFn: () => api<Idea>(`/ideas/${encodeURIComponent(id)}/join`, { method: "POST" }), onSuccess: joined => { client.setQueryData(["idea", id], joined); client.invalidateQueries({ queryKey: ["ideas"] }); } });
+  useEffect(()=>{document.documentElement.classList.add("ih-room-open");return()=>document.documentElement.classList.remove("ih-room-open");},[]);
   useEffect(() => { joinAttempted.current = false; }, [id, user?.id]);
   useEffect(() => { if (user && idea.data && !idea.data.joined && !joinAttempted.current) { joinAttempted.current = true; join.mutate(); } }, [user, idea.data, join]);
   useEffect(() => {
@@ -55,9 +56,10 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   }, [setSidebarOpen]);
   useEffect(() => {
     if (!mobile || !sidebarOpen) return;
-    close.current?.focus({preventScroll:true});
+    (searchOpen?panel.current?.querySelector<HTMLInputElement>("input"):close.current)?.focus({preventScroll:true});
     const keyboard=(event:KeyboardEvent)=>{
       if(document.querySelector("dialog[open]"))return;
+      if(event.target instanceof Element&&event.target.closest("[role=listbox],[role=menu]"))return;
       if(event.key==="Escape"){event.preventDefault();setSidebarOpen(false);setSearchOpen(false);requestAnimationFrame(()=>searchOpen?searchButton.current?.focus():reveal.current?.focus());}
       if(event.key!=="Tab")return;
       const buttons=[...(panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],[tabindex="0"]')??[])].filter(el=>el.getClientRects().length>0);

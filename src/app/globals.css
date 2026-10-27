@@ -648,3 +648,42 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 .ih-push-invite-steps{font-size:12px;line-height:1.9;color:#707060;padding-left:20px;margin:16px 0 0}
 .ih-push-invite-steps li+li{margin-top:8px}
 @media(max-width:760px){.ih-push-invite{padding:26px 22px;max-height:calc(var(--ih-viewport-height,100dvh) - max(14px,env(safe-area-inset-top,0px)) - max(14px,env(safe-area-inset-bottom,0px)))}.ih-push-invite-close{width:44px;height:44px;right:7px;top:7px}.ih-push-invite h2{font-size:20px}.ih-push-invite-actions{gap:8px}.ih-push-invite-actions button{flex:1;min-width:0;white-space:normal}}
+
+/* Room overlays share viewport geometry; controls stay below the mobile drawer. */
+.ih-discussion-header{position:relative;z-index:20;isolation:isolate}
+.ih-mention-options{z-index:150;overscroll-behavior:contain;box-sizing:border-box}
+.ih-comment-popover{z-index:150;padding:5px;background:#fff;border:1px solid #e4e4dc;border-radius:8px;box-shadow:0 5px 22px #00000012;overflow-y:auto;overscroll-behavior:contain}
+.ih-comment-popover [role=menuitem]{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;padding:8px 10px;text-align:left;border:0;border-radius:5px;background:transparent;color:#55554a;font-size:12px}
+.ih-comment-popover [role=menuitem]:hover,.ih-comment-popover [role=menuitem]:focus-visible{background:#f3f3ed}
+.ih-attachment-viewer>header{position:sticky;top:0;z-index:2;background:#151515}
+.ih-attachment-viewer>header>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ih-attachment-viewer>header button,.ih-attachment-viewer>header a{flex-shrink:0;min-width:44px;min-height:44px}
+@media(max-width:760px){
+ html.ih-room-open,html.ih-room-open body{height:100%;overflow:hidden;overscroll-behavior:none}
+ .ih-discussion-page{position:fixed;top:var(--ih-viewport-top,0px);left:env(safe-area-inset-left,0px);right:env(safe-area-inset-right,0px);width:auto}
+ .ih-thread-main{isolation:isolate}
+ .ih-thread-aside{top:calc(var(--ih-viewport-top,0px) + env(safe-area-inset-top,0px));bottom:auto;height:calc(var(--ih-viewport-height,100dvh) - env(safe-area-inset-top,0px));scroll-padding-top:calc(var(--header-height) + 12px);-webkit-overflow-scrolling:touch}
+ .ih-aside-scrim{top:var(--ih-viewport-top,0px);bottom:auto;height:var(--ih-viewport-height,100dvh)}
+ .ih-comment-actions{gap:10px;flex-wrap:wrap}
+ .ih-reply-button,.ih-replies-toggle,.ih-comment-menu>button,.ih-message-pin,.ih-composer-files button{min-height:44px}
+ .ih-comment-menu>button,.ih-attach-button{min-width:44px}
+ .ih-thread-composer{padding-block:10px max(10px,env(safe-area-inset-bottom,0px))}
+ .ih-thread-composer textarea{max-height:min(160px,calc(var(--ih-viewport-height,100dvh)*.25))}
+ .ih-composer-files{max-height:min(110px,calc(var(--ih-viewport-height,100dvh)*.2))}
+ .ih-thread-comments,.ih-thread-aside,.ih-thread-composer textarea,.ih-reply-form textarea{scrollbar-width:thin;scrollbar-color:#d1d1c7 transparent}
+ .ih-thread-comments::-webkit-scrollbar,.ih-thread-aside::-webkit-scrollbar,.ih-thread-composer textarea::-webkit-scrollbar,.ih-reply-form textarea::-webkit-scrollbar{display:block;width:4px}
+ .ih-thread-comments::-webkit-scrollbar-thumb,.ih-thread-aside::-webkit-scrollbar-thumb,.ih-thread-composer textarea::-webkit-scrollbar-thumb,.ih-reply-form textarea::-webkit-scrollbar-thumb{background:#d1d1c7;border-radius:4px}
+ .ih-create-dialog,.ih-auth-dialog,.ih-avatar-dialog,.ih-recap-dialog,.ih-attachment-viewer,.ih-push-invite{top:calc(var(--ih-viewport-top,0px) + max(12px,env(safe-area-inset-top,0px)));bottom:calc(100% - var(--ih-viewport-top,0px) - var(--ih-viewport-height,100dvh) + max(12px,env(safe-area-inset-bottom,0px)))}
+}
+@media(max-height:500px) and (max-width:1000px){
+ .ih-recap-dialog{display:block;overflow-y:auto;max-height:calc(var(--ih-viewport-height,100dvh) - 24px)}
+ .ih-recap-dialog-top{position:sticky;top:0;z-index:3;background:#fff;padding:6px 18px;border-bottom:1px solid #eaeae5}
+ .ih-recap-dialog-top .ih-icon-button{min-width:44px;min-height:44px}
+ .ih-recap-reader-header{padding:12px 20px}
+ .ih-recap-reader-header h2{font-size:20px;margin:6px 0}
+ .ih-recap-reader-body{overflow:visible;min-height:0;padding:16px 20px 4px}
+ .ih-recap-reader-footer{padding:10px 20px}
+ .ih-thread-composer>label{display:none}
+ .ih-thread-composer textarea{max-height:88px}
+ .ih-thread-composer-bottom{margin-top:5px}
+}
