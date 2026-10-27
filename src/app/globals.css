@@ -586,3 +586,46 @@ button.ih-tag-selected:hover:enabled{border-color:#aaa99e;background:#e9e9e2}
 .ih-card-notification:after{content:attr(data-label);position:absolute;right:0;top:calc(100% + 7px);z-index:3;padding:6px 9px;border:1px solid #e3e3d9;border-radius:5px;background:#fff;color:#666659;box-shadow:0 3px 10px #00000008;font-size:10px;font-weight:400;line-height:1.6;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none}
 .ih-card-notification:hover:after,.ih-card-notification:focus-visible:after{opacity:1;visibility:visible}
 .ih-card-notification:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+
+/* Mobile browsers: top-layer notifications, safe areas and keyboard viewport. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.ih-notifications-panel{position:fixed;left:var(--notification-left,12px);right:auto;top:var(--notification-top,72px);bottom:auto;margin:0;padding:0;width:min(358px,calc(100vw - 24px));max-height:calc(var(--ih-viewport-height,100dvh) - var(--notification-top,72px) - 12px);overflow-y:auto;overscroll-behavior:contain;outline:none}
+.ih-notifications-panel:not([open]){display:none}
+.ih-notifications-panel::backdrop{background:#20201824}
+.ih-notification-top,.ih-notification-filters,.ih-push-settings{flex-shrink:0}
+.ih-notification-list{flex:1 1 auto;min-height:0;-webkit-overflow-scrolling:touch}
+.ih-notification-trigger{touch-action:manipulation}
+.ih-push-install{margin-top:8px;font-size:11px;line-height:1.85;color:#777768}
+.ih-push-install summary{cursor:pointer;color:#555546;min-height:40px;display:list-item;padding:8px 0}
+.ih-push-install ol{margin:4px 0 0;padding-left:20px}
+.ih-push-install li+li{margin-top:6px}
+.ih-push-settings strong{color:#666657}.ih-push-settings p{color:#7b7b6b}
+@media(max-width:760px){
+ .ih-discussion-page{height:100vh;height:var(--ih-viewport-height,100dvh);--header-height:calc(64px + env(safe-area-inset-top,0px))}
+ .ih-discussion-header{padding-top:env(safe-area-inset-top,0px)}
+ .ih-notifications-panel{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(var(--ih-viewport-top,0px) + max(12px,env(safe-area-inset-top,0px)));width:auto;max-height:calc(var(--ih-viewport-height,100dvh) - max(12px,env(safe-area-inset-top,0px)) - max(12px,env(safe-area-inset-bottom,0px)))}
+ .ih-notification-list{max-height:none}
+ .ih-notification-top>button,.ih-notification-tabs button,.ih-notification-read-all,.ih-push-settings button{min-height:44px}
+ .ih-notification-top>button{flex-basis:44px}
+ .ih-push-settings button{padding:8px 0}
+ .ih-thread-aside{top:env(safe-area-inset-top,0px);right:env(safe-area-inset-right,0px);height:calc(var(--ih-viewport-height,100dvh) - env(safe-area-inset-top,0px));max-width:calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px) - 24px)}
+ .ih-create-dialog,.ih-auth-dialog,.ih-avatar-dialog,.ih-recap-dialog,.ih-attachment-viewer{max-height:calc(var(--ih-viewport-height,100dvh) - max(12px,env(safe-area-inset-top,0px)) - max(12px,env(safe-area-inset-bottom,0px)));overscroll-behavior:contain}
+ .ih-header,.ih-profile-header{padding-top:max(16px,env(safe-area-inset-top,0px))}
+ .ih-footer{padding-bottom:max(27px,env(safe-area-inset-bottom,0px))}
+ input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{font-size:16px!important}
+ .ih-discussion-page{--control-height:44px}.ih-discussion-header .ih-notifications{--control-height:44px}
+ .ih-discussion-sort .ih-picker-trigger{min-height:44px}
+ .ih-discussion-actions{gap:5px}
+ .ih-room-search-field>button{flex-basis:36px;height:36px}
+ .ih-comment-menu>button,.ih-about-close{min-width:44px;min-height:44px}
+ .ih-delivery-actions button,.ih-reply-cancel,.ih-reply-submit{min-height:44px}
+}
+@media(max-width:400px){
+ .ih-discussion-page{--control-height:44px;--gutter:10px}
+ .ih-discussion-actions{gap:3px}
+ .ih-discussion-header .ih-notifications{--control-height:44px}
+ .ih-discussion-header h1{font-size:12px}
+}
+@media(max-width:360px){.ih-discussion-header .ih-comment-count{display:none}.ih-discussion-header{gap:5px}}
+@media(pointer:coarse){button,a,summary{touch-action:manipulation}.ih-icon-button,.ih-password-toggle{min-width:44px;min-height:44px}}

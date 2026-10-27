@@ -6,6 +6,7 @@ import {NotificationRuntime} from "./notification-bell";
 import { AuthDialog } from "./auth-dialog";
 import type { Account, IdeaSort, IdeaView, Session } from "@/lib/domain";
 
+import {useMobileViewport} from "./use-mobile-viewport";
 import {restorePending} from "@/lib/outbox-storage";
 import {outboxKey} from "@/lib/comment-outbox";
 import type { PendingComment } from "@/lib/comment-outbox";
@@ -19,6 +20,7 @@ interface UiState {
 }
 const UiContext = createContext<UiState | null>(null);
 export function Providers({ children }: { children: ReactNode }) {
+  useMobileViewport();
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 15000, retry: 1 }, mutations: { retry: false } } }));
   const [dashboard, setDashboard] = useState<DashboardState>({ search: "", view: "all", sort: "activity", scroll: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -53,7 +55,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     setDashboard(current => ({ ...current, view: "all", scroll: 0 }));
   }
   async function success(next: Session) { await update(next); const action = continuation.current; continuation.current = undefined; setOpen(false); action?.(); }
-  async function logout() { let endpoint="";if("serviceWorker" in navigator){const registration=await navigator.serviceWorker.getRegistration();const subscription=await registration?.pushManager.getSubscription();endpoint=subscription?.endpoint??"";}
+  async function logout() { let endpoint="";if("serviceWorker" in navigator){const registration=await navigator.serviceWorker.getRegistration();const subscription=await registration?.pushManager?.getSubscription();endpoint=subscription?.endpoint??"";}
     const next=await api<Session>("/auth/logout",{method:"POST",headers:endpoint?{"x-push-endpoint":endpoint}:{}});
     if("serviceWorker" in navigator)void navigator.serviceWorker.getRegistration().then(r=>r?.active?.postMessage({type:"ACCOUNT",userId:null})); await update(next); }
   async function updateProfile(next:Session){await client.cancelQueries({queryKey:["session"]});client.setQueryData(["session"],next);await client.invalidateQueries({predicate:q=>["ideas","idea","comments"].includes(String(q.queryKey[0]))});}

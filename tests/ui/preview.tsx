@@ -4,10 +4,17 @@ import { useState } from "react";
 import { Providers } from "../../src/components/providers";
 import { Dashboard } from "../../src/components/dashboard";
 import { Discussion } from "../../src/components/discussion";
+import BusinessHome from "../../src/app/business-for-startup/page";
+import {StartupShell} from "../../src/components/business-for-startup/shell";
+import {StartupLessonView} from "../../src/components/business-for-startup/lesson";
+import {lessonCatalog,lessonGroups,searchEntries,getStartupLesson} from "../../src/content/business-for-startup";
+import NotFound from "../../src/app/not-found";
+import ErrorPage from "../../src/app/error";
+import {SiteFooter} from "../../src/components/site-footer";
 import { Profile } from "../../src/components/profile";
 import type { Account, Attachment, Comment, Idea, RoomNotification } from "../../src/lib/domain";
 import type { Recap } from "../../src/lib/recaps";
-declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void } }
+declare global { interface Window { __qaScene: string; __qaNavigate: (path: string) => void; __qaPath: string } }
 const person: Account = { id: "qa-person", username: "minhan", name: "Nguyễn Minh An", initial: "NA" };
 const tags = ["Công nghệ", "Data engineering", "Python", "Open source", "Thiết kế", "Teamwork", "PostgreSQL", "Tìm đồng đội", "Mobile", "Product", "Frontend", "Backend"];
 const ideas: Idea[] = ["Phòng thí nghiệm Data Crawling", "Bản đồ không gian học tập", "Tủ sách trao đổi cộng đồng"].map((title, i) => ({ id: `qa-idea-${i}`, title, description: "Cùng xây một sản phẩm hữu ích, chia sẻ góc nhìn và tìm đồng đội để đưa ý tưởng thành hiện thực", status: i === 0 ? "potential" : i === 1 ? "new" : "archived", category: "Công nghệ", tags, creator: person, createdAt: new Date().toISOString(), memberCount: 12, commentCount: 13, lastCommentAt:new Date(Date.now()-(i+1)*3600000).toISOString(), mine: i === 0, joined: i !== 1, notificationsMuted:i===2 }));
@@ -43,10 +50,16 @@ const roomMembers=[person,{id:"qa-other",name:"Trần Ngọc Bình",initial:"TB"
 const notifications:RoomNotification[]=[{id:"qa-notification-1",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-0",actor:roomMembers[1],kind:"mention",excerpt:"@Nguyễn Minh An bạn xem giúp hướng tiếp cận này nhé",createdAt:new Date(Date.now()-240000).toISOString(),readAt:null},{id:"qa-notification-2",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-1",actor:roomMembers[2],kind:"reply",excerpt:"Mình có thể góp sức ở bước kiểm tra dữ liệu đầu vào",createdAt:new Date(Date.now()-3600000).toISOString(),readAt:null},{id:"qa-notification-3",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-share-root",actor:roomMembers[1],kind:"reply",excerpt:"Nhóm đã xem phác thảo, cùng thống nhất phần còn bỏ ngỏ nhé",createdAt:new Date(Date.now()-86400000).toISOString(),readAt:new Date().toISOString()}];
 if(window.__qaScene.includes("empty"))notifications.splice(0);
 if(window.__qaScene==="discussion-long")for(let n=0;n<25;n++)comments.push({...comments[0],id:`qa-long-${n}`,parentId:null,attachments:[],pinnedAt:null,text:`Góc nhìn số ${n+1}: cùng xác định vấn đề và kiểm chứng nhu cầu trước khi xây sản phẩm. Mình muốn nghe thêm trải nghiệm của mọi người.`,createdAt:new Date(Date.now()-(30-n)*60000).toISOString()});
-const qaWorker=Object.assign(new EventTarget(),{register:async()=>({active:{postMessage:()=>{}}}),getRegistration:async()=>undefined,ready:Promise.resolve({active:{postMessage:()=>{}},pushManager:{getSubscription:async()=>null}})});
+const ios=window.__qaScene.includes("ios"),installed=window.__qaScene.includes("pwa"),allowPush=installed||window.__qaScene.includes("android-push");
+if(ios){Object.defineProperty(navigator,"userAgent",{configurable:true,value:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1"});Object.defineProperty(navigator,"platform",{configurable:true,value:"iPhone"});Object.defineProperty(navigator,"standalone",{configurable:true,value:installed});}
+let fixtureSubscription:any=null;
+const pushManager={getSubscription:async()=>fixtureSubscription,subscribe:async()=>{fixtureSubscription={endpoint:"https://web.push.apple.com/qa-only",keys:{p256dh:"qa",auth:"qa"},options:{},toJSON(){return {endpoint:this.endpoint,keys:this.keys};},async unsubscribe(){fixtureSubscription=null;return true;}};return fixtureSubscription;}};
+const registration={active:{postMessage:()=>{}},pushManager};
+const qaWorker=Object.assign(new EventTarget(),{register:async()=>registration,getRegistration:async()=>registration,ready:Promise.resolve(registration)});
 Object.defineProperty(navigator,"serviceWorker",{configurable:true,value:qaWorker});
-Object.defineProperty(window,"Notification",{configurable:true,value:{permission:window.__qaScene.includes("push-off")?"default":"denied",requestPermission:async()=>"denied"}});
+Object.defineProperty(window,"Notification",{configurable:true,value:{permission:allowPush||window.__qaScene.includes("push-off")||ios?"default":"denied",requestPermission:async()=>allowPush?"granted":"denied"}});
 Object.defineProperty(window,"PushManager",{configurable:true,value:class {}});
+try{localStorage.removeItem("ih-push-user");}catch{}
 const sources=new Set<EventTarget>();let qaVersion=0;
 window.addEventListener("message",event=>{if(event.data!=="QA_ADD_COMMENT")return;comments.push({...comments[0],id:crypto.randomUUID(),author:roomMembers[1],parentId:null,text:"Tin mới: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận",attachments:[],pinnedAt:null,createdAt:new Date().toISOString()});qaVersion++;for(const source of sources)source.dispatchEvent(new MessageEvent("comments-changed",{data:JSON.stringify({commentCount:comments.length,memberCount:3,version:String(qaVersion)})}));});
 const attempts=new Map<string,number>();let postNumber=0;
@@ -61,6 +74,8 @@ let current: Account|null = window.__qaScene === "guest" ? null : { ...person, p
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");
+  if(path==="/api/push/config")return Response.json({publicKey:"B"+"A".repeat(86)});
+  if(path==="/api/push/subscribe"||path==="/api/push/unsubscribe")return Response.json({ok:true});
   if(path==="/api/notifications"){
     if(window.__qaScene.includes("loading"))await new Promise(r=>setTimeout(r,20000));
     if(window.__qaScene.includes("error"))return Response.json({error:{code:"QA_NETWORK",message:"Kết nối đang gián đoạn. Hãy thử lại sau ít phút"}},{status:503});
@@ -113,8 +128,10 @@ window.fetch = async (input, init) => {
   return Response.json({ error: { code: "QA_ONLY", message: "Đây là fixture UI; không gửi dữ liệu thật" } }, { status: 400 });
 };
 function App() {
-  const [route, setRoute] = useState(window.__qaScene.startsWith("discussion") ? `/ideas/${ideas[0].id}` : window.__qaScene.startsWith("profile") ? "/profile" : "/");
+  const [route, setRoute] = useState(window.__qaScene.startsWith("discussion") ? `/ideas/${ideas[0].id}` : window.__qaScene.startsWith("profile") ? "/profile" : window.__qaScene.startsWith("startup:") ? `/business-for-startup/${window.__qaScene.slice(8)}` : window.__qaScene==="startup" ? "/business-for-startup" : window.__qaScene==="not-found" ? "/missing" : window.__qaScene==="page-error" ? "/error" : "/");
+  window.__qaPath=route;
   window.__qaNavigate = setRoute;
-  return <Providers><div id="ih-app">{route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion id={route.split("/")[2]}/> : <Dashboard/>}</div></Providers>;
+  const startup=route.startsWith("/business-for-startup"),lesson=getStartupLesson(route.split("/")[2]);
+  return <Providers><div id="ih-app">{startup?<><StartupShell catalog={lessonCatalog} groups={lessonGroups} entries={searchEntries}>{lesson?<StartupLessonView lesson={lesson} catalog={lessonCatalog}/>:<BusinessHome/>}</StartupShell><SiteFooter/></>:route==="/missing"?<NotFound/>:route==="/error"?<ErrorPage error={new Error("QA")} reset={()=>setRoute("/")}/>:route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion id={route.split("/")[2]}/> : <Dashboard/>}</div></Providers>;
 }
 createRoot(document.getElementById("root")!).render(<App/>);

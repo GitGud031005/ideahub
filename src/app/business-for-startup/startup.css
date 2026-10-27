@@ -80,3 +80,13 @@ html:has(.bfs-root),body:has(.bfs-root){min-width:0}
   .bfs-card-outcome strong,.bfs-capstone-list{font-size:13px}
   .bfs-editorial-note{font-size:12px}
 }
+
+@media(max-width:760px){
+ .bfs-header{padding-top:max(14px,env(safe-area-inset-top,0px));--bfs-header:calc(112px + env(safe-area-inset-top,0px))}
+ .bfs-search input,.bfs-number-wrap input{font-size:16px}
+ .bfs-search button,.bfs-menu-button,.bfs-dialog-heading button{min-width:44px;min-height:44px}
+ .bfs-nav-dialog{max-height:calc(var(--ih-viewport-height,100dvh) - max(12px,env(safe-area-inset-top,0px)) - max(12px,env(safe-area-inset-bottom,0px)));overscroll-behavior:contain}
+ .bfs-search-results{max-height:calc(var(--ih-viewport-height,100dvh) - 150px)}
+ .bfs-chapter-nav a,.bfs-toc-mobile nav>a,.bfs-template-heading>button{min-height:44px}
+ .bfs-number-wrap input{min-height:44px}
+}
