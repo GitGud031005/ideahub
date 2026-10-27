@@ -3,6 +3,7 @@ import {useEffect,useRef,useState,type CSSProperties} from "react";
 import {useInfiniteQuery,useQuery,useQueryClient} from "@tanstack/react-query";
 import {Bell,BellOff,CheckCheck,Check,X,RefreshCw,AlertCircle,ArrowUpRight,Inbox} from "lucide-react";
 import {createPortal} from "react-dom";
+import {enableDevicePush,disableDevicePush} from "@/lib/device-push";
 import {browserPushSupport} from "@/lib/push-support";
 import {useRouter} from "next/navigation";
 import type {NotificationsPage,RoomNotification} from "@/lib/domain";
@@ -14,7 +15,6 @@ import {Avatar} from "./avatar";
 import {useSurface} from "./use-surface";
 function useInbox(){const {user}=useAuth();return useQuery({queryKey:["notifications",user?.id],queryFn:({signal})=>api<NotificationsPage>("/notifications",{signal}),enabled:!!user,refetchInterval:5000,refetchOnWindowFocus:"always",refetchOnReconnect:"always",staleTime:0});}
 function visibleComment(n:RoomNotification){const el=document.getElementById(`comment-${n.commentId}`),root=document.querySelector(".ih-thread-comments"),a=el?.getBoundingClientRect(),b=root?.getBoundingClientRect();return !document.hidden&&document.hasFocus()&&!!el?.getClientRects().length&&!!a&&!!b&&a.bottom>b.top&&a.top<b.bottom;}
-function keyBytes(value:string){return Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-value.length%4)%4)),c=>c.charCodeAt(0));}
 export function NotificationRuntime(){
  const {user,ready}=useAuth(),inbox=useInbox(),router=useRouter(),client=useQueryClient(),seen=useRef<{userId:string;ids:Set<string>}|null>(null),[toast,setToast]=useState<RoomNotification|null>(null);
  useEffect(()=>{if(!ready||!("serviceWorker" in navigator))return;let disposed=false;void navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(async()=>{const r=await navigator.serviceWorker.ready;if(disposed)return;r.active?.postMessage({type:"ACCOUNT",userId:user?.id??null});if(user&&"Notification" in window&&Notification.permission==="granted"&&localStorage.getItem("ih-push-user")===user.id){const s=await r.pushManager.getSubscription();if(s)await api("/push/subscribe",{method:"POST",body:JSON.stringify(s.toJSON())});}}).catch(()=>{});return()=>{disposed=true;};},[user?.id,ready]);
@@ -46,7 +46,7 @@ export function NotificationBell(){
   return()=>{disposed=true;};
  },[open,user?.id]);
  async function read(ids:string[]|"all"){await api("/notifications/read",{method:"POST",body:JSON.stringify({ids})});await client.invalidateQueries({queryKey:["notifications"]});await client.invalidateQueries({queryKey:["notification-pages"]});}
- async function togglePush(){setBusy(true);setError("");try{if(push==="on"){const r=await navigator.serviceWorker.getRegistration(),s=await r?.pushManager?.getSubscription();if(s){await api("/push/unsubscribe",{method:"POST",body:JSON.stringify({endpoint:s.endpoint})});await s.unsubscribe();}localStorage.removeItem("ih-push-user");setPush("off");return;}const permission=await Notification.requestPermission();if(permission!=="granted"){setPush(permission==="denied"?"denied":"off");return;}await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});const r=await navigator.serviceWorker.ready,config=await api<{publicKey:string}>("/push/config");let s=await r.pushManager.getSubscription();if(s&&s.options.applicationServerKey&&btoa(String.fromCharCode(...new Uint8Array(s.options.applicationServerKey))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")!==config.publicKey){await s.unsubscribe();s=null;}s??=await r.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:keyBytes(config.publicKey)});await api("/push/subscribe",{method:"POST",body:JSON.stringify(s.toJSON())});r.active?.postMessage({type:"ACCOUNT",userId:user!.id});localStorage.setItem("ih-push-user",user!.id);setPush("on");}catch(e){setError(e instanceof Error?e.message:"Chưa bật được thông báo");}finally{setBusy(false);}}
+ async function togglePush(){setBusy(true);setError("");try{if(push==="on"){await disableDevicePush(user!.id);setPush("off");}else setPush(await enableDevicePush(user!.id));}catch(e){setError(e instanceof Error?e.message:"Chưa bật được thông báo");}finally{setBusy(false);}}
  if(!user)return null;
  const items=[...new Map(pages.data?.pages.flatMap(p=>p.items).map(n=>[n.id,n])??[]).values()];
  return <div className="ih-notifications" onKeyDown={e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();setOpen(false);trigger.current?.focus();}}}>

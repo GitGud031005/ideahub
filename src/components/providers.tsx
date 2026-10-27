@@ -2,6 +2,7 @@
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { api } from "@/lib/api-client";
+import {PushOptIn} from "./push-opt-in";
 import {NotificationRuntime} from "./notification-bell";
 import { AuthDialog } from "./auth-dialog";
 import type { Account, IdeaSort, IdeaView, Session } from "@/lib/domain";
@@ -65,6 +66,6 @@ function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("ideahub:auth-required", expired); return () => window.removeEventListener("ideahub:auth-required", expired);
   }, [client]);
   useEffect(()=>{const userId=session.data?.user?.id;if(!userId)return;let disposed=false;void restorePending(userId).then(items=>{if(disposed)return;setOutbox(current=>{const next={...current};for(const entry of items){const key=outboxKey(entry.ideaId,userId);if(!(next[key]??[]).some(c=>c.id===entry.id))next[key]=[...(next[key]??[]),entry];}return next;});}).catch(()=>{});return()=>{disposed=true;};},[session.data?.user?.id,setOutbox]);
-  return <AuthContext value={{ user: session.data?.user ?? null, ready: session.isSuccess, requestLogin, logout,updateProfile }}>{children}<NotificationRuntime/>{open && <AuthDialog onClose={close} onSuccess={success} oauthNext={oauthNext} initialError={authError}/>}</AuthContext>;
+  return <AuthContext value={{ user: session.data?.user ?? null, ready: session.isSuccess, requestLogin, logout,updateProfile }}>{children}<NotificationRuntime/><PushOptIn/>{open && <AuthDialog onClose={close} onSuccess={success} oauthNext={oauthNext} initialError={authError}/>}</AuthContext>;
 }
 export function useAuth() { const value = useContext(AuthContext); if (!value) throw new Error("Missing AuthContext"); return value; }

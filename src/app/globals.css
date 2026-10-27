@@ -632,3 +632,19 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 @media(max-width:760px){
  dialog .ih-dialog-top{position:sticky;top:-20px;z-index:4;background:#fff;padding-block:8px;margin-top:-8px}
 }
+
+/* Device-wide push opt-in, shown once a signed-in member is ready. */
+.ih-push-invite{position:fixed;width:420px;max-width:calc(100vw - 28px);max-height:calc(var(--ih-viewport-height,100dvh) - 28px);margin:auto;padding:30px;border:1px solid #e2e2d9;border-radius:14px;background:#fff;color:#33332c;box-shadow:0 18px 70px #16161022;overflow-y:auto;overscroll-behavior:contain;text-align:left}
+.ih-push-invite:not([open]){display:none}
+.ih-push-invite::backdrop{background:#20201842}
+.ih-push-invite-close{position:absolute;right:12px;top:12px;width:40px;height:40px}
+.ih-push-invite-icon{display:grid;place-items:center;width:54px;height:54px;border:1px solid #e9e9df;border-radius:50%;background:#f7f7f1;color:#777767;margin-bottom:20px}
+.ih-push-invite h2{font-size:21px;font-weight:600;line-height:1.5;letter-spacing:-.45px;padding-right:12px}
+.ih-push-invite>p{font-size:13px;line-height:1.9;color:#77776b;margin-top:12px}
+.ih-push-invite .ih-push-invite-note{font-size:11px;color:#8a8a79;background:#f7f7f1;border-radius:6px;padding:10px 12px}
+.ih-push-invite-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:24px;flex-wrap:wrap}
+.ih-push-invite-actions button{min-height:44px}
+.ih-push-invite>small{display:block;font-size:10px;line-height:1.8;color:#939383;margin-top:16px}
+.ih-push-invite-steps{font-size:12px;line-height:1.9;color:#707060;padding-left:20px;margin:16px 0 0}
+.ih-push-invite-steps li+li{margin-top:8px}
+@media(max-width:760px){.ih-push-invite{padding:26px 22px;max-height:calc(var(--ih-viewport-height,100dvh) - max(14px,env(safe-area-inset-top,0px)) - max(14px,env(safe-area-inset-bottom,0px)))}.ih-push-invite-close{width:44px;height:44px;right:7px;top:7px}.ih-push-invite h2{font-size:20px}.ih-push-invite-actions{gap:8px}.ih-push-invite-actions button{flex:1;min-width:0;white-space:normal}}
