@@ -1,0 +1,1153 @@
+{
+  "browser": "Chrome (Blink), responsive fixture; not native iOS Safari or Android hardware",
+  "checks": [
+    {
+      "page": "dashboard guest",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "dashboard member",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "profile 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "profile iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "profile iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "profile Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "profile Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "profile Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "profile Keyboard area",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 480,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "Google profile",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Hồ sơ cá nhân"
+      ],
+      "height": 480,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "dashboard 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "dashboard iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "dashboard iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "dashboard iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "dashboard Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "dashboard Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "dashboard Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Nơi những ý tưởng lớngặp nhau"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "startup home 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "startup home iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "startup home iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "startup home iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "startup home Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "startup home Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "startup home Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Từ ý tưởngđến bước đi đầu tiên"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "tu-duy-khoi-nghiep 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Tư duy và hành trình khởi nghiệp"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "tu-duy-khoi-nghiep iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Tư duy và hành trình khởi nghiệp"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "tu-duy-khoi-nghiep Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Tư duy và hành trình khởi nghiệp"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "tu-duy-khoi-nghiep Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Tư duy và hành trình khởi nghiệp"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "nhan-dien-co-hoi 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Nhận diện cơ hội và phát triển ý tưởng"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "nhan-dien-co-hoi iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Nhận diện cơ hội và phát triển ý tưởng"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "nhan-dien-co-hoi Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Nhận diện cơ hội và phát triển ý tưởng"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "nhan-dien-co-hoi Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Nhận diện cơ hội và phát triển ý tưởng"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "kiem-tra-tinh-kha-thi 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Kiểm tra tính khả thi"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "kiem-tra-tinh-kha-thi iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Kiểm tra tính khả thi"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "kiem-tra-tinh-kha-thi Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Kiểm tra tính khả thi"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "kiem-tra-tinh-kha-thi Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Kiểm tra tính khả thi"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "mo-hinh-kinh-doanh 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Xây dựng mô hình kinh doanh"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "mo-hinh-kinh-doanh iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Xây dựng mô hình kinh doanh"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "mo-hinh-kinh-doanh Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Xây dựng mô hình kinh doanh"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "mo-hinh-kinh-doanh Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Xây dựng mô hình kinh doanh"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "thi-truong-va-doi-thu 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Ngành, thị trường và đối thủ"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "thi-truong-va-doi-thu iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Ngành, thị trường và đối thủ"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "thi-truong-va-doi-thu Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Ngành, thị trường và đối thủ"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "thi-truong-va-doi-thu Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Ngành, thị trường và đối thủ"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "ke-hoach-kinh-doanh 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Viết kế hoạch kinh doanh"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "ke-hoach-kinh-doanh iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Viết kế hoạch kinh doanh"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "ke-hoach-kinh-doanh Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Viết kế hoạch kinh doanh"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "ke-hoach-kinh-doanh Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Viết kế hoạch kinh doanh"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "tai-chinh-startup 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Tài chính và sức khỏe doanh nghiệp"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "tai-chinh-startup iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Tài chính và sức khỏe doanh nghiệp"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "tai-chinh-startup Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Tài chính và sức khỏe doanh nghiệp"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "tai-chinh-startup Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Tài chính và sức khỏe doanh nghiệp"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "xay-dung-doi-ngu 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Xây dựng đội ngũ"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "xay-dung-doi-ngu iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Xây dựng đội ngũ"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "xay-dung-doi-ngu Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Xây dựng đội ngũ"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "xay-dung-doi-ngu Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Xây dựng đội ngũ"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "von-va-tai-tro 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Vốn và nguồn tài trợ"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "von-va-tai-tro iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Vốn và nguồn tài trợ"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "von-va-tai-tro Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Vốn và nguồn tài trợ"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "von-va-tai-tro Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Vốn và nguồn tài trợ"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "marketing-va-ban-hang 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Marketing và bán hàng"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "marketing-va-ban-hang iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Marketing và bán hàng"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "marketing-va-ban-hang Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Marketing và bán hàng"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "marketing-va-ban-hang Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Marketing và bán hàng"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "tai-san-tri-tue 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Tài sản trí tuệ và bảo vệ giá trị"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "tai-san-tri-tue iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Tài sản trí tuệ và bảo vệ giá trị"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "tai-san-tri-tue Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Tài sản trí tuệ và bảo vệ giá trị"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "tai-san-tri-tue Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Tài sản trí tuệ và bảo vệ giá trị"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "proposal-va-quy-trinh 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Proposal mẫu và quy trình triển khai"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "proposal-va-quy-trinh iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Proposal mẫu và quy trình triển khai"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "proposal-va-quy-trinh Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Proposal mẫu và quy trình triển khai"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "proposal-va-quy-trinh Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Proposal mẫu và quy trình triển khai"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "404 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "404 iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "404 iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "404 iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "404 Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "404 Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "404 Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "404 Keyboard area",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Không tìm thấy trang"
+      ],
+      "height": 480,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "Page error 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "Page error iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "Page error iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "Page error iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "Page error Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "Page error Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "Page error Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "Page error Keyboard area",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [],
+      "height": 480,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "Discussion 320 px",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    },
+    {
+      "page": "Discussion iPhone SE",
+      "appWidth": 375,
+      "documentWidth": 375,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 667,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 375
+    },
+    {
+      "page": "Discussion iPhone 390",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 844,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "Discussion iPhone Max",
+      "appWidth": 430,
+      "documentWidth": 430,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 932,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 430
+    },
+    {
+      "page": "Discussion Android 360",
+      "appWidth": 360,
+      "documentWidth": 360,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 800,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 360
+    },
+    {
+      "page": "Discussion Android 412",
+      "appWidth": 412,
+      "documentWidth": 412,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 915,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 412
+    },
+    {
+      "page": "Discussion Landscape",
+      "appWidth": 844,
+      "documentWidth": 844,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 390,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 844
+    },
+    {
+      "page": "Discussion Keyboard area",
+      "appWidth": 390,
+      "documentWidth": 390,
+      "headings": [
+        "Thảo luận 18"
+      ],
+      "height": 480,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 390
+    },
+    {
+      "page": "failed-send edit 320",
+      "appWidth": 320,
+      "documentWidth": 320,
+      "headings": [
+        "Thảo luận 19"
+      ],
+      "height": 568,
+      "horizontalOverflow": false,
+      "oversized": [],
+      "width": 320
+    }
+  ]
+}

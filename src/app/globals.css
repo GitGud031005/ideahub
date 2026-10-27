@@ -629,3 +629,6 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 }
 @media(max-width:360px){.ih-discussion-header .ih-comment-count{display:none}.ih-discussion-header{gap:5px}}
 @media(pointer:coarse){button,a,summary{touch-action:manipulation}.ih-icon-button,.ih-password-toggle{min-width:44px;min-height:44px}}
+@media(max-width:760px){
+ dialog .ih-dialog-top{position:sticky;top:-20px;z-index:4;background:#fff;padding-block:8px;margin-top:-8px}
+}

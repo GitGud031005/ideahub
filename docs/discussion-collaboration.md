@@ -8,7 +8,7 @@ Implemented for the existing IdeaHub discussion, keeping its monochrome layout a
 - The outbox writes messages and File objects to device IndexedDB before sending. Reload restores unconfirmed messages as failed. Retry preserves the client ID; editing an ambiguously accepted send reconciles the saved message before editing it. IndexedDB failure falls back to the current in-memory outbox.
 - Authors can edit with optimistic version checks. Conflicts preserve the editor text. Edits keep creation time, parent, attachments and unread sequence; only newly mentioned recipients are considered for notification.
 - Notifications are inserted in the same transaction as comments/edits, unique per recipient/comment. Mention takes precedence over direct reply. Inbox read receipts are separate from comment receipts. Room mute silences toast/push while retaining inbox history.
-- Web Push uses `web-push` with persistent server-only VAPID keys. Browser permission is requested only from the enable button. The worker avoids caching authenticated data, isolates accounts, suppresses pushes for visible source comments, and navigates to the source on click. Known browser push endpoints are allowlisted and redirects disabled.
+- Web Push uses `web-push` with persistent server-only VAPID keys. Browser permission is requested only from the enable button. The worker avoids caching authenticated data, isolates accounts, displays every delivered push as required by Safari/iOS (using generic content after an account change), and navigates to the source on click. Known browser push endpoints are allowlisted and redirects disabled.
 
 ## API
 

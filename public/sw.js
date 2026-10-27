@@ -12,7 +12,7 @@ self.addEventListener("push",event=>event.waitUntil((async()=>{
  await self.registration.showNotification(data.title||"IdeaHub",{body:data.body||"Bạn có thông báo mới",icon:"/icon-192.png",badge:"/icon-192.png",tag:`ideahub:${data.id}`,renotify:false,data});
 })()));
 self.addEventListener("notificationclick",event=>{const data=event.notification.data;event.notification.close();event.waitUntil((async()=>{
- const current=await account();let url=new URL("/",self.location.origin);
+ let current;try{current=await account();}catch{}let url=new URL("/",self.location.origin);
  if(data?.userId&&current===data.userId){const target=new URL(data.url,self.location.origin);if(target.origin!==url.origin||!target.pathname.startsWith("/ideas/"))return;url=target;try{await fetch("/api/notifications/read",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids:[data.id]})});}catch{}}
  const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true}),existing=windows.find(w=>new URL(w.url).origin===url.origin);
  if(existing){await existing.navigate(url.href);await existing.focus();}else await self.clients.openWindow(url.href);

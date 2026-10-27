@@ -90,3 +90,4 @@ html:has(.bfs-root),body:has(.bfs-root){min-width:0}
  .bfs-chapter-nav a,.bfs-toc-mobile nav>a,.bfs-template-heading>button{min-height:44px}
  .bfs-number-wrap input{min-height:44px}
 }
+@media(max-width:760px){.bfs-nav-dialog .bfs-dialog-heading{position:sticky;top:0;z-index:2;background:#fbfbfa;padding-block:8px}}
