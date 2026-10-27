@@ -23,6 +23,7 @@ export function useLiveComments(ideaId: string, userId: string | undefined, enab
           client.invalidateQueries({ queryKey: key }, { cancelRefetch: false }),
           client.invalidateQueries({ queryKey: ["unread-comments", ideaId, userId] }, { cancelRefetch: false }),
           client.invalidateQueries({ queryKey: ["idea", ideaId] }, { cancelRefetch: false }),
+          client.invalidateQueries({ queryKey: ["notifications",userId] }, { cancelRefetch: false }),
           client.invalidateQueries({ queryKey: ["ideas"] }, { cancelRefetch: false }),
         ]);
         if (fetching) changedAgain = true;

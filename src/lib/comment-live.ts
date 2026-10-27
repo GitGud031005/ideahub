@@ -5,7 +5,7 @@ interface LiveCallbacks {
 }
 
 /** One stream per visible discussion; EventSource handles transient reconnects. */
-export function watchComments(ideaId: string, callbacks: LiveCallbacks) {
+export function watchActivity(path:string,event:string,callbacks:LiveCallbacks) {
   let source: EventSource | undefined, stopped = false;
   function disconnect() {
     source?.close();
@@ -15,10 +15,10 @@ export function watchComments(ideaId: string, callbacks: LiveCallbacks) {
   function connect() {
     if (stopped || document.hidden || !navigator.onLine) { disconnect(); return; }
     if (source || typeof EventSource === "undefined") return;
-    const current = source = new EventSource(`/api/ideas/${encodeURIComponent(ideaId)}/comments/stream`);
+    const current = source = new EventSource(path);
     current.onopen = () => { if (source === current) callbacks.connected(true); };
     current.onerror = () => { if (source === current) callbacks.connected(false); };
-    current.addEventListener("comments-changed", () => { if (source === current) callbacks.changed(); });
+    current.addEventListener(event, () => { if (source === current) callbacks.changed(); });
     current.addEventListener("stream-error", () => { if (source === current) callbacks.connected(false); });
     current.addEventListener("auth-required", () => {
       if (source !== current) return;
@@ -39,3 +39,6 @@ export function watchComments(ideaId: string, callbacks: LiveCallbacks) {
     window.removeEventListener("offline", connect);
   };
 }
+
+export function watchComments(ideaId:string,callbacks:LiveCallbacks){return watchActivity(`/api/ideas/${encodeURIComponent(ideaId)}/comments/stream`,"comments-changed",callbacks);}
+export function watchNotifications(callbacks:LiveCallbacks){return watchActivity("/api/notifications/stream","notifications-changed",callbacks);}

@@ -32,6 +32,10 @@ ALTER TABLE ideahub_private.push_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ideahub_private.push_subscriptions ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON ideahub_private.notifications,ideahub_private.push_keys,ideahub_private.push_subscriptions FROM PUBLIC,anon,authenticated;
 `;
+export const roomMessageSchema=String.raw`-- Preserve existing notifications and allow an inbox entry for every new room message.
+ALTER TABLE ideahub_private.notifications DROP CONSTRAINT IF EXISTS notifications_kind_check;
+ALTER TABLE ideahub_private.notifications ADD CONSTRAINT notifications_kind_check CHECK (kind IN ('mention','reply','message'));
+`;
 export async function ensureCollaborationSchema(pool:DatabasePool){
  const db=await pool.connect();
  try{
@@ -41,6 +45,8 @@ export async function ensureCollaborationSchema(pool:DatabasePool){
   await db.query("REVOKE ALL ON ideahub_private.schema_versions FROM PUBLIC,anon,authenticated");
   const found=await db.query("SELECT version FROM ideahub_private.schema_versions WHERE version='20261026030300'");
   if(!found.rowCount){for(const statement of collaborationSchema.split(";").filter(s=>s.trim()))await db.query(statement);await db.query("INSERT INTO ideahub_private.schema_versions(version) VALUES('20261026030300') ON CONFLICT DO NOTHING");}
+  const messages=await db.query("SELECT version FROM ideahub_private.schema_versions WHERE version='20261027170239'");
+  if(!messages.rowCount){for(const statement of roomMessageSchema.split(";").filter(s=>s.trim()))await db.query(statement);await db.query("INSERT INTO ideahub_private.schema_versions(version) VALUES('20261027170239') ON CONFLICT DO NOTHING");}
   await db.query("COMMIT");
  }catch(e){await db.query("ROLLBACK");throw e;}finally{db.release();}
 }

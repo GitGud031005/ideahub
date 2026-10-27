@@ -8,19 +8,44 @@ import {browserPushSupport} from "@/lib/push-support";
 import {useRouter} from "next/navigation";
 import type {NotificationsPage,RoomNotification} from "@/lib/domain";
 import {api} from "@/lib/api-client";
-import {commentHref} from "@/lib/mentions";
+import {revealNotification} from "@/lib/mentions";
 import {relativeTime} from "@/lib/format";
 import {useAuth} from "./providers";
 import {Avatar} from "./avatar";
+import {watchNotifications} from "@/lib/comment-live";
+import {notificationSound} from "@/lib/notification-sound";
 import {useSurface} from "./use-surface";
 function useInbox(){const {user}=useAuth();return useQuery({queryKey:["notifications",user?.id],queryFn:({signal})=>api<NotificationsPage>("/notifications",{signal}),enabled:!!user,refetchInterval:5000,refetchOnWindowFocus:"always",refetchOnReconnect:"always",staleTime:0});}
-function visibleComment(n:RoomNotification){const el=document.getElementById(`comment-${n.commentId}`),root=document.querySelector(".ih-thread-comments"),a=el?.getBoundingClientRect(),b=root?.getBoundingClientRect();return !document.hidden&&document.hasFocus()&&!!el?.getClientRects().length&&!!a&&!!b&&a.bottom>b.top&&a.top<b.bottom;}
+function notificationAction(n:RoomNotification){return n.kind==="mention"?"đã nhắc đến bạn":n.kind==="reply"?"đã trả lời bạn":"đã gửi tin nhắn mới";}
 export function NotificationRuntime(){
- const {user,ready}=useAuth(),inbox=useInbox(),router=useRouter(),client=useQueryClient(),seen=useRef<{userId:string;ids:Set<string>}|null>(null),[toast,setToast]=useState<RoomNotification|null>(null);
+ const {user,ready}=useAuth(),inbox=useInbox(),router=useRouter(),client=useQueryClient(),seen=useRef<{userId:string;ids:Set<string>}|null>(null),sound=useRef<ReturnType<typeof notificationSound>|null>(null),activeUser=useRef(user?.id),pending=useRef(Promise.resolve()),[toast,setToast]=useState<RoomNotification|null>(null);
+ activeUser.current=user?.id;
+ useEffect(()=>{sound.current=notificationSound();return()=>sound.current?.close();},[]);
+ useEffect(()=>{
+  if(!user){seen.current=null;return;}let disposed=false,refreshing=false,again=false;
+  async function refresh(){again=true;if(refreshing)return;refreshing=true;do{again=false;const fetching=client.isFetching({queryKey:["notifications",user!.id]})>0;await client.invalidateQueries({queryKey:["notifications",user!.id]},{cancelRefetch:false});if(fetching)again=true;}while(again&&!disposed);refreshing=false;}
+  const stop=watchNotifications({changed:()=>void refresh(),connected:()=>{},expired:()=>window.dispatchEvent(new Event("ideahub:auth-required"))});
+  const message=(event:MessageEvent)=>{if(event.data?.userId!==user.id)return;if(event.data.type==="NOTIFICATIONS_CHANGED")void refresh();if(event.data.type==="OPEN_COMMENT"){router.push(revealNotification(event.data.ideaId,event.data.commentId),{scroll:false});event.ports[0]?.postMessage({opened:true});}};
+  navigator.serviceWorker?.addEventListener("message",message);
+  return()=>{disposed=true;stop();navigator.serviceWorker?.removeEventListener("message",message);};
+ },[user?.id,client,router]);
  useEffect(()=>{if(!ready||!("serviceWorker" in navigator))return;let disposed=false;void navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"}).then(async()=>{const r=await navigator.serviceWorker.ready;if(disposed)return;r.active?.postMessage({type:"ACCOUNT",userId:user?.id??null});if(user&&"Notification" in window&&Notification.permission==="granted"&&localStorage.getItem("ih-push-user")===user.id){const s=await r.pushManager.getSubscription();if(s)await api("/push/subscribe",{method:"POST",body:JSON.stringify(s.toJSON())});}}).catch(()=>{});return()=>{disposed=true;};},[user?.id,ready]);
- useEffect(()=>{if(!user||!inbox.data){setToast(null);return;}if(seen.current?.userId!==user.id){seen.current={userId:user.id,ids:new Set(inbox.data.items.map(n=>n.id))};return;}let disposed=false;for(const n of [...inbox.data.items].reverse()){if(seen.current.ids.has(n.id))continue;seen.current.ids.add(n.id);if(n.readAt||document.hidden||!document.hasFocus())continue;if(visibleComment(n)){void api("/notifications/read",{method:"POST",body:JSON.stringify({ids:[n.id]})}).then(()=>client.invalidateQueries({queryKey:["notifications"]})).catch(()=>{});continue;}void api<{muted:boolean}>(`/ideas/${encodeURIComponent(n.ideaId)}/notification-settings`).then(settings=>{if(disposed||settings.muted)return;const show=()=>{const key=`ih-notification:${user.id}:${n.id}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");setToast(n);};if(navigator.locks)void navigator.locks.request("ih-notification-toast",show);else show();}).catch(()=>{});}return()=>{disposed=true;};},[inbox.data,user,client]);
+ useEffect(()=>{
+  if(!user||!inbox.data){setToast(null);return;}
+  if(seen.current?.userId!==user.id){seen.current={userId:user.id,ids:new Set(inbox.data.items.map(n=>n.id))};return;}
+  const fresh=[...inbox.data.items].reverse().filter(n=>!seen.current!.ids.has(n.id));
+  for(const n of fresh){seen.current.ids.add(n.id);
+   pending.current=pending.current.then(async()=>{
+    if(n.readAt||n.actor.id===user.id||document.hidden||!document.hasFocus()||activeUser.current!==user.id)return;
+    const settings=await api<{muted:boolean}>(`/ideas/${encodeURIComponent(n.ideaId)}/notification-settings`);
+    if(settings.muted||activeUser.current!==user.id)return;
+    const show=()=>{const key=`ih-notification:${user.id}:${n.id}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");setToast(n);sound.current?.play();};
+    if(navigator.locks)await navigator.locks.request("ih-notification-toast",show);else show();
+   }).catch(()=>{});
+  }
+ },[inbox.data,user]);
  useEffect(()=>{if(!toast)return;const timer=setTimeout(()=>setToast(null),8000);return()=>clearTimeout(timer);},[toast]);
- return toast?<div className="ih-notification-toast" role="status"><button onClick={()=>{void api("/notifications/read",{method:"POST",body:JSON.stringify({ids:[toast.id]})}).then(()=>client.invalidateQueries({queryKey:["notifications"]})).catch(()=>{});router.push(commentHref(toast.ideaId,toast.commentId));setToast(null);}}><strong>{toast.actor.name} {toast.kind==="mention"?"đã nhắc đến bạn":"đã trả lời bạn"}</strong><span>{toast.ideaTitle}</span></button><button aria-label="Ẩn thông báo" onClick={()=>setToast(null)}><X size={16}/></button></div>:null;
+ return toast?<div className="ih-notification-toast" role="status"><button onClick={()=>{void api("/notifications/read",{method:"POST",body:JSON.stringify({ids:[toast.id]})}).then(()=>client.invalidateQueries({queryKey:["notifications"]})).catch(()=>{});router.push(revealNotification(toast.ideaId,toast.commentId),{scroll:false});setToast(null);}}><strong>{toast.actor.name} {notificationAction(toast)}</strong><span>{toast.ideaTitle}</span></button><button aria-label="Ẩn thông báo" onClick={()=>setToast(null)}><X size={16}/></button></div>:null;
 }
 export function NotificationBell(){
  const {user}=useAuth(),inbox=useInbox(),client=useQueryClient(),router=useRouter(),[open,setOpen]=useState(false),[unread,setUnread]=useState(false),[error,setError]=useState(""),[busy,setBusy]=useState(false),[marking,setMarking]=useState(false),[push,setPush]=useState<"checking"|"install-ios"|"unsupported"|"off"|"on"|"denied">("checking"),dialog=useRef<HTMLDialogElement>(null),trigger=useRef<HTMLButtonElement>(null),[position,setPosition]=useState({left:12,top:72});
@@ -57,8 +82,8 @@ export function NotificationBell(){
    <div className="ih-notification-list" aria-busy={pages.isPending}>
     {pages.isPending?<div className="ih-notification-loading" role="status"><span className="ih-sr">Đang tải thông báo</span>{[0,1,2].map(i=><div className="ih-notification-skeleton" key={i}><i/><span><b/><em/></span></div>)}</div>:
      pages.error&&!items.length?<div className="ih-collaboration-state" role="alert"><span className="ih-state-icon"><AlertCircle size={21}/></span><strong>Chưa tải được thông báo</strong><p>{pages.error.message}</p><button type="button" className="ih-quiet-action" onClick={()=>void pages.refetch()}><RefreshCw size={13}/>Thử lại</button></div>:
-     !items.length?<div className="ih-collaboration-state"><span className="ih-state-icon">{unread?<Check size={23}/>:<Inbox size={23}/>}</span><strong>{unread?"Bạn đã xem hết thông báo":"Chưa có thông báo"}</strong><p>{unread?"Lời nhắc và trả lời mới sẽ xuất hiện ở đây":"Khi có người nhắc tên hoặc trả lời bạn, mình sẽ báo tại đây"}</p></div>:
-     items.map(n=><button type="button" key={n.id} className={`ih-notification-item${!n.readAt?" ih-notification-unread":""}`} onClick={()=>{void read([n.id]).catch(e=>setError(e.message));setOpen(false);router.push(commentHref(n.ideaId,n.commentId));}}><Avatar person={n.actor}/><span><span className="ih-notification-summary"><strong>{n.actor.name}</strong> {n.kind==="mention"?"đã nhắc đến bạn":"đã trả lời bạn"}</span><b>{n.ideaTitle}</b><span className="ih-notification-excerpt">{n.excerpt}</span><time>{relativeTime(n.createdAt)}</time></span>{!n.readAt&&<i aria-label="Chưa đọc"/>}<ArrowUpRight size={14} className="ih-notification-go" aria-hidden="true"/></button>)}
+     !items.length?<div className="ih-collaboration-state"><span className="ih-state-icon">{unread?<Check size={23}/>:<Inbox size={23}/>}</span><strong>{unread?"Bạn đã xem hết thông báo":"Chưa có thông báo"}</strong><p>{unread?"Tin nhắn mới trong các phòng bạn tham gia sẽ xuất hiện ở đây":"Mỗi tin mới của người khác trong phòng bạn tham gia sẽ được báo tại đây"}</p></div>:
+     items.map(n=><button type="button" key={n.id} className={`ih-notification-item${!n.readAt?" ih-notification-unread":""}`} onClick={()=>{void read([n.id]).catch(e=>setError(e.message));setOpen(false);router.push(revealNotification(n.ideaId,n.commentId),{scroll:false});}}><Avatar person={n.actor}/><span><span className="ih-notification-summary"><strong>{n.actor.name}</strong> {notificationAction(n)}</span><b>{n.ideaTitle}</b><span className="ih-notification-excerpt">{n.excerpt}</span><time>{relativeTime(n.createdAt)}</time></span>{!n.readAt&&<i aria-label="Chưa đọc"/>}<ArrowUpRight size={14} className="ih-notification-go" aria-hidden="true"/></button>)}
     {pages.hasNextPage&&<button type="button" className="ih-notification-more" disabled={pages.isFetchingNextPage} onClick={()=>void pages.fetchNextPage()}>{pages.isFetchingNextPage?"Đang tải…":"Xem thêm thông báo"}</button>}
     {!!items.length&&pages.error&&<p className="ih-inline-error" role="alert">Chưa cập nhật được thông báo mới</p>}
    </div>

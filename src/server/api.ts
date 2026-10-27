@@ -13,7 +13,7 @@ import { z } from "zod";
 import { CloudinaryAvatars, readAvatar } from "./cloudinary";
 import { googleConfigured } from "./google-oauth";
 import { applicationCache } from "./redis-cache";
-import { commentStream } from "./comment-stream";
+import { activityStream, commentStream } from "./comment-stream";
 import { randomUUID } from "node:crypto";
 import { CloudinaryDiscussionFiles, readDiscussionFile } from "./discussion-uploads";
 import { publicAttachment } from "./attachment-record";
@@ -101,6 +101,11 @@ export async function handleApi(request: Request, path: string[], repository?: I
       const user=await auth.user(token);if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để xem thông báo");
       const repo=repository??getRepository(),url=new URL(request.url);
       if(method==="POST")await auth.limit(`notifications:${user.id}`,120,60);
+      if(route==="notifications/stream"&&method==="GET"){
+        assertSameOrigin(request);return activityStream(request,await repo.notificationVersion(user.id),async()=>{
+          const viewer=await auth.user(token);return viewer?.id===user.id?repo.notificationVersion(user.id):null;
+        },{event:"notifications-changed"});
+      }
       if(route==="notifications"&&method==="GET"){const query=z.object({unread:z.enum(["0","1"]).default("0"),offset:z.coerce.number().int().min(0).max(100000).default(0)}).strict().parse(Object.fromEntries(url.searchParams));return json(await repo.listNotifications(user.id,query.unread==="1",query.offset));}
       if(route==="notifications/read"&&method==="POST"){const input=await readJson(request,z.object({ids:z.union([z.literal("all"),z.array(z.string().max(100)).min(1).max(100)])}).strict());await repo.readNotifications(user.id,input.ids);return json({ok:true});}
       if(route==="push/config"&&method==="GET")return json({publicKey:(await repo.pushKeys()).publicKey});
@@ -108,7 +113,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(route==="push/unsubscribe"&&method==="POST"){const input=await readJson(request,z.object({endpoint:z.string().max(2048)}).strict());await repo.removePush(user.id,input.endpoint);return json({ok:true});}
       throw new AppError(404,"NOT_FOUND","Không tìm thấy API này");
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|status|members|search|notification-settings|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/(?:pin|edit)))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|status|members|search|notification-settings|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/(?:pin|edit|context)))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
     if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments" || path[2]==="read") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
@@ -125,6 +130,10 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(path[2]==="search"&&method==="GET"){const q=z.object({q:z.string().trim().max(120).default(""),author:z.string().max(100).default(""),offset:z.coerce.number().int().min(0).max(100000).default(0)}).strict().parse(Object.fromEntries(url.searchParams));return json(await repo.searchComments(id,user.id,q.q,q.author,q.offset));}
       if(path[2]==="notification-settings"){if(method==="GET")return json({muted:await repo.roomMuted(id,user.id)});const input=await readJson(request,z.object({muted:z.boolean()}).strict());await repo.muteRoom(id,user.id,input.muted);return json(input);}
       return json({error:{code:"METHOD_NOT_ALLOWED",message:"Phương thức không được hỗ trợ"}},405);
+    }
+    if(path[2]==="comments"&&path.length===5&&path[4]==="context"){
+      if(method!=="GET")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng GET để mở bình luận"}},405,{Allow:"GET"});
+      return json(await repo.getCommentContext(id,path[3]));
     }
     if(path[2]==="comments"&&path.length===5&&path[4]==="edit"){if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng POST để sửa bình luận"}},405,{Allow:"POST"});return json(await repo.editComment(id,path[3],user!,await readJson(request,editCommentSchema)));}
     if (path[2] === "status") {

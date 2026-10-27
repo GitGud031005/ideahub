@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, PanelRightOpen, X, Search, ArrowDown, ArrowDownUp, Bell, BellOff } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { api, fetchComments } from "@/lib/api-client";
+import { ApiError, api, fetchComments } from "@/lib/api-client";
 import type { Author, Mention, Attachment, Comment, CommentSort, Idea } from "@/lib/domain";
 import { buildCommentForest, relativeTime } from "@/lib/format";
 import { mergeComments } from "@/lib/comment-outbox";
@@ -30,6 +30,8 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const reveal = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null), panel = useRef<HTMLElement>(null), joinAttempted = useRef(false);
   const [mobile, setMobile] = useState(false),[selectedImage,setSelectedImage]=useState<Attachment|null>(null);
   const [searchOpen,setSearchOpen]=useState(false),[navigationError,setNavigationError]=useState("");
+  const [navigation,setNavigation]=useState<{commentId:string;sequence:number;instant:boolean}|null>(null);
+  const navigationSequence=useRef(0),positioning=useRef(false),scrollFrame=useRef(0),failedTarget=useRef("");
   const anchor=useRef<{id:string;top:number}|null>(null),searchButton=useRef<HTMLButtonElement>(null);
   const scrollBox = useRef<HTMLElement>(null), followLatest = useRef(true), previousSort = useRef(sort);
   const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
@@ -83,7 +85,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
       return;
     }
-    if(box){if(sort==="old"&&followLatest.current)box.scrollTop=box.scrollHeight;else if(!followLatest.current&&anchor.current){const el=document.getElementById(anchor.current.id);if(el)box.scrollTop+=el.getBoundingClientRect().top-anchor.current.top;}}
+    if(box&&!positioning.current){if(sort==="old"&&followLatest.current)box.scrollTop=box.scrollHeight;else if(!followLatest.current&&anchor.current){const el=document.getElementById(anchor.current.id);if(el)box.scrollTop+=el.getBoundingClientRect().top-anchor.current.top;}}
   }, [thread, sort]);
   function submit(text:string,parentId:string|null=null,files:File[]=[],mentions:Mention[]=[]){
     const entry=outbox.enqueue(text,parentId,files,mentions);if(!entry)return;
@@ -91,29 +93,64 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     if(!parentId)requestAnimationFrame(()=>document.getElementById(`comment-${entry.id}`)?.scrollIntoView({block:"nearest",behavior:"instant"}));
   }
   function toggleSidebar(open: boolean) { setSearchOpen(false);setSidebarOpen(open); requestAnimationFrame(() => (open ? close : reveal).current?.focus({ preventScroll: true })); }
-  function revealComment(commentId: string) {
-    followLatest.current=false;feed.release();setNavigationError("");
-    setExpanded(current => {
-      const next = new Set(current), seen = new Set<string>();
-      let parent = comments.data?.find(c => c.id === commentId)?.parentId;
-      while (parent && !seen.has(parent)) { seen.add(parent); next.add(parent); parent = comments.data?.find(c => c.id === parent)?.parentId; }
-      return next;
-    });
-    if (window.matchMedia("(max-width: 760px)").matches) setSidebarOpen(false);
-    requestAnimationFrame(() => { const el=document.getElementById(`comment-${commentId}`);el?.scrollIntoView({ block: "center", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });el?.focus({preventScroll:true});if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};else setNavigationError("Bình luận không còn có sẵn. Hãy tải lại cuộc thảo luận");if(el&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches)el.animate([{background:"#eeeeea"},{background:"transparent"}],{duration:1800}); });
+  async function revealComment(commentId:string,instant=false){
+    const sequence=++navigationSequence.current;positioning.current=true;followLatest.current=false;anchor.current=null;
+    failedTarget.current=commentId;setNavigationError("");setNavigation(null);
+    if(window.matchMedia("(max-width: 760px)").matches)setSidebarOpen(false);
+    try{
+      let snapshot=comments.data??[];
+      if(!snapshot.some(c=>c.id===commentId)){
+        const context=await api<Comment[]>(`/ideas/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/context`);
+        if(sequence!==navigationSequence.current)return;
+        await client.cancelQueries({queryKey:["comments",id,user?.id]});
+        snapshot=[...new Map([...(client.getQueryData<Comment[]>(["comments",id,user?.id])??[]),...context].map(c=>[c.id,c])).values()];
+        client.setQueryData(["comments",id,user?.id],snapshot);
+      }
+      if(sequence!==navigationSequence.current)return;
+      feed.release(snapshot);
+      setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));let parent=byId.get(commentId)?.parentId;
+        while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=byId.get(parent)?.parentId;}return next;});
+      setNavigation({commentId,sequence,instant});
+    }catch(error){if(sequence!==navigationSequence.current)return;positioning.current=false;setNavigationError(error instanceof ApiError&&error.status===404?"Tin nhắn này đã bị xóa hoặc không thuộc phòng":"Chưa mở được tin nhắn. Vui lòng thử lại");}
   }
+  const revealCommentRef=useRef(revealComment);revealCommentRef.current=revealComment;
+  useLayoutEffect(()=>{
+    if(!navigation)return;
+    const box=scrollBox.current,el=document.getElementById(`comment-${navigation.commentId}`);
+    if(!box||!el||mobile&&sidebarOpen)return;
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    const frame=requestAnimationFrame(()=>{
+      if(navigation.sequence!==navigationSequence.current)return;
+      const bounds=box.getBoundingClientRect(),target=el.getBoundingClientRect();
+      const top=Math.max(0,Math.min(box.scrollHeight-box.clientHeight,box.scrollTop+target.top-bounds.top-Math.max(16,(box.clientHeight-Math.min(target.height,box.clientHeight-32))/2)));
+      const smooth=!navigation.instant&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&Math.abs(top-box.scrollTop)<box.clientHeight;
+      box.scrollTo({top,behavior:smooth?"smooth":"instant"});el.focus({preventScroll:true});
+      el.classList.remove("ih-comment-located");void el.offsetWidth;el.classList.add("ih-comment-located");
+      const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;anchor.current={id:el.id,top:el.getBoundingClientRect().top};setNavigation(null);};
+      if(smooth)timer=setTimeout(finish,500);else finish();
+    });
+    return()=>{cancelAnimationFrame(frame);clearTimeout(timer);};
+  },[navigation,thread,expanded,mobile,sidebarOpen]);
+  useEffect(()=>{const reveal=(event:Event)=>{const detail=(event as CustomEvent<{ideaId:string;commentId:string}>).detail;if(detail?.ideaId===id)void revealCommentRef.current(detail.commentId);};window.addEventListener("ideahub:reveal-comment",reveal);return()=>window.removeEventListener("ideahub:reveal-comment",reveal);},[id]);
   useEffect(()=>{const composer=scrollBox.current?.parentElement?.querySelector<HTMLElement>(".ih-thread-composer");if(!composer)return;const update=()=>composer.parentElement?.style.setProperty("--composer-height",`${composer.getBoundingClientRect().height}px`);const observer=new ResizeObserver(update);observer.observe(composer);update();return()=>observer.disconnect();},[user?.id,!!idea.data]);
   const deepLinkDone=useRef("");
-  useEffect(()=>{if(!requestedComment||!comments.data||deepLinkDone.current===requestedComment)return;deepLinkDone.current=requestedComment;if(comments.data.some(c=>c.id===requestedComment))revealComment(requestedComment);else setNavigationError("Bình luận không còn có sẵn trong cuộc thảo luận này");},[requestedComment,comments.data]);
+  useEffect(()=>{if(!requestedComment){deepLinkDone.current="";return;}const key=`${id}:${user?.id}:${requestedComment}`;if(!user||!comments.data||deepLinkDone.current===key)return;deepLinkDone.current=key;void revealCommentRef.current(requestedComment,true);},[id,user?.id,requestedComment,comments.data]);
   useEffect(()=>{const handler=(event:MessageEvent)=>{if(event.data?.type!=="CHECK_COMMENT")return;const el=document.getElementById(`comment-${event.data.commentId}`),box=scrollBox.current,a=el?.getBoundingClientRect(),b=box?.getBoundingClientRect();event.ports[0]?.postMessage({visible:!!user&&user.id===event.data.userId&&!document.hidden&&document.hasFocus()&&!!el?.getClientRects().length&&!!a&&!!b&&a.bottom>b.top&&a.top<b.bottom&&!(mobile&&sidebarOpen),userId:user?.id??null});};navigator.serviceWorker?.addEventListener("message",handler);return()=>navigator.serviceWorker?.removeEventListener("message",handler);},[user,mobile,sidebarOpen]);
-  function recordScroll(){const box=scrollBox.current;if(!box)return;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;const top=box.getBoundingClientRect().top;const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};}
+  function recordScroll(){
+    if(positioning.current||scrollFrame.current)return;
+    scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=0;const box=scrollBox.current;if(!box||positioning.current)return;
+      followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;
+      const top=box.getBoundingClientRect().top;const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};
+    });
+  }
+  useEffect(()=>()=>cancelAnimationFrame(scrollFrame.current),[]);
   const error = session.error || idea.error;
   return <main className="ih-discussion" aria-labelledby="discussion-title"><section className={`ih-discussion-page${!sidebarOpen ? " ih-aside-collapsed" : ""}`}>
     <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
     <button type="button" className="ih-aside-scrim" hidden={!sidebarOpen} aria-label="Đóng thanh thông tin ý tưởng" onClick={() => toggleSidebar(false)}/>
-    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}><section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" onScroll={() => { const box = scrollBox.current; if (box) followLatest.current = sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;recordScroll(); }}>
+    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}><section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" onScroll={recordScroll}>
       {error ? <ErrorState error={error} retry={() => { session.refetch(); idea.refetch(); }}/> : !idea.data ? <LoadingState label="Đang mở thảo luận..."/> : <>
-        {navigationError&&<p className="ih-inline-error" role="alert">{navigationError}</p>}{mute.error&&<p className="ih-inline-error" role="alert">{mute.error.message}</p>}{pin.error&&<p className="ih-inline-error" role="alert">{pin.error.message}</p>}
+        {navigationError&&<p className="ih-inline-error" role="alert">{navigationError}<button className="ih-reply-button" onClick={()=>void revealComment(failedTarget.current)}>Thử lại</button></p>}{mute.error&&<p className="ih-inline-error" role="alert">{mute.error.message}</p>}{pin.error&&<p className="ih-inline-error" role="alert">{pin.error.message}</p>}
         {join.error && <div className="ih-inline-error" role="alert">{join.error.message}<button className="ih-reply-button" onClick={() => join.mutate()} disabled={join.isPending}>Thử tham gia lại</button></div>}
         {!user ? <div className="ih-thread-login"><h2>Cùng góp một góc nhìn</h2><p>Đăng nhập để tham gia cuộc thảo luận này</p><button className="ih-primary" type="button" onClick={() => requestLogin(undefined,window.location.pathname+window.location.search)}>Đăng nhập để tham gia</button></div> : comments.error && !thread.length ? <ErrorState error={comments.error} retry={() => { comments.refetch(); }}/> : comments.isPending && !thread.length ? <LoadingState label="Đang tải bình luận..."/> : !thread.length ? <p className="ih-thread-empty">Cuộc thảo luận đang chờ góc nhìn đầu tiên của bạn</p> : <CommentTree allChildren={allTree} members={members.data??[]} onEdit={editComment} revise={outbox.revise} unread={unreadComments} ideaId={id} creatorId={idea.data.creator.id} userId={user.id} children={tree} expanded={expanded} toggle={commentId => {if(!expanded.has(commentId))feed.releaseBranch(commentId);setExpanded(current => { const next = new Set(current); if (next.has(commentId)) next.delete(commentId); else next.add(commentId); return next; });}} target={target} setTarget={setTarget} retry={outbox.retry} dismiss={outbox.dismiss} submit={submit} canPin={!!idea.data.joined} pinPending={pin.isPending?pin.variables?.commentId:undefined} onPin={(commentId,pinned)=>pin.mutate({commentId,pinned})} onImage={setSelectedImage}/>}
       </>}

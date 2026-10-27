@@ -1,11 +1,11 @@
 import type { RoomActivity } from "@/lib/domain";
 
 /** Read shared storage, rather than an instance-local event bus, for Vercel compatibility. */
-export function commentStream(
+export function activityStream(
   request: Request,
-  initial: RoomActivity,
-  read: () => Promise<RoomActivity | null>,
-  { interval = 1000, duration = 50000 } = {},
+  initial: string,
+  read: () => Promise<string | null>,
+  { interval = 1000, duration = 50000, event = "comments-changed" } = {},
 ) {
   const encoder = new TextEncoder();
   let cancelled = false;
@@ -13,7 +13,7 @@ export function commentStream(
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false, timer: ReturnType<typeof setTimeout> | undefined;
-      let version = `${initial.commentCount}:${initial.memberCount}:${initial.version??"0"}`, ticks = 0;
+      let version = initial, ticks = 0;
       const deadline = setTimeout(() => stop(), duration);
       stop = () => {
         if (closed) return;
@@ -28,11 +28,11 @@ export function commentStream(
         try {
           const idea = await read();
           if (closed) return;
-          if (!idea) { send("auth-required"); stop(); return; }
+          if (idea===null) { send("auth-required"); stop(); return; }
           // A stalled client must not retain an unbounded stream buffer.
           if (controller.desiredSize !== null && controller.desiredSize <= 0) { stop(); return; }
-          const next = `${idea.commentCount}:${idea.memberCount}:${idea.version??"0"}`;
-          if (next !== version) { version = next; send("comments-changed"); }
+          const next = idea;
+          if (next !== version) { version = next; send(event); }
           else if (++ticks % 10 === 0) controller.enqueue(encoder.encode(": heartbeat\n\n"));
           timer = setTimeout(poll, interval);
         } catch {
@@ -43,7 +43,7 @@ export function commentStream(
       if (request.signal.aborted) { stop(); return; }
       controller.enqueue(encoder.encode("retry: 1000\n\n"));
       // Reconnects always refresh the cache, including messages missed while offline.
-      send("comments-changed");
+      send(event);
       timer = setTimeout(poll, interval);
     },
     cancel() { cancelled = true; stop(); },
@@ -54,4 +54,9 @@ export function commentStream(
     "X-Accel-Buffering": "no",
     "X-Content-Type-Options": "nosniff",
   } });
+}
+
+const roomVersion=(room:RoomActivity)=>`${room.commentCount}:${room.memberCount}:${room.version??"0"}`;
+export function commentStream(request:Request,initial:RoomActivity,read:()=>Promise<RoomActivity|null>,options={}){
+ return activityStream(request,roomVersion(initial),async()=>{const room=await read();return room?roomVersion(room):null;},options);
 }

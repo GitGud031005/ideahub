@@ -56,6 +56,11 @@ if(window.__qaScene==="discussion-stress")for(let i=0;i<24;i++)roomMembers.push(
 const notifications:RoomNotification[]=[{id:"qa-notification-1",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-0",actor:roomMembers[1],kind:"mention",excerpt:"@Nguyễn Minh An bạn xem giúp hướng tiếp cận này nhé",createdAt:new Date(Date.now()-240000).toISOString(),readAt:null},{id:"qa-notification-2",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-1",actor:roomMembers[2],kind:"reply",excerpt:"Mình có thể góp sức ở bước kiểm tra dữ liệu đầu vào",createdAt:new Date(Date.now()-3600000).toISOString(),readAt:null},{id:"qa-notification-3",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-share-root",actor:roomMembers[1],kind:"reply",excerpt:"Nhóm đã xem phác thảo, cùng thống nhất phần còn bỏ ngỏ nhé",createdAt:new Date(Date.now()-86400000).toISOString(),readAt:new Date().toISOString()}];
 if(window.__qaScene.includes("empty"))notifications.splice(0);
 if(["discussion-long","discussion-stress"].includes(window.__qaScene))for(let n=0;n<25;n++)comments.push({...comments[0],id:`qa-long-${n}`,parentId:null,attachments:[],pinnedAt:null,text:`Góc nhìn số ${n+1}: cùng xác định vấn đề và kiểm chứng nhu cầu trước khi xây sản phẩm. Mình muốn nghe thêm trải nghiệm của mọi người.`,createdAt:new Date(Date.now()-(30-n)*60000).toISOString()});
+if(window.__qaScene.startsWith("discussion-navigation")){
+ for(let i=0;i<45;i++)comments.push({...comments[0],id:`qa-navigation-${i}`,parentId:null,attachments:[],pinnedAt:null,text:`Góc nhìn ${i+1}. `+"Cùng kiểm tra cuộn và định vị trên điện thoại. ".repeat(4),createdAt:new Date(Date.now()-i*60000).toISOString()});
+ notifications[0].commentId="qa-comment-12";notifications[0].excerpt="Tin đích ở cấp trả lời sâu, cần mở đầy đủ nhánh cha";notifications[0].kind="message";
+}
+let commentReads=0;
 const ios=window.__qaScene.includes("ios"),installed=window.__qaScene.includes("pwa"),allowPush=installed||window.__qaScene.includes("android-push")||["invite-desktop","invite-android","invite-error","invite-google-return"].includes(window.__qaScene);
 if(ios){Object.defineProperty(navigator,"userAgent",{configurable:true,value:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1"});Object.defineProperty(navigator,"platform",{configurable:true,value:"iPhone"});Object.defineProperty(navigator,"standalone",{configurable:true,value:installed});}
 let fixtureSubscription:any=null;
@@ -75,7 +80,14 @@ Object.defineProperty(window,"visualViewport",{configurable:true,value:qaViewpor
 const relay=()=>qaViewport.dispatchEvent(new Event("resize"));nativeViewport?.addEventListener("resize",relay);
 window.addEventListener("message",event=>{if(event.data!=="QA_KEYBOARD_PAN")return;panned=!panned;qaViewport.dispatchEvent(new Event("resize"));qaViewport.dispatchEvent(new Event("scroll"));});
 const sources=new Set<EventTarget>();let qaVersion=0;
-window.addEventListener("message",event=>{if(event.data!=="QA_ADD_COMMENT")return;comments.push({...comments[0],id:crypto.randomUUID(),author:roomMembers[1],parentId:null,text:"Tin mới: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận",attachments:[],pinnedAt:null,createdAt:new Date().toISOString()});qaVersion++;for(const source of sources)source.dispatchEvent(new MessageEvent("comments-changed",{data:JSON.stringify({commentCount:comments.length,memberCount:3,version:String(qaVersion)})}));});
+window.addEventListener("message",event=>{
+ if(!["QA_ADD_COMMENT","QA_ADD_REPLY","QA_ADD_SELF","QA_ADD_BURST"].includes(event.data))return;
+ for(let i=0;i<(event.data==="QA_ADD_BURST"?4:1);i++){
+  const own=event.data==="QA_ADD_SELF",comment={...comments[0],id:crypto.randomUUID(),author:own?person:roomMembers[1],parentId:event.data==="QA_ADD_REPLY"?"qa-comment-12":null,text:`Tin mới ${++qaVersion}: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận`,attachments:[],pinnedAt:null,createdAt:new Date().toISOString()};comments.push(comment);
+  if(!own)notifications.unshift({id:crypto.randomUUID(),userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:comment.id,actor:comment.author,kind:"message",excerpt:comment.text,createdAt:comment.createdAt,readAt:null});
+ }
+ for(const source of sources){source.dispatchEvent(new MessageEvent("comments-changed"));source.dispatchEvent(new MessageEvent("notifications-changed"));}
+});
 const attempts=new Map<string,number>();let postNumber=0,pushAttempts=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
 if(window.__qaScene==="discussion-recap-long"){
@@ -100,6 +112,12 @@ window.fetch = async (input, init) => {
     const filtered=notifications.filter(n=>url.searchParams.get("unread")!=="1"||!n.readAt);return Response.json({items:filtered,unread:notifications.filter(n=>!n.readAt).length,nextCursor:null});
   }
   if(path==="/api/notifications/read"){const body=JSON.parse(String(init?.body));for(const n of notifications)if(body.ids==="all"||body.ids.includes(n.id))n.readAt=new Date().toISOString();return Response.json({ok:true});}
+  if(path.endsWith("/context")){
+    await new Promise(r=>setTimeout(r,700));
+    const result:Comment[]=[];let id:string|null=path.split("/").at(-2)!;
+    while(id){const c=comments.find(c=>c.id===id);if(!c)return Response.json({error:{code:"NOT_FOUND",message:"Không tìm thấy tin nhắn"}},{status:404});result.push(c);id=c.parentId;}
+    return Response.json(result);
+  }
   if(path.endsWith("/members"))return Response.json(roomMembers);
   if(path.endsWith("/notification-settings")){const idea=ideas.find(i=>i.id===path.split("/")[3])??ideas[0];if(init?.method==="POST")idea.notificationsMuted=JSON.parse(String(init.body)).muted;return Response.json({muted:idea.notificationsMuted??false});}
   if(path.endsWith("/search")){await new Promise(r=>setTimeout(r,350));const q=(url.searchParams.get("q")||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d"),author=url.searchParams.get("author"),items=comments.filter(c=>(!author||c.author.id===author)&&c.text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/g,"d").includes(q));return Response.json({items,total:items.length,nextCursor:null});}
@@ -140,16 +158,16 @@ window.fetch = async (input, init) => {
     const existing=comments.find(c=>c.id===input.clientId);if(existing)return Response.json(existing);
     const comment={...comments[0],id:input.clientId,parentId:input.parentId||null,text:input.text,mentions:input.mentions,author:person,attachments:(input.attachmentIds??[]).map((id:string)=>fixtureAttachments.find(a=>a.id===id)!),pinnedAt:null,readCursor:String(comments.length+1),createdAt:new Date().toISOString()};comments.push(comment);ideas.find(i=>i.id===path.split("/")[3])!.lastCommentAt=comment.createdAt;return Response.json(comment);
   }
-  if (path.endsWith("/comments")) return Response.json({ items: comments, total: comments.length, nextCursor: null });
+  if(path.endsWith("/comments")){commentReads++;const items=window.__qaScene==="discussion-navigation-stale"&&commentReads===1?comments.filter(c=>c.id!=="qa-comment-12"):comments;return Response.json({items,total:items.length,nextCursor:null});}
   if (path.endsWith("/join") && init?.method === "POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;if(!idea.joined){idea.joined=true;idea.status="potential";}return Response.json(project(idea));}
   if (path.startsWith("/api/ideas/")) return Response.json(project(ideas.find(i=>i.id===path.split("/")[3])??ideas[0]));
   return Response.json({ error: { code: "QA_ONLY", message: "Đây là fixture UI; không gửi dữ liệu thật" } }, { status: 400 });
 };
 function App() {
-  const [route, setRoute] = useState(window.__qaScene.startsWith("discussion") ? `/ideas/${ideas[0].id}` : window.__qaScene.startsWith("profile") ? "/profile" : window.__qaScene.startsWith("startup:") ? `/business-for-startup/${window.__qaScene.slice(8)}` : window.__qaScene==="startup" ? "/business-for-startup" : window.__qaScene==="not-found" ? "/missing" : window.__qaScene==="page-error" ? "/error" : "/");
+  const [route, setRoute] = useState(window.__qaScene.startsWith("discussion") ? `/ideas/${ideas[0].id}${window.__qaScene==="discussion-navigation-stale"?"?comment=qa-comment-12":window.__qaScene==="discussion-navigation-missing"?"?comment=deleted-message":""}` : window.__qaScene.startsWith("profile") ? "/profile" : window.__qaScene.startsWith("startup:") ? `/business-for-startup/${window.__qaScene.slice(8)}` : window.__qaScene==="startup" ? "/business-for-startup" : window.__qaScene==="not-found" ? "/missing" : window.__qaScene==="page-error" ? "/error" : "/");
   window.__qaPath=route;
   window.__qaNavigate = setRoute;
   const startup=route.startsWith("/business-for-startup"),lesson=getStartupLesson(route.split("/")[2]);
-  return <Providers><div id="ih-app">{startup?<><StartupShell catalog={lessonCatalog} groups={lessonGroups} entries={searchEntries}>{lesson?<StartupLessonView lesson={lesson} catalog={lessonCatalog}/>:<BusinessHome/>}</StartupShell><SiteFooter/></>:route==="/missing"?<NotFound/>:route==="/error"?<ErrorPage error={new Error("QA")} reset={()=>setRoute("/")}/>:route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion id={route.split("/")[2]}/> : <Dashboard/>}</div></Providers>;
+  return <Providers><div id="ih-app">{startup?<><StartupShell catalog={lessonCatalog} groups={lessonGroups} entries={searchEntries}>{lesson?<StartupLessonView lesson={lesson} catalog={lessonCatalog}/>:<BusinessHome/>}</StartupShell><SiteFooter/></>:route==="/missing"?<NotFound/>:route==="/error"?<ErrorPage error={new Error("QA")} reset={()=>setRoute("/")}/>:route==="/profile" ? <Profile/> : route.startsWith("/ideas/") ? <Discussion key={route.split("?")[0]} id={route.split("/")[2].split("?")[0]} requestedComment={new URLSearchParams(route.split("?")[1]).get("comment")??undefined}/> : <Dashboard/>}</div></Providers>;
 }
 createRoot(document.getElementById("root")!).render(<App/>);

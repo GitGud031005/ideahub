@@ -9,11 +9,25 @@ async function genericNotification(){await self.registration.showNotification("I
 self.addEventListener("push",event=>event.waitUntil((async()=>{
  let data,current;try{data=event.data?.json();current=await account();}catch{await genericNotification();return;}
  if(!data?.userId||current!==data.userId){await genericNotification();return;}
- await self.registration.showNotification(data.title||"IdeaHub",{body:data.body||"Bạn có thông báo mới",icon:"/icon-192.png",badge:"/icon-192.png",tag:`ideahub:${data.id}`,renotify:false,data});
+ await self.registration.showNotification(data.title||"IdeaHub",{body:data.body||"Bạn có thông báo mới",icon:"/icon-192.png",badge:"/icon-192.png",tag:`ideahub:${data.id}`,renotify:true,data});
+ for(const client of await self.clients.matchAll({type:"window",includeUncontrolled:true}))client.postMessage({type:"NOTIFICATIONS_CHANGED",userId:data.userId});
 })()));
+// A ready app can navigate without destroying the room, its cache or its scroll pane.
+async function openInApp(client,url,data){
+ if(typeof MessageChannel==="undefined")return false;
+ return new Promise(resolve=>{const channel=new MessageChannel(),timer=setTimeout(()=>finish(false),900);
+  function finish(opened){clearTimeout(timer);channel.port1.close();resolve(opened);}
+  channel.port1.onmessage=event=>finish(event.data?.opened===true);
+  client.postMessage({type:"OPEN_COMMENT",userId:data.userId,ideaId:decodeURIComponent(url.pathname.split("/")[2]),commentId:url.searchParams.get("comment")},[channel.port2]);
+ });
+}
 self.addEventListener("notificationclick",event=>{const data=event.notification.data;event.notification.close();event.waitUntil((async()=>{
- let current;try{current=await account();}catch{}let url=new URL("/",self.location.origin);
- if(data?.userId&&current===data.userId){const target=new URL(data.url,self.location.origin);if(target.origin!==url.origin||!target.pathname.startsWith("/ideas/"))return;url=target;try{await fetch("/api/notifications/read",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids:[data.id]})});}catch{}}
- const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true}),existing=windows.find(w=>new URL(w.url).origin===url.origin);
- if(existing){await existing.navigate(url.href);await existing.focus();}else await self.clients.openWindow(url.href);
+ let current;try{current=await account();}catch{}let url=new URL("/",self.location.origin),read=Promise.resolve();
+ if(data?.userId&&current===data.userId){
+  const target=new URL(data.url,self.location.origin);if(target.origin!==url.origin||!target.pathname.startsWith("/ideas/"))return;url=target;
+  read=fetch("/api/notifications/read",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({ids:[data.id]})}).catch(()=>{});
+ }
+ const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true}),existing=windows.find(w=>new URL(w.url).pathname===url.pathname)||windows.find(w=>new URL(w.url).origin===url.origin);
+ if(existing){await existing.focus();if(!data?.userId||current!==data.userId||!await openInApp(existing,url,data))await existing.navigate(url.href);}else await self.clients.openWindow(url.href);
+ await read;
 })());});

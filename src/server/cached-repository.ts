@@ -9,6 +9,8 @@ export class CachedIdeaRepository implements IdeaRepository {
   listMembers(id:string,userId:string){return this.inner.listMembers(id,userId);}
   searchComments(id:string,userId:string,q:string,authorId:string,offset:number){return this.inner.searchComments(id,userId,q,authorId,offset);}
   async editComment(id:string,commentId:string,user:Author,input:EditCommentInput){const c=await this.inner.editComment(id,commentId,user,input);await this.cache.invalidate();return c;}
+  notificationVersion(userId:string){return this.inner.notificationVersion(userId);}
+  getCommentContext(ideaId:string,commentId:string){return this.inner.getCommentContext(ideaId,commentId);}
   listNotifications(userId:string,unreadOnly:boolean,offset:number){return this.inner.listNotifications(userId,unreadOnly,offset);}
   readNotifications(userId:string,ids:string[]|"all"){return this.inner.readNotifications(userId,ids);}
   roomMuted(id:string,userId:string){return this.inner.roomMuted(id,userId);}

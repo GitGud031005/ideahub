@@ -4,3 +4,6 @@ export function moveMentions(previous:string,next:string,mentions:readonly Menti
 export function trimmedMessage(text:string,mentions:readonly Mention[]=[]){const offset=text.length-text.trimStart().length;return {text:text.trim(),mentions:validMentions(text.trim(),mentions.map(m=>({...m,start:m.start-offset,end:m.end-offset})))};}
 export function sameMentions(a:readonly Mention[]=[],b:readonly Mention[]=[]){return JSON.stringify(a.map(m=>[m.userId,m.name,m.start,m.end]))===JSON.stringify(b.map(m=>[m.userId,m.name,m.start,m.end]));}
 export function commentHref(ideaId:string,commentId:string){return `/ideas/${encodeURIComponent(ideaId)}?comment=${encodeURIComponent(commentId)}`;}
+
+/** Also handles selecting the same notification twice without requiring a URL change. */
+export function revealNotification(ideaId:string,commentId:string){window.dispatchEvent(new CustomEvent("ideahub:reveal-comment",{detail:{ideaId,commentId}}));return commentHref(ideaId,commentId);}
