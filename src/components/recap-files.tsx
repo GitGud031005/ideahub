@@ -1,4 +1,5 @@
 "use client";
+import {createPortal} from "react-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { ChevronDown, FileText, NotebookText, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -11,15 +12,15 @@ import { ErrorState, LoadingState } from "./status";
 function RecapDialog({ children, title, onClose, className = "" }: { children: ReactNode; title: string; onClose: () => void; className?: string }) {
   const ref = useRef<HTMLDialogElement>(null), close = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    const dialog = ref.current, previous = document.body.style.overflow;
-    dialog?.showModal(); close.current?.focus(); document.body.style.overflow = "hidden";
-    return () => { dialog?.close(); document.body.style.overflow = previous; };
+    const dialog = ref.current, opener=document.activeElement as HTMLElement|null, previous = document.body.style.overflow;
+    dialog?.showModal(); close.current?.focus({preventScroll:true}); document.body.style.overflow = "hidden";
+    return () => { dialog?.close(); document.body.style.overflow = previous; if(opener?.isConnected)opener.focus({preventScroll:true}); };
   }, []);
-  return <dialog ref={ref} className={`ih-recap-dialog ${className}`} aria-label={title}
+  return createPortal(<dialog ref={ref} className={`ih-recap-dialog ${className}`} aria-label={title}
     onCancel={e => { e.preventDefault(); onClose(); }} onClick={e => { const rect=e.currentTarget.getBoundingClientRect(); if (e.target === e.currentTarget && (e.clientX<rect.left || e.clientX>rect.right || e.clientY<rect.top || e.clientY>rect.bottom)) onClose(); }}>
     <div className="ih-recap-dialog-top"><span><Sparkles size={13} aria-hidden="true"/>AI RECAP</span><button ref={close} type="button" className="ih-icon-button" aria-label="Đóng recap" onClick={onClose}><X size={18} aria-hidden="true"/></button></div>
     {children}
-  </dialog>;
+  </dialog>,document.body);
 }
 function RecapReader({ ideaId, file, onClose, onReveal }: { ideaId: string; file: RecapFile; onClose: () => void; onReveal: (id: string) => void }) {
   const query = useQuery({ queryKey: ["recap", ideaId, file.id, file.updatedAt], queryFn: ({ signal }) => api<Recap>(`/ideas/${encodeURIComponent(ideaId)}/recaps/${encodeURIComponent(file.id)}`, { signal }) });
@@ -29,7 +30,8 @@ function RecapReader({ ideaId, file, onClose, onReveal }: { ideaId: string; file
     { key: "nextSteps", title: "Việc tiếp theo", empty: "Chưa có công việc tiếp theo được xác nhận" },
     { key: "openQuestions", title: "Câu hỏi còn mở", empty: "Không ghi nhận câu hỏi còn mở" },
   ] as const;
-  return <RecapDialog title={file.fileName} onClose={onClose}>
+  return <RecapDialog title={file.fileName} onClose={onClose} className="ih-recap-reader">
+    <div className="ih-recap-document" role="region" aria-label="Nội dung bản recap" tabIndex={0}>
     <header className="ih-recap-reader-header"><span className="ih-recap-kind">{file.kind === "daily" ? "Bản ngày" : "Bản tuần"}{file.source === "sample" && <span className="ih-recap-sample">Mẫu · biên soạn sẵn</span>}</span>
       <h2>{file.fileName}</h2><p>{displayDay(file.periodStart)}{file.kind === "weekly" && ` — ${displayDay(addDays(file.periodEnd, -1))}`}<span>·</span>{file.sourceCount} bình luận<span>·</span>Giờ Việt Nam</p>
     </header>
@@ -39,6 +41,7 @@ function RecapReader({ ideaId, file, onClose, onReveal }: { ideaId: string; file
       </section>)}
     </div>
     <footer className="ih-recap-reader-footer"><span>{file.source === "sample" ? "Bản mẫu để xem trước bố cục recap" : `${file.model?geminiModelLabel(file.model):"AI tổng hợp"} · đối chiếu bình luận nguồn khi cần`}</span><time dateTime={file.updatedAt}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(new Date(file.updatedAt))}</time></footer>
+    </div>
   </RecapDialog>;
 }
 function RecapWeek({ start, files, initialOpen, onOpen }: { start: string; files: RecapFile[]; initialOpen: boolean; onOpen: (file: RecapFile) => void }) {

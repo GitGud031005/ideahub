@@ -696,3 +696,26 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
  .ih-sort-compact-icon{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1}
 }
 @media(max-width:760px){.ih-icon-button{min-width:44px;min-height:44px}.ih-picker-option{min-height:44px}}
+
+/* The reader has one explicit-height scroll region; only its close bar stays fixed. */
+.ih-recap-dialog.ih-recap-reader{display:grid;grid-template-rows:auto minmax(0,1fr);height:min(800px,calc(var(--ih-viewport-height,100dvh) - 48px));max-height:calc(var(--ih-viewport-height,100dvh) - 48px);overflow:hidden}
+.ih-recap-reader .ih-recap-dialog-top{position:static;min-height:57px;padding:6px 18px;border-bottom:1px solid #eaeae5;background:#fff}
+.ih-recap-reader .ih-recap-dialog-top .ih-icon-button{width:44px;height:44px}
+.ih-recap-document{min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c7c7bc transparent;-webkit-overflow-scrolling:touch;scroll-padding:20px}
+.ih-recap-document:focus-visible{outline:2px solid #a8a89a;outline-offset:-3px}
+.ih-recap-document::-webkit-scrollbar{display:block;width:5px}
+.ih-recap-document::-webkit-scrollbar-thumb{background:#c7c7bc;border-radius:5px}
+.ih-recap-document .ih-recap-reader-header{padding:16px 24px}
+.ih-recap-document .ih-recap-reader-header h2{font-size:22px;line-height:1.4;margin:7px 0}
+.ih-recap-document .ih-recap-reader-body{display:block;flex:none;min-height:0;max-height:none;overflow:visible;padding:22px 24px 4px}
+.ih-recap-document .ih-recap-section h3{font-size:13px}
+.ih-recap-document .ih-recap-section li p{font-size:14px;line-height:1.85}
+.ih-recap-document .ih-recap-evidence{min-height:40px;font-size:11px}
+.ih-recap-document .ih-recap-reader-footer{padding:14px 24px}
+@media(max-width:760px){
+ .ih-recap-dialog.ih-recap-reader{height:calc(var(--ih-viewport-height,100dvh) - 24px);max-height:calc(var(--ih-viewport-height,100dvh) - 24px)}
+ .ih-recap-document .ih-recap-reader-header{padding:14px 20px}
+ .ih-recap-document .ih-recap-reader-header h2{font-size:20px}
+ .ih-recap-document .ih-recap-reader-body{padding:20px 20px 4px}
+ .ih-recap-document .ih-recap-reader-footer{padding:12px 20px}
+}

@@ -78,6 +78,10 @@ const sources=new Set<EventTarget>();let qaVersion=0;
 window.addEventListener("message",event=>{if(event.data!=="QA_ADD_COMMENT")return;comments.push({...comments[0],id:crypto.randomUUID(),author:roomMembers[1],parentId:null,text:"Tin mới: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận",attachments:[],pinnedAt:null,createdAt:new Date().toISOString()});qaVersion++;for(const source of sources)source.dispatchEvent(new MessageEvent("comments-changed",{data:JSON.stringify({commentCount:comments.length,memberCount:3,version:String(qaVersion)})}));});
 const attempts=new Map<string,number>();let postNumber=0,pushAttempts=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};
+if(window.__qaScene==="discussion-recap-long"){
+ recap.kind="weekly";recap.fileName="2026-10-12_2026-10-18_ban-tong-ket-tuan-voi-ten-tep-dai.md";
+ for(const key of ["keyIdeas","decisions","nextSteps","openQuestions"] as const)recap.content[key]=Array.from({length:8},(_,i)=>({text:`Góc nhìn ${i+1}: `+"Nhóm cùng kiểm chứng nhu cầu, ghi lại quyết định và phân công bước tiếp theo. ".repeat(3),commentIds:[comments[0].id]}));
+}
 class MockSource extends EventTarget {
   onopen:((event:Event)=>void)|null=null;onerror:((event:Event)=>void)|null=null;
   constructor(_url:string){super();sources.add(this);setTimeout(()=>this.onopen?.(new Event("open")),10);}
@@ -125,7 +129,7 @@ window.fetch = async (input, init) => {
     return Response.json({items,total:items.length,counts:{all:all.length,new:all.filter(i=>i.status==="new").length,potential:all.filter(i=>i.status==="potential").length,archived:all.filter(i=>i.status==="archived").length,mine:all.filter(i=>i.mine).length},nextCursor:null});
   }
   if (path.endsWith("/status")&&init?.method==="POST") {const idea=ideas.find(i=>i.id===path.split("/")[3])!;idea.status=JSON.parse(String(init.body)).status;return Response.json(project(idea));}
-  if (path.endsWith("/recaps/qa-recap")) return Response.json(recap);
+  if (path.endsWith("/recaps/qa-recap")) {if(window.__qaScene==="discussion-recap-loading")await new Promise(r=>setTimeout(r,20000));if(window.__qaScene==="discussion-recap-error")return Response.json({error:{message:"Chưa tải được recap thử nghiệm"}},{status:503});return Response.json(recap);}
   if (path.endsWith("/recaps")) return Response.json({items:[recap],nextOffset:null,aiConfigured:true});
   if(path.endsWith('/pin')&&init?.method==='POST') {const c=comments.find(c=>c.id===path.split('/').at(-2));if(c)c.pinnedAt=JSON.parse(String(init.body)).pinned?new Date().toISOString():null;return Response.json({ok:true});}
   if(path.endsWith('/attachments')&&init?.method==='POST'){const f=(init.body as FormData).get('file') as File;await new Promise(r=>setTimeout(r,1200));const a:Attachment={id:crypto.randomUUID(),name:f.name,size:f.size,mime:f.type,kind:f.type.startsWith('image/')?'image':'file',url:URL.createObjectURL(f)};fixtureAttachments.push(a);return Response.json(a);}
