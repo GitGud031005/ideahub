@@ -5,10 +5,10 @@ import type { Attachment } from "@/lib/domain";
 import { fileSize } from "@/lib/shared-content";
 
 export function AttachmentViewer({attachment,onClose}:{attachment:Attachment;onClose:()=>void}){
-  const ref=useRef<HTMLDialogElement>(null);
-  useEffect(()=>{const d=ref.current,previous=document.body.style.overflow;d?.showModal();document.body.style.overflow="hidden";return()=>{d?.close();document.body.style.overflow=previous;};},[]);
+  const ref=useRef<HTMLDialogElement>(null),close=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{const d=ref.current,opener=document.activeElement as HTMLElement|null,previous=document.body.style.overflow;d?.showModal();close.current?.focus({preventScroll:true});document.body.style.overflow="hidden";return()=>{d?.close();document.body.style.overflow=previous;if(opener?.isConnected)opener.focus({preventScroll:true});};},[]);
   return <dialog ref={ref} className="ih-attachment-viewer" aria-label={`Xem ảnh ${attachment.name}`} onCancel={e=>{e.preventDefault();onClose();}}>
-    <header><span>{attachment.name}</span><a href={attachment.url.startsWith("blob:")?attachment.url:`${attachment.url}?download=1`} download={attachment.name} aria-label="Tải ảnh xuống"><Download size={18}/></a><button autoFocus type="button" aria-label="Đóng ảnh" onClick={onClose}><X size={20}/></button></header>
+    <header><span>{attachment.name}</span><a href={attachment.url.startsWith("blob:")?attachment.url:`${attachment.url}?download=1`} download={attachment.name} aria-label="Tải ảnh xuống"><Download size={18}/></a><button ref={close} type="button" aria-label="Đóng ảnh" onClick={onClose}><X size={20}/></button></header>
     <img src={attachment.url} alt={attachment.name}/><p>{fileSize(attachment.size)}</p>
   </dialog>;
 }
