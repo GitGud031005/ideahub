@@ -26,7 +26,7 @@ import {useRoomFeed} from "./use-room-feed";
 
 export function Discussion({ id,requestedComment }: { id: string;requestedComment?:string }) {
   const session = useSession(), { user, requestLogin } = useAuth(), client = useQueryClient(), { sidebarOpen, setSidebarOpen } = useUi();
-  const [sort, setSort] = useState<CommentSort>("old"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [sort, setSort] = useState<CommentSort>("new"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const reveal = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null), panel = useRef<HTMLElement>(null), joinAttempted = useRef(false);
   const [mobile, setMobile] = useState(false),[selectedImage,setSelectedImage]=useState<Attachment|null>(null);
   const [searchOpen,setSearchOpen]=useState(false),[navigationError,setNavigationError]=useState("");
