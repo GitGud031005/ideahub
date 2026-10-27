@@ -42,7 +42,7 @@ function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
   const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberReadComments:_receipts, memberArchived:_archived, status:_legacy, ...record } = idea;
   const comments=state.comments.filter(c=>c.ideaId===idea.id);
   const lastCommentAt=comments.reduce<string|null>((last,c)=>!last||Date.parse(c.createdAt)>Date.parse(last)?c.createdAt:last,null);
-  return { ...record, lastCommentAt, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: comments.length, joined: members.includes(userId), mine: idea.creator.id === userId };
+  return { ...record, lastCommentAt, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: comments.length, joined: members.includes(userId), mine: idea.creator.id === userId, notificationsMuted: members.includes(userId) && (state.mutedRooms?.[userId]?.includes(idea.id) ?? false) };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
@@ -104,7 +104,7 @@ export class StateIdeaRepository implements IdeaRepository {
       const ranked = state.ideas.filter(i => before(i.createdAt)).map(i => {
         const item = present(i, state, userId);
         const joined = i.members.includes(userId) && before(i.memberJoinedAt?.[userId]);
-        return { item: { ...item, lastCommentAt:latest.get(i.id)??null, joined, status: !joined ? "new" as const : i.memberArchived?.[userId] ? "archived" as const : "potential" as const },
+        return { item: { ...item, lastCommentAt:latest.get(i.id)??null, joined, notificationsMuted:joined && !!item.notificationsMuted, status: !joined ? "new" as const : i.memberArchived?.[userId] ? "archived" as const : "potential" as const },
           sortAt:query.sort==="activity"?(latest.get(i.id)??i.createdAt):i.createdAt,
           rank: query.sort === "popular" ? i.members.filter(id => before(i.memberJoinedAt?.[id])).length : 0 };
       });

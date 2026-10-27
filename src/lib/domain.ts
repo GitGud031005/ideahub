@@ -20,6 +20,8 @@ export interface Idea {
   lastCommentAt: string | null;
   joined: boolean;
   mine: boolean;
+  /** Viewer preference; omitted by older clients means notifications are enabled. */
+  notificationsMuted?: boolean;
 }
 export interface Comment {
   id: string;

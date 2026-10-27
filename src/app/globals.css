@@ -577,3 +577,12 @@ button.ih-tag-selected:hover:enabled{border-color:#aaa99e;background:#e9e9e2}
 }
 @media(max-width:400px){.ih-discussion-sort{position:relative}.ih-discussion-sort .ih-picker-trigger{width:var(--control-height);min-width:var(--control-height);padding:0;border:1px solid #e4e4db;border-radius:5px}.ih-discussion-sort .ih-picker-trigger>span,.ih-discussion-sort .ih-picker-trigger>svg{display:none}.ih-sort-compact-icon{display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:1}.ih-discussion-page{--control-height:34px}.ih-discussion-actions{gap:5px}.ih-discussion-header .ih-notifications{--control-height:34px}.ih-discussion-heading{gap:5px}.ih-discussion-header h1{font-size:12px;gap:5px}.ih-reply-form-footer{flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){.ih-mention-options>button,.ih-new-messages,.ih-notification-tabs button,.ih-notification-item,.ih-room-search-result{transition:none}}
+
+/* Personal room notification state on dashboard cards. */
+.ih-card-signals{display:flex;align-items:center;gap:7px;flex:0 0 auto;margin-top:1px}
+.ih-card-signals .ih-card-status{margin-top:0}
+.ih-card-notification{position:relative;display:inline-grid;place-items:center;flex:0 0 24px;width:24px;height:24px;border:1px solid #e5e5dd;border-radius:50%;background:#f7f7f3;color:#7c7c6e;cursor:help;line-height:1}
+.ih-card-notification-muted{border-color:#edddd6;background:#faf1ed;color:#aa7a6b}
+.ih-card-notification:after{content:attr(data-label);position:absolute;right:0;top:calc(100% + 7px);z-index:3;padding:6px 9px;border:1px solid #e3e3d9;border-radius:5px;background:#fff;color:#666659;box-shadow:0 3px 10px #00000008;font-size:10px;font-weight:400;line-height:1.6;white-space:nowrap;opacity:0;visibility:hidden;pointer-events:none}
+.ih-card-notification:hover:after,.ih-card-notification:focus-visible:after{opacity:1;visibility:visible}
+.ih-card-notification:focus-visible{outline:2px solid currentColor;outline-offset:3px}

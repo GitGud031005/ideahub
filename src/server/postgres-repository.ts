@@ -20,7 +20,7 @@ interface IdeaRow {
   status: IdeaStatus;
   id: string; title: string; description: string; category: Category; tags: string[];
   creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
-  member_count: number; comment_count: number; joined: boolean; mine: boolean;
+  member_count: number; comment_count: number; joined: boolean; mine: boolean; notifications_muted: boolean;
   cursor_time: string; rank_members?: number; last_comment_at: Date | null; cursor_activity?:string;
 }
 interface CommentRow {
@@ -36,6 +36,7 @@ const IDEA_SELECT = `SELECT i.id, CASE WHEN viewer.user_id IS NULL THEN 'new' WH
   (SELECT count(*)::int FROM public.comments c WHERE c.idea_id = i.id) AS comment_count,
   (SELECT c.created_at FROM public.comments c WHERE c.idea_id = i.id ORDER BY c.created_at DESC LIMIT 1) AS last_comment_at,
   (viewer.user_id IS NOT NULL) AS joined,
+  COALESCE(viewer.notifications_muted, false) AS notifications_muted,
   i.creator_id = $1 AS mine
   FROM public.ideas i JOIN public.users u ON u.id = i.creator_id
   LEFT JOIN public.memberships viewer ON viewer.idea_id = i.id AND viewer.user_id = $1`;
@@ -44,7 +45,7 @@ const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body
 function idea(row: IdeaRow): Idea {
   return { id: row.id, status: row.status, title: row.title, description: row.description, category: row.category, tags: row.tags,
     creator: { id: row.creator_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),
-    memberCount: row.member_count, commentCount: row.comment_count, lastCommentAt: row.last_comment_at?.toISOString()??null, joined: row.joined, mine: row.mine };
+    memberCount: row.member_count, commentCount: row.comment_count, lastCommentAt: row.last_comment_at?.toISOString()??null, joined: row.joined, mine: row.mine, notificationsMuted: row.notifications_muted };
 }
 function comment(row: CommentRow): Comment {
   return { id: row.id, ideaId: row.idea_id, parentId: row.parent_id, text: row.body,
