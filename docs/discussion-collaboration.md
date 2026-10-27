@@ -34,8 +34,10 @@ On iOS/iPadOS, Web Push requires a supported OS and launching the installed home
 
 ## Automatic notification invitation — 27 October 2026
 
-Signed-in members receive a device notification invitation after the page settles. It waits while another dialog is open or the member is typing. “Bật thông báo” requests browser permission directly from the click; “Để sau”, close and Escape defer the invitation for seven days on that device/account. Already subscribed devices, blocked permission and explicit manual disable are respected.
+Signed-in members receive a device notification invitation after the page settles. It waits while another dialog is open or the member is typing. “Bật thông báo” requests browser permission directly from the click; “Để sau”, close and Escape defer the invitation for seven days on that device/account. Already subscribed devices and explicit manual disable are respected. Blocked permission shows a recovery guide instead of silently suppressing the invitation; “Kiểm tra lại” can finish subscribing after the member changes their browser/device permission. No native permission request is attempted while blocked.
 
 iPhone/iPad browser sessions receive an installation guide. Its dismissal is stored separately so opening the installed home-screen app can still offer notification permission immediately. Permission and subscription are shared with the existing notification bell; failures keep the invitation retryable.
 
 Validation: production build, TypeScript and 110 tests passed (one external-Postgres test skipped). Browser fixtures verified desktop, Android 360px, iPhone 375/390px and the scrollable 320px guide, including enable success, deferred reload, denial, previously blocked permission, and recovery after a failed subscription request. Mobile platform APIs were simulated; physical-device OS banners were not tested in this pass.
+
+Sign-in follow-up: Google callback pages use the same session-driven invitation as password login. The invitation no longer waits for service-worker subscription lookup when permission is still undecided or blocked, and its in-session guard resets on logout. A Google-return fixture covers fresh signed-in startup separately from already-blocked permission recovery.
