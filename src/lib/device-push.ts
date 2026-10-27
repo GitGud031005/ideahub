@@ -16,7 +16,8 @@ export function deferPushInvite(userId:string,{permanently=false,now=Date.now(),
 }
 export function clearPushInviteDecision(userId:string){decisions.delete(inviteKey(userId,"push"));try{localStorage.removeItem(inviteKey(userId,"push"));}catch{}}
 export function shouldInvitePush({support,permission,subscribed,decision,now=Date.now()}:{support:ReturnType<typeof browserPushSupport>;permission:NotificationPermission;subscribed:boolean;decision:PushInviteDecision|null;now?:number}) {
-  return support!=="unsupported"&&permission!=="denied"&&!subscribed&&(!decision||decision.until<=now);
+  // A blocked browser needs a recovery guide, rather than silently hiding the invitation.
+  return support!=="unsupported"&&(!subscribed||permission==="denied")&&(!decision||decision.until<=now);
 }
 function keyBytes(value:string){return Uint8Array.from(atob(value.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-value.length%4)%4)),c=>c.charCodeAt(0));}
 export function pushOwner(){try{return localStorage.getItem("ih-push-user");}catch{return null;}}
@@ -24,6 +25,7 @@ export async function hasDevicePush(userId:string){const registration=await navi
 /** Called directly from a click so Safari/Firefox retain the permission user gesture. */
 export async function enableDevicePush(userId:string):Promise<"on"|"off"|"denied"> {
   if(browserPushSupport()!=="available")throw new Error("Thiết bị này chưa sẵn sàng nhận push");
+  if(Notification.permission==="denied")return "denied";
   const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
   if(permission!=="granted")return permission==="denied"?"denied":"off";
   await navigator.serviceWorker.register("/sw.js",{updateViaCache:"none"});

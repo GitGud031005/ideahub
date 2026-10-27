@@ -50,7 +50,7 @@ const roomMembers=[person,{id:"qa-other",name:"Trần Ngọc Bình",initial:"TB"
 const notifications:RoomNotification[]=[{id:"qa-notification-1",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-0",actor:roomMembers[1],kind:"mention",excerpt:"@Nguyễn Minh An bạn xem giúp hướng tiếp cận này nhé",createdAt:new Date(Date.now()-240000).toISOString(),readAt:null},{id:"qa-notification-2",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-comment-1",actor:roomMembers[2],kind:"reply",excerpt:"Mình có thể góp sức ở bước kiểm tra dữ liệu đầu vào",createdAt:new Date(Date.now()-3600000).toISOString(),readAt:null},{id:"qa-notification-3",userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:"qa-share-root",actor:roomMembers[1],kind:"reply",excerpt:"Nhóm đã xem phác thảo, cùng thống nhất phần còn bỏ ngỏ nhé",createdAt:new Date(Date.now()-86400000).toISOString(),readAt:new Date().toISOString()}];
 if(window.__qaScene.includes("empty"))notifications.splice(0);
 if(window.__qaScene==="discussion-long")for(let n=0;n<25;n++)comments.push({...comments[0],id:`qa-long-${n}`,parentId:null,attachments:[],pinnedAt:null,text:`Góc nhìn số ${n+1}: cùng xác định vấn đề và kiểm chứng nhu cầu trước khi xây sản phẩm. Mình muốn nghe thêm trải nghiệm của mọi người.`,createdAt:new Date(Date.now()-(30-n)*60000).toISOString()});
-const ios=window.__qaScene.includes("ios"),installed=window.__qaScene.includes("pwa"),allowPush=installed||window.__qaScene.includes("android-push")||["invite-desktop","invite-android","invite-error"].includes(window.__qaScene);
+const ios=window.__qaScene.includes("ios"),installed=window.__qaScene.includes("pwa"),allowPush=installed||window.__qaScene.includes("android-push")||["invite-desktop","invite-android","invite-error","invite-google-return"].includes(window.__qaScene);
 if(ios){Object.defineProperty(navigator,"userAgent",{configurable:true,value:"Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1"});Object.defineProperty(navigator,"platform",{configurable:true,value:"iPhone"});Object.defineProperty(navigator,"standalone",{configurable:true,value:installed});}
 let fixtureSubscription:any=null;
 const pushManager={getSubscription:async()=>fixtureSubscription,subscribe:async()=>{fixtureSubscription={endpoint:"https://web.push.apple.com/qa-only",keys:{p256dh:"qa",auth:"qa"},options:{},toJSON(){return {endpoint:this.endpoint,keys:this.keys};},async unsubscribe(){fixtureSubscription=null;return true;}};return fixtureSubscription;}};
@@ -71,7 +71,7 @@ class MockSource extends EventTarget {
   close(){sources.delete(this);}
 }
 window.EventSource=MockSource as unknown as typeof EventSource;
-let current: Account|null = window.__qaScene === "guest" ? null : { ...person, provider:window.__qaScene === "profile-google"?"google":"password" };
+let current: Account|null = window.__qaScene === "guest" ? null : { ...person, provider:["profile-google","invite-google-return"].includes(window.__qaScene)?"google":"password" };
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === "string" ? input : input instanceof Request ? input.url : input.href, "https://fixture.ideahub.test"), path = url.pathname;
   if (!path.startsWith("/api/")) throw new Error("UI fixture blocked a non-mocked request");

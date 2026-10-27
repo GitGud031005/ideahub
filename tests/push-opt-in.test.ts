@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {PUSH_INVITE_DELAY,clearPushInviteDecision,deferPushInvite,enableDevicePush,disableDevicePush,readPushInviteDecision,shouldInvitePush} from "../src/lib/device-push";
 const eligible={support:"available" as const,permission:"default" as const,subscribed:false,decision:null};
-test("invitation respects support, existing subscriptions and blocked permissions",()=>{
+test("invitation respects subscriptions and offers a recovery guide for blocked permissions",()=>{
  assert.equal(shouldInvitePush(eligible),true);
  assert.equal(shouldInvitePush({...eligible,support:"unsupported"}),false);
- assert.equal(shouldInvitePush({...eligible,permission:"denied"}),false);
+ assert.equal(shouldInvitePush({...eligible,permission:"denied"}),true);
+ assert.equal(shouldInvitePush({...eligible,permission:"denied",subscribed:true}),true,"A stale subscription must not hide the blocked-permission guide");
+ assert.equal(shouldInvitePush({...eligible,permission:"denied",decision:{until:Date.now()+PUSH_INVITE_DELAY}}),false);
  assert.equal(shouldInvitePush({...eligible,subscribed:true}),false);
  assert.equal(shouldInvitePush({...eligible,support:"install-ios"}),true);
 });
@@ -40,4 +42,5 @@ test("enabling asks permission synchronously from the click and only subscribes 
  assert.equal(await pending,"on");assert(calls.indexOf("permission")<calls.indexOf("subscribe"));assert.equal(storage.get("ih-push-user"),"opt-in-user");
  await disableDevicePush("opt-in-user");assert(calls.includes("unsubscribe"));assert.equal(storage.has("ih-push-user"),false);assert.equal(shouldInvitePush({...eligible,decision:readPushInviteDecision("opt-in-user")}),false);
  permission="default";answer="denied";calls.length=0;assert.equal(await enableDevicePush("opt-in-user"),"denied");assert.deepEqual(calls,["permission"]);
+ calls.length=0;assert.equal(await enableDevicePush("opt-in-user"),"denied");assert.deepEqual(calls,[],"A blocked browser must never be prompted again through requestPermission");
 });
