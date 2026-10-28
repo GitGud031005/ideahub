@@ -89,9 +89,13 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     if(box&&!positioning.current){
       const moving=scrollActivity.current.active(performance.now());
       // Coordinates within the content exclude the user's own scroll distance.
+      if(moving){anchor.current=null;return;}
       const el=anchor.current?document.getElementById(anchor.current.id):null;
-      const delta=!moving&&el&&anchor.current?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop-anchor.current.offset:undefined;
-      restoreRoomScroll(box,moving,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
+      const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      // Rebase after a content change so later updates cannot apply the same delta twice.
+      if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }
   }, [thread, sort]);
   function submit(text:string,parentId:string|null=null,files:File[]=[],mentions:Mention[]=[]){
