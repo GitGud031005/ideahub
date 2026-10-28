@@ -13,6 +13,7 @@ import {relativeTime} from "@/lib/format";
 import {useAuth} from "./providers";
 import {Avatar} from "./avatar";
 import {watchNotifications} from "@/lib/comment-live";
+import {waitForVisibleComment} from "@/lib/room-attention";
 import {notificationSound} from "@/lib/notification-sound";
 import {useSurface} from "./use-surface";
 function useInbox(){const {user}=useAuth();return useQuery({queryKey:["notifications",user?.id],queryFn:({signal})=>api<NotificationsPage>("/notifications",{signal}),enabled:!!user,refetchInterval:5000,refetchOnWindowFocus:"always",refetchOnReconnect:"always",staleTime:0});}
@@ -37,8 +38,17 @@ export function NotificationRuntime(){
   for(const n of fresh){seen.current.ids.add(n.id);
    pending.current=pending.current.then(async()=>{
     if(n.readAt||n.actor.id===user.id||document.hidden||activeUser.current!==user.id)return;
+    if(await waitForVisibleComment(n.ideaId,n.commentId,user.id)){
+     if(activeUser.current!==user.id)return;
+     localStorage.setItem(`ih-notification:${user.id}:${n.id}`,"1");
+     await api(`/ideas/${encodeURIComponent(n.ideaId)}/read`,{method:"POST",body:JSON.stringify({commentIds:[n.commentId]})});
+     void client.invalidateQueries({queryKey:["notifications",user.id]});
+     void client.invalidateQueries({queryKey:["unread-comments",n.ideaId,user.id]});
+     void client.invalidateQueries({queryKey:["unread",user.id]});
+     return;
+    }
     const settings=await api<{muted:boolean}>(`/ideas/${encodeURIComponent(n.ideaId)}/notification-settings`);
-    if(settings.muted||activeUser.current!==user.id)return;
+    if(settings.muted||document.hidden||activeUser.current!==user.id)return;
     const show=()=>{const key=`ih-notification:${user.id}:${n.id}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");setToast(n);sound.current?.play();};
     if(navigator.locks)await navigator.locks.request("ih-notification-toast",show);else show();
    }).catch(()=>{});

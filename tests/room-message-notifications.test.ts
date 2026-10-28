@@ -47,9 +47,9 @@ test("inbox SSE is scoped to the authenticated account and missing context retur
  const room=await repo.createIdea(user,{title:"API",description:"Fixture",tags:[]});assert.equal((await call(`ideas/${room.id}/comments/missing/context`)).status,404);
  const target=await repo.createComment(room.id,user,{text:"Open me"});const context=await call(`ideas/${room.id}/comments/${target.id}/context`);assert.equal(context.status,200);assert.equal((await context.json())[0].id,target.id);
 });
-test("push drains over 20 recipients and does not suppress jobs merely because the inbox was read",async()=>{
+test("push drains over 20 recipients and rechecks read status before delivery",async()=>{
  const jobs=Array.from({length:25},(_,i)=>({id:String(i),ideaId:"room",userId:"other",commentId:String(i),readAt:new Date().toISOString()}));
  let finished=0,claimed=0;
- const repo={claimPush:async()=>jobs.splice(0,20),pushKeys:async()=>({}),roomMuted:async()=>false,subscriptions:async()=>{claimed++;return [];},finishPush:async()=>{finished++;}} as unknown as IdeaRepository;
+ const repo={claimPush:async()=>jobs.splice(0,20),pushKeys:async()=>({}),roomMuted:async()=>false,subscriptions:async()=>{claimed++;return [];},pushUnread:async()=>true,finishPush:async()=>{finished++;}} as unknown as IdeaRepository;
  await dispatchPendingPush(repo);assert.equal(finished,25);assert.equal(claimed,25);
 });

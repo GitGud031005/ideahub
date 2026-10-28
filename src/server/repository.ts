@@ -19,6 +19,7 @@ export interface IdeaRepository {
   readNotifications(userId:string,ids:string[]|"all"):Promise<void>;
   roomMuted(ideaId:string,userId:string):Promise<boolean>;
   muteRoom(ideaId:string,userId:string,muted:boolean):Promise<void>;
+  pushUnread(id:string,userId:string):Promise<boolean>;
   pushKeys():Promise<{publicKey:string;privateKey:string}>;
   savePush(userId:string,subscription:PushRegistration):Promise<void>;
   removePush(userId:string,endpoint:string):Promise<void>;
@@ -63,6 +64,7 @@ export class StateIdeaRepository implements IdeaRepository {
   readNotifications(userId:string,ids:string[]|"all"){return this.store.transact(state=>{for(const n of state.notifications??[])if(n.userId===userId&&(ids==="all"||ids.includes(n.id)))n.readAt??=new Date().toISOString();});}
   roomMuted(id:string,userId:string){return this.store.read(state=>{this.members(state,id);return state.mutedRooms?.[userId]?.includes(id)??false;});}
   muteRoom(id:string,userId:string,muted:boolean){return this.store.transact(state=>{const room=state.ideas.find(i=>i.id===id);if(!room)throw notFound();if(!room.members.includes(userId))throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để đổi thông báo");const ids=new Set(state.mutedRooms?.[userId]??[]);if(muted)ids.add(id);else ids.delete(id);(state.mutedRooms??={})[userId]=[...ids];});}
+  pushUnread(id:string,userId:string){return this.store.read(state=>!!state.notifications?.some(n=>n.id===id&&n.userId===userId&&!n.readAt&&n.pushState==="pending"));}
   pushKeys(){return this.store.transact(state=>{if(!state.pushKeys){const ec=createECDH("prime256v1");ec.generateKeys();state.pushKeys={publicKey:ec.getPublicKey().toString("base64url"),privateKey:ec.getPrivateKey().toString("base64url")};}return state.pushKeys;});}
   savePush(userId:string,subscription:PushRegistration){return this.store.transact(state=>{state.pushSubscriptions=(state.pushSubscriptions??[]).filter(s=>s.endpoint!==subscription.endpoint);state.pushSubscriptions.push({...subscription,userId});});}
   removePush(userId:string,endpoint:string){return this.store.transact(state=>{state.pushSubscriptions=(state.pushSubscriptions??[]).filter(s=>s.userId!==userId||s.endpoint!==endpoint);});}
@@ -100,6 +102,7 @@ export class StateIdeaRepository implements IdeaRepository {
     const read=new Set(idea.memberReadComments?.[userId]??[]);
     for(const id of ids)read.add(id);
     (idea.memberReadComments??={})[userId]=[...read];
+    for(const n of state.notifications??[])if(n.ideaId===ideaId&&n.userId===userId&&ids.includes(n.commentId)&&!n.readAt)n.readAt=new Date().toISOString();
   });}
   async listIdeas(userId: string, query: IdeaQuery) {
     const cursor = readIdeaCursor(userId, query);

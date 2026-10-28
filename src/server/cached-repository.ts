@@ -15,6 +15,7 @@ export class CachedIdeaRepository implements IdeaRepository {
   readNotifications(userId:string,ids:string[]|"all"){return this.inner.readNotifications(userId,ids);}
   roomMuted(id:string,userId:string){return this.inner.roomMuted(id,userId);}
   muteRoom(id:string,userId:string,muted:boolean){return this.inner.muteRoom(id,userId,muted);}
+  pushUnread(id:string,userId:string){return this.inner.pushUnread(id,userId);}
   pushKeys(){return this.inner.pushKeys();}
   savePush(userId:string,s:PushRegistration){return this.inner.savePush(userId,s);}
   removePush(userId:string,endpoint:string){return this.inner.removePush(userId,endpoint);}
