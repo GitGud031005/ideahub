@@ -67,7 +67,7 @@
   #ih-app .ih-intro { min-height: 0; padding-block: 32px 32px; }
   #ih-app .ih-intro h1 {
     max-width: 100%;
-    margin-bottom: 176px;
+    margin-bottom: 208px;
     font-size: clamp(27px,5.7vw,36px);
     letter-spacing: -1px;
   }
