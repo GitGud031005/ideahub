@@ -13,7 +13,7 @@ import {relativeTime} from "@/lib/format";
 import {useAuth} from "./providers";
 import {Avatar} from "./avatar";
 import {watchNotifications} from "@/lib/comment-live";
-import {waitForVisibleComment} from "@/lib/room-attention";
+import {activeRoom,waitForVisibleComment} from "@/lib/room-attention";
 import {notificationSound} from "@/lib/notification-sound";
 import {useSurface} from "./use-surface";
 function useInbox(){const {user}=useAuth();return useQuery({queryKey:["notifications",user?.id],queryFn:({signal})=>api<NotificationsPage>("/notifications",{signal}),enabled:!!user,refetchInterval:5000,refetchOnWindowFocus:"always",refetchOnReconnect:"always",staleTime:0});}
@@ -38,6 +38,8 @@ export function NotificationRuntime(){
   for(const n of fresh){seen.current.ids.add(n.id);
    pending.current=pending.current.then(async()=>{
     if(n.readAt||n.actor.id===user.id||document.hidden||activeUser.current!==user.id)return;
+    // Inbox SSE can beat room SSE. Refresh the room before deciding whether to alert.
+    if(activeRoom(n.ideaId,user.id))await client.invalidateQueries({queryKey:["comments",n.ideaId,user.id]},{cancelRefetch:false});
     if(await waitForVisibleComment(n.ideaId,n.commentId,user.id)){
      if(activeUser.current!==user.id)return;
      localStorage.setItem(`ih-notification:${user.id}:${n.id}`,"1");

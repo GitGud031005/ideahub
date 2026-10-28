@@ -1,6 +1,6 @@
 /** The room must actually be on screen, unobscured and owned by this account. */
 export function activeRoom(ideaId:string,userId:string) {
-  if(document.hidden||!document.hasFocus()||document.querySelector("dialog[open]"))return null;
+  if(document.hidden||document.querySelector("dialog[open]"))return null;
   const pane=document.querySelector<HTMLElement>(".ih-thread-comments");
   return pane?.dataset.ideaId===ideaId&&pane.dataset.userId===userId&&!pane.closest("[inert]")?pane:null;
 }

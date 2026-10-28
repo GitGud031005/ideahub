@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import {activeRoom,roomCommentVisible,roomBranchVisible,waitForVisibleComment} from "../src/lib/room-attention";
 
-test("only the visible, focused room and rendered open branch can suppress a notification",async()=>{
+test("only the visible room and rendered open branch can suppress a notification",async()=>{
  const previous=Object.getOwnPropertyDescriptor(globalThis,"document");
  let hidden=false,focused=true,modal=false,inert=false,rendered=true,top=150,branchTop=150;
  const pane={dataset:{ideaId:"room",userId:"reader"},closest:()=>inert?{}:null,contains:()=>true,getBoundingClientRect:()=>({top:100,bottom:600,height:500})};
@@ -13,7 +13,7 @@ test("only the visible, focused room and rendered open branch can suppress a not
   assert(roomCommentVisible("room","new","reader"));assert(await waitForVisibleComment("room","new","reader"));
   assert(!roomCommentVisible("other-room","new","reader"));assert(!roomCommentVisible("room","new","other-account"));
   hidden=true;assert(!activeRoom("room","reader"));assert.equal(await waitForVisibleComment("room","new","reader"),false);hidden=false;
-  focused=false;assert(!roomCommentVisible("room","new","reader"));focused=true;
+  focused=false;assert(roomCommentVisible("room","new","reader"),"returning from a notification can temporarily retain browser focus elsewhere");focused=true;
   modal=true;assert(!roomCommentVisible("room","new","reader"));modal=false;
   inert=true;assert(!roomCommentVisible("room","new","reader"));inert=false;
   rendered=false;assert(!roomCommentVisible("room","new","reader"));assert(!roomBranchVisible("room","parent","reader"));rendered=true;

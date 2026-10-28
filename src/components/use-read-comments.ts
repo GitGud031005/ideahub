@@ -33,9 +33,9 @@ export function useReadComments(ideaId:string,userId:string|undefined,joined:boo
     if(!ids.length)return;
     function attempt(){
       clearTimeout(timer);
-      if(document.hidden||!document.hasFocus())return;
+      if(document.hidden)return;
       timer=setTimeout(async()=>{
-        if(disposed||document.hidden||!document.hasFocus())return;
+        if(disposed||document.hidden)return;
         const reading=ids.filter(id=>roomCommentVisible(ideaId,id,userId!));
         if(!reading.length)return;
         try{

@@ -23,6 +23,7 @@ import { AttachmentViewer } from "./attachment-view";
 import {RoomSearch} from "./room-search";
 import {NotificationBell} from "./notification-bell";
 import { RoomScrollActivity, restoreRoomScroll, type RoomScrollAnchor } from "@/lib/room-scroll";
+import {extendOpenReplies} from "@/lib/live-room-feed";
 import {useRoomFeed} from "./use-room-feed";
 
 export function Discussion({ id,requestedComment }: { id: string;requestedComment?:string }) {
@@ -41,6 +42,12 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const members=useQuery({queryKey:["room-members",id,user?.id],queryFn:({signal})=>api<Author[]>(`/ideas/${encodeURIComponent(id)}/members`,{signal}),enabled:!!user&&!!idea.data,refetchInterval:30000});
   const settings=useQuery({queryKey:["room-notification-settings",id,user?.id],queryFn:({signal})=>api<{muted:boolean}>(`/ideas/${encodeURIComponent(id)}/notification-settings`,{signal}),enabled:!!user&&!!idea.data?.joined});
   const mute=useMutation({mutationFn:(muted:boolean)=>api<{muted:boolean}>(`/ideas/${encodeURIComponent(id)}/notification-settings`,{method:"POST",body:JSON.stringify({muted})}),onSuccess:result=>{client.setQueryData(["room-notification-settings",id,user?.id],result);client.setQueryData<Idea>(["idea",id],current=>current?{...current,notificationsMuted:result.muted}:current);void client.invalidateQueries({queryKey:["ideas"]});}});
+  const knownComments=useRef(new Set<string>());
+  useLayoutEffect(()=>{
+    if(!comments.data)return;
+    const previous=knownComments.current;knownComments.current=new Set(comments.data.map(c=>c.id));
+    if(previous.size)setExpanded(current=>extendOpenReplies(previous,comments.data!,current) as Set<string>);
+  },[comments.data]);
   const feed=useRoomFeed(comments.data,user?.id,followLatest,expanded);
   async function editComment(commentId:string,text:string,mentions:Mention[],revision:number){const updated=await api<Comment>(`/ideas/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/edit`,{method:"POST",body:JSON.stringify({text,mentions,revision})});client.setQueryData<Comment[]>(["comments",id,user?.id],current=>current?.map(c=>c.id===commentId?updated:c));void client.invalidateQueries({queryKey:["room-search",id]});void client.invalidateQueries({queryKey:["notifications"]});return updated;}
   const unreadComments=useReadComments(id,user?.id,!!idea.data?.joined,feed.items,expanded,!mobile||!sidebarOpen);
@@ -78,9 +85,11 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const thread=useMemo(()=>mergeComments(feed.items,outbox.items),[feed.items,outbox.items]);
   const allTree=useMemo(()=>buildCommentForest(mergeComments(comments.data??[],outbox.items),sort),[comments.data,outbox.items,sort]);
   const tree=useMemo(()=>buildCommentForest(thread,sort),[thread,sort]);
+  const previousThread=useRef<ReadonlySet<string>>(new Set());
   useLayoutEffect(() => { followLatest.current = true; }, [id]);
   useLayoutEffect(() => {
-    const box = scrollBox.current;
+    const box = scrollBox.current,previousIds=previousThread.current;
+    previousThread.current=new Set(thread.map(c=>c.id));
     if (previousSort.current !== sort) {
       previousSort.current = sort;
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
@@ -93,7 +102,21 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const el=anchor.current?document.getElementById(anchor.current.id):null;
       const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
       const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
-      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      const anchored=anchor.current?thread.find(c=>`comment-${c.id}`===anchor.current!.id):undefined;
+      // A new sibling belongs at the visible anchor in newest-first order.
+      // Compensating its insertion would hide it above the pane and trigger an alert.
+      const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
+      // Notification navigation can finish while a newest-first sibling arrives.
+      // Keep that incoming sibling on screen when the opened target is still visible.
+      const opened=requestedComment?thread.find(c=>c.id===requestedComment):undefined;
+      const openedElement=opened?document.getElementById(`comment-${opened.id}`):null;
+      const bounds=box.getBoundingClientRect(),openedBounds=openedElement?.getBoundingClientRect();
+      if(sort==="new"&&opened?.parentId&&openedBounds&&openedBounds.bottom>bounds.top&&openedBounds.top<bounds.bottom&&!box.querySelector(".ih-reply-form:focus-within")){
+        const incoming=thread.find(c=>c.parentId===opened.parentId&&!previousIds.has(c.id));
+        const rect=incoming?document.getElementById(`comment-${incoming.id}`)?.getBoundingClientRect():null;
+        if(rect&&rect.top<bounds.top)box.scrollTop=Math.max(0,box.scrollTop+rect.top-bounds.top-16);
+      }
       // Rebase after a content change so later updates cannot apply the same delta twice.
       if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }
@@ -119,7 +142,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       }
       if(sequence!==navigationSequence.current)return;
       feed.release(snapshot);
-      setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));let parent=byId.get(commentId)?.parentId;
+      setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));next.add(commentId);let parent=byId.get(commentId)?.parentId;
         while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=byId.get(parent)?.parentId;}return next;});
       setNavigation({commentId,sequence,instant});
     }catch(error){if(sequence!==navigationSequence.current)return;positioning.current=false;setNavigationLoading(false);setNavigationError(error instanceof ApiError&&error.status===404?"Tin nhắn này đã bị xóa hoặc không thuộc phòng":"Chưa mở được tin nhắn. Vui lòng thử lại");}
@@ -130,7 +153,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     const box=scrollBox.current,el=document.getElementById(`comment-${navigation.commentId}`);
     if(!box||!el||mobile&&sidebarOpen)return;
     let timer:ReturnType<typeof setTimeout>|undefined,frame=0,observer:ResizeObserver|undefined;
-    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;anchor.current={id:el.id,offset:el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop};setNavigation(null);setNavigationLoading(false);};
+    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;anchor.current={id:el.id,offset:el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop};setNavigation(null);setNavigationLoading(false);};
     // Two frames allow viewport/composer CSS to settle after a mobile dialog closes.
     frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
       if(navigation.sequence!==navigationSequence.current)return;
@@ -149,7 +172,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       timer=setTimeout(finish,700);
     });});
     return()=>{cancelAnimationFrame(frame);clearTimeout(timer);observer?.disconnect();};
-  },[navigation,thread,expanded,mobile,sidebarOpen]);
+  },[navigation,thread,expanded,mobile,sidebarOpen,sort]);
   useEffect(()=>{const reveal=(event:Event)=>{const detail=(event as CustomEvent<{ideaId:string;commentId:string}>).detail;if(detail?.ideaId===id)void revealCommentRef.current(detail.commentId);};window.addEventListener("ideahub:reveal-comment",reveal);return()=>window.removeEventListener("ideahub:reveal-comment",reveal);},[id]);
   useEffect(()=>{const composer=scrollBox.current?.parentElement?.querySelector<HTMLElement>(".ih-thread-composer");if(!composer)return;const update=()=>composer.parentElement?.style.setProperty("--composer-height",`${composer.getBoundingClientRect().height}px`);const observer=new ResizeObserver(update);observer.observe(composer);update();return()=>observer.disconnect();},[user?.id,!!idea.data]);
   const deepLinkDone=useRef("");
