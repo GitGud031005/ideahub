@@ -724,3 +724,5 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 .ih-thread-comments{overflow-anchor:none;scroll-padding-block:16px}
 .ih-comment-located{animation:ih-located 2.4s ease-out;outline:none;border-radius:6px}
 @keyframes ih-located{0%,40%{background:#eeeee5;box-shadow:0 0 0 8px #eeeee5}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
+
+.ih-message-navigation-status{position:absolute;z-index:16;top:12px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);padding:8px 14px;border:1px solid #e0e0d7;border-radius:20px;background:#fffffff5;box-shadow:0 2px 12px #0000000a;font-size:11px;color:#737365;pointer-events:none}

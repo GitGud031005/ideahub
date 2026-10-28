@@ -32,6 +32,9 @@ for(const kind of ["memory","postgres"] as const)test(`${kind}: every message re
   const before=await repo.notificationVersion(a.id);await repo.editComment(room.id,root.id,b,{text:"Edited without new message",revision:0});assert.equal(await repo.notificationVersion(a.id),before);
   const nested=await repo.createComment(room.id,c,{text:"Nested target",parentId:replies[0].id});
   const context=await repo.getCommentContext(room.id,nested.id);assert.deepEqual(new Set(context.map(c=>c.id)),new Set([nested.id,replies[0].id,root.id]));
+  const late={id:"late-member",name:"Late",initial:"L"};await repo.joinIdea(room.id,late.id,late);
+  await repo.createComment(room.id,b,{clientId:"burst-root",text:"Edited without new message"});
+  assert.equal((await repo.listNotifications(late.id,false,0)).items.length,0,"Retrying an existing send never backfills a new member");
   const wrongRoom=await repo.createIdea(a,{title:"Other room",description:"Fixture",tags:[]});await assert.rejects(repo.getCommentContext(wrongRoom.id,nested.id),{status:404});
  }finally{await db?.close();}
 });
@@ -42,6 +45,7 @@ test("inbox SSE is scoped to the authenticated account and missing context retur
  assert.equal((await call("notifications/stream","")).status,401);
  const stream=await call("notifications/stream"),reader=stream.body!.getReader();assert.equal(stream.headers.get("content-type"),"text/event-stream; charset=utf-8");assert.match(new TextDecoder().decode((await reader.read()).value),/retry/);assert.match(new TextDecoder().decode((await reader.read()).value),/notifications-changed/);await reader.cancel();
  const room=await repo.createIdea(user,{title:"API",description:"Fixture",tags:[]});assert.equal((await call(`ideas/${room.id}/comments/missing/context`)).status,404);
+ const target=await repo.createComment(room.id,user,{text:"Open me"});const context=await call(`ideas/${room.id}/comments/${target.id}/context`);assert.equal(context.status,200);assert.equal((await context.json())[0].id,target.id);
 });
 test("push drains over 20 recipients and does not suppress jobs merely because the inbox was read",async()=>{
  const jobs=Array.from({length:25},(_,i)=>({id:String(i),ideaId:"room",userId:"other",commentId:String(i),readAt:new Date().toISOString()}));

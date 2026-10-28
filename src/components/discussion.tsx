@@ -29,7 +29,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const [sort, setSort] = useState<CommentSort>("new"), [target, setTarget] = useState<string | null>(null), [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const reveal = useRef<HTMLButtonElement>(null), close = useRef<HTMLButtonElement>(null), panel = useRef<HTMLElement>(null), joinAttempted = useRef(false);
   const [mobile, setMobile] = useState(false),[selectedImage,setSelectedImage]=useState<Attachment|null>(null);
-  const [searchOpen,setSearchOpen]=useState(false),[navigationError,setNavigationError]=useState("");
+  const [searchOpen,setSearchOpen]=useState(false),[navigationError,setNavigationError]=useState(""),[navigationLoading,setNavigationLoading]=useState(false);
   const [navigation,setNavigation]=useState<{commentId:string;sequence:number;instant:boolean}|null>(null);
   const navigationSequence=useRef(0),positioning=useRef(false),scrollFrame=useRef(0),failedTarget=useRef("");
   const anchor=useRef<{id:string;top:number}|null>(null),searchButton=useRef<HTMLButtonElement>(null);
@@ -95,7 +95,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   function toggleSidebar(open: boolean) { setSearchOpen(false);setSidebarOpen(open); requestAnimationFrame(() => (open ? close : reveal).current?.focus({ preventScroll: true })); }
   async function revealComment(commentId:string,instant=false){
     const sequence=++navigationSequence.current;positioning.current=true;followLatest.current=false;anchor.current=null;
-    failedTarget.current=commentId;setNavigationError("");setNavigation(null);
+    failedTarget.current=commentId;setNavigationError("");setNavigationLoading(true);setNavigation(null);
     if(window.matchMedia("(max-width: 760px)").matches)setSidebarOpen(false);
     try{
       let snapshot=comments.data??[];
@@ -111,31 +111,40 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));let parent=byId.get(commentId)?.parentId;
         while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=byId.get(parent)?.parentId;}return next;});
       setNavigation({commentId,sequence,instant});
-    }catch(error){if(sequence!==navigationSequence.current)return;positioning.current=false;setNavigationError(error instanceof ApiError&&error.status===404?"Tin nhắn này đã bị xóa hoặc không thuộc phòng":"Chưa mở được tin nhắn. Vui lòng thử lại");}
+    }catch(error){if(sequence!==navigationSequence.current)return;positioning.current=false;setNavigationLoading(false);setNavigationError(error instanceof ApiError&&error.status===404?"Tin nhắn này đã bị xóa hoặc không thuộc phòng":"Chưa mở được tin nhắn. Vui lòng thử lại");}
   }
   const revealCommentRef=useRef(revealComment);revealCommentRef.current=revealComment;
   useLayoutEffect(()=>{
     if(!navigation)return;
     const box=scrollBox.current,el=document.getElementById(`comment-${navigation.commentId}`);
     if(!box||!el||mobile&&sidebarOpen)return;
-    let timer:ReturnType<typeof setTimeout>|undefined;
-    const frame=requestAnimationFrame(()=>{
+    let timer:ReturnType<typeof setTimeout>|undefined,frame=0,observer:ResizeObserver|undefined;
+    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;anchor.current={id:el.id,top:el.getBoundingClientRect().top};setNavigation(null);setNavigationLoading(false);};
+    // Two frames allow viewport/composer CSS to settle after a mobile dialog closes.
+    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
       if(navigation.sequence!==navigationSequence.current)return;
-      const bounds=box.getBoundingClientRect(),target=el.getBoundingClientRect();
-      const top=Math.max(0,Math.min(box.scrollHeight-box.clientHeight,box.scrollTop+target.top-bounds.top-Math.max(16,(box.clientHeight-Math.min(target.height,box.clientHeight-32))/2)));
-      const smooth=!navigation.instant&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&Math.abs(top-box.scrollTop)<box.clientHeight;
-      box.scrollTo({top,behavior:smooth?"smooth":"instant"});el.focus({preventScroll:true});
+      const place=(animate:boolean)=>{
+        if(navigation.sequence!==navigationSequence.current)return;
+        const bounds=box.getBoundingClientRect(),target=el.getBoundingClientRect();
+        const top=Math.max(0,Math.min(box.scrollHeight-box.clientHeight,box.scrollTop+target.top-bounds.top-16));
+        const smooth=animate&&!navigation.instant&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches&&Math.abs(top-box.scrollTop)<box.clientHeight;
+        box.scrollTo({top,behavior:smooth?"smooth":"instant"});
+      };
+      place(true);el.focus({preventScroll:true});
       el.classList.remove("ih-comment-located");void el.offsetWidth;el.classList.add("ih-comment-located");
-      const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;anchor.current={id:el.id,top:el.getBoundingClientRect().top};setNavigation(null);};
-      if(smooth)timer=setTimeout(finish,500);else finish();
-    });
-    return()=>{cancelAnimationFrame(frame);clearTimeout(timer);};
+      let geometry=`${box.clientHeight}:${el.offsetHeight}:${box.scrollHeight}`;
+      observer=new ResizeObserver(()=>{const next=`${box.clientHeight}:${el.offsetHeight}:${box.scrollHeight}`;if(next===geometry)return;geometry=next;place(false);clearTimeout(timer);timer=setTimeout(finish,700);});
+      observer.observe(box);observer.observe(el);const list=box.querySelector(".ih-comment-list");if(list)observer.observe(list);
+      timer=setTimeout(finish,700);
+    });});
+    return()=>{cancelAnimationFrame(frame);clearTimeout(timer);observer?.disconnect();};
   },[navigation,thread,expanded,mobile,sidebarOpen]);
   useEffect(()=>{const reveal=(event:Event)=>{const detail=(event as CustomEvent<{ideaId:string;commentId:string}>).detail;if(detail?.ideaId===id)void revealCommentRef.current(detail.commentId);};window.addEventListener("ideahub:reveal-comment",reveal);return()=>window.removeEventListener("ideahub:reveal-comment",reveal);},[id]);
   useEffect(()=>{const composer=scrollBox.current?.parentElement?.querySelector<HTMLElement>(".ih-thread-composer");if(!composer)return;const update=()=>composer.parentElement?.style.setProperty("--composer-height",`${composer.getBoundingClientRect().height}px`);const observer=new ResizeObserver(update);observer.observe(composer);update();return()=>observer.disconnect();},[user?.id,!!idea.data]);
   const deepLinkDone=useRef("");
   useEffect(()=>{if(!requestedComment){deepLinkDone.current="";return;}const key=`${id}:${user?.id}:${requestedComment}`;if(!user||!comments.data||deepLinkDone.current===key)return;deepLinkDone.current=key;void revealCommentRef.current(requestedComment,true);},[id,user?.id,requestedComment,comments.data]);
   useEffect(()=>{const handler=(event:MessageEvent)=>{if(event.data?.type!=="CHECK_COMMENT")return;const el=document.getElementById(`comment-${event.data.commentId}`),box=scrollBox.current,a=el?.getBoundingClientRect(),b=box?.getBoundingClientRect();event.ports[0]?.postMessage({visible:!!user&&user.id===event.data.userId&&!document.hidden&&document.hasFocus()&&!!el?.getClientRects().length&&!!a&&!!b&&a.bottom>b.top&&a.top<b.bottom&&!(mobile&&sidebarOpen),userId:user?.id??null});};navigator.serviceWorker?.addEventListener("message",handler);return()=>navigator.serviceWorker?.removeEventListener("message",handler);},[user,mobile,sidebarOpen]);
+  function cancelNavigation(){if(!positioning.current)return;navigationSequence.current++;positioning.current=false;setNavigation(null);setNavigationLoading(false);}
   function recordScroll(){
     if(positioning.current||scrollFrame.current)return;
     scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=0;const box=scrollBox.current;if(!box||positioning.current)return;
@@ -143,12 +152,12 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const top=box.getBoundingClientRect().top;const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};
     });
   }
-  useEffect(()=>()=>cancelAnimationFrame(scrollFrame.current),[]);
+  useEffect(()=>()=>{cancelAnimationFrame(scrollFrame.current);navigationSequence.current++;},[]);
   const error = session.error || idea.error;
   return <main className="ih-discussion" aria-labelledby="discussion-title"><section className={`ih-discussion-page${!sidebarOpen ? " ih-aside-collapsed" : ""}`}>
     <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
     <button type="button" className="ih-aside-scrim" hidden={!sidebarOpen} aria-label="Đóng thanh thông tin ý tưởng" onClick={() => toggleSidebar(false)}/>
-    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}><section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" onScroll={recordScroll}>
+    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}>{navigationLoading&&<p className="ih-message-navigation-status" role="status">Đang mở tin nhắn…</p>}<section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" aria-busy={navigationLoading} onPointerDown={cancelNavigation} onWheel={cancelNavigation} onKeyDown={event=>{if(["ArrowUp","ArrowDown","PageUp","PageDown","Home","End"].includes(event.key))cancelNavigation();}} onScroll={recordScroll}>
       {error ? <ErrorState error={error} retry={() => { session.refetch(); idea.refetch(); }}/> : !idea.data ? <LoadingState label="Đang mở thảo luận..."/> : <>
         {navigationError&&<p className="ih-inline-error" role="alert">{navigationError}<button className="ih-reply-button" onClick={()=>void revealComment(failedTarget.current)}>Thử lại</button></p>}{mute.error&&<p className="ih-inline-error" role="alert">{mute.error.message}</p>}{pin.error&&<p className="ih-inline-error" role="alert">{pin.error.message}</p>}
         {join.error && <div className="ih-inline-error" role="alert">{join.error.message}<button className="ih-reply-button" onClick={() => join.mutate()} disabled={join.isPending}>Thử tham gia lại</button></div>}

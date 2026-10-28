@@ -290,13 +290,13 @@ export class PostgresIdeaRepository implements IdeaRepository {
         WHERE idea_id=$1 AND owner_id=$2 AND id=ANY($3::text[]) AND (comment_id IS NULL OR comment_id=$4) FOR UPDATE`,[ideaId,user.id,ids,id])).rows:[];
       if(receipts.length!==ids.length)throw new AppError(422,"INVALID_ATTACHMENT","Tệp không thuộc bạn hoặc đã được gửi");
       const attachments=ids.map(id=>{const a=receipts.find(a=>a.id===id)!;return {id:a.id,name:a.name,mime:a.mime,size:a.size,kind:a.kind,url:`/api/ideas/${encodeURIComponent(ideaId)}/attachments/${encodeURIComponent(a.id)}`};});
-      await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body,attachments,mentions,search_text) VALUES ($1, $2, $3, $4, $5,$6::jsonb,$7::jsonb,$8) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text,JSON.stringify(attachments),JSON.stringify(mentions),normalize(input.text)]);
+      const inserted=await db.query("INSERT INTO public.comments (id, idea_id, parent_id, author_id, body,attachments,mentions,search_text) VALUES ($1, $2, $3, $4, $5,$6::jsonb,$7::jsonb,$8) ON CONFLICT (id) DO NOTHING", [id, ideaId, parentId, user.id, input.text,JSON.stringify(attachments),JSON.stringify(mentions),normalize(input.text)]);
       const existing=(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`,[id])).rows[0];
       if(!existing||existing.idea_id!==ideaId||existing.author_id!==user.id||existing.parent_id!==parentId||existing.body!==input.text||!sameMentions(existing.mentions,mentions)||JSON.stringify(existing.attachments.map(a=>a.id))!==JSON.stringify(ids))throw new AppError(409,"COMMENT_CONFLICT","Mã gửi bình luận đã được dùng");
       if(ids.length)await db.query("UPDATE public.discussion_attachments SET comment_id=$1 WHERE id=ANY($2::text[])",[id,ids]);
       await db.query("INSERT INTO public.memberships (idea_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [ideaId, user.id]);
       const result = await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id = $1`, [id]);
-      const saved=comment(result.rows[0]);const parent=parentId?(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id=$1`,[parentId])).rows[0]:undefined;await this.notify(db,saved,parent?comment(parent):undefined);return saved;
+      const saved=comment(result.rows[0]);const parent=parentId?(await db.query<CommentRow>(`${COMMENT_SELECT} WHERE c.id=$1`,[parentId])).rows[0]:undefined;if(inserted.rowCount)await this.notify(db,saved,parent?comment(parent):undefined);return saved;
     });
   }
 }

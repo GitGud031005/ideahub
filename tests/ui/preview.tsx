@@ -82,11 +82,13 @@ window.addEventListener("message",event=>{if(event.data!=="QA_KEYBOARD_PAN")retu
 const sources=new Set<EventTarget>();let qaVersion=0;
 window.addEventListener("message",event=>{
  if(!["QA_ADD_COMMENT","QA_ADD_REPLY","QA_ADD_SELF","QA_ADD_BURST"].includes(event.data))return;
+ setTimeout(()=>{
  for(let i=0;i<(event.data==="QA_ADD_BURST"?4:1);i++){
   const own=event.data==="QA_ADD_SELF",comment={...comments[0],id:crypto.randomUUID(),author:own?person:roomMembers[1],parentId:event.data==="QA_ADD_REPLY"?"qa-comment-12":null,text:`Tin mới ${++qaVersion}: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận`,attachments:[],pinnedAt:null,createdAt:new Date().toISOString()};comments.push(comment);
   if(!own)notifications.unshift({id:crypto.randomUUID(),userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:comment.id,actor:comment.author,kind:"message",excerpt:comment.text,createdAt:comment.createdAt,readAt:null});
  }
  for(const source of sources){source.dispatchEvent(new MessageEvent("comments-changed"));source.dispatchEvent(new MessageEvent("notifications-changed"));}
+ },700);
 });
 const attempts=new Map<string,number>();let postNumber=0,pushAttempts=0;
 const recap: Recap = { id:"qa-recap",ideaId:ideas[0].id,kind:"daily",periodStart:"2026-10-16",periodEnd:"2026-10-17",fileName:"2026-10-16.md",source:"gemini",sourceCount:13,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),model:"gemini-3.8-flash",content:{keyIdeas:[{text:"Cùng xây một pipeline nhỏ, có thể kiểm tra chất lượng dữ liệu trước khi mở rộng phạm vi",commentIds:[comments[0].id]}],decisions:[{text:"Bắt đầu với dữ liệu sách, lưu PostgreSQL và kiểm tra URL trùng",commentIds:[comments[1].id]}],nextSteps:[{text:"Nhóm hoàn thiện parser, viết README và kiểm thử phân trang",commentIds:[comments[2].id]}],openQuestions:[{text:"Cần xác nhận điều kiện dừng ở trang cuối",commentIds:[comments[3].id]}]}};

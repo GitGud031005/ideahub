@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
-import { watchComments } from "../src/lib/comment-live";
+import { watchComments, watchNotifications } from "../src/lib/comment-live";
 
 function browser(t: TestContext) {
   const page = Object.assign(new EventTarget(), { hidden: false });
@@ -70,4 +70,12 @@ test("unsupported browsers and initially hidden pages keep HTTP fallback availab
   const unsupported = watchComments("1", callbacks);
   assert.equal(Source.instances.length, 0); assert.equal(connected, false);
   unsupported();
+});
+
+test("inbox connects independently of the current room and reconnects after returning to the app",t=>{
+ const {page,Source}=browser(t);let changed=0,expired=0;const stop=watchNotifications({changed:()=>changed++,connected:()=>{},expired:()=>expired++});
+ assert.equal(Source.instances[0].url,"/api/notifications/stream");Source.instances[0].dispatchEvent(new Event("notifications-changed"));assert.equal(changed,1);
+ page.hidden=true;page.dispatchEvent(new Event("visibilitychange"));assert(Source.instances[0].closed);
+ page.hidden=false;page.dispatchEvent(new Event("visibilitychange"));assert.equal(Source.instances.length,2);
+ Source.instances[1].dispatchEvent(new Event("auth-required"));assert.equal(expired,1);assert(Source.instances[1].closed);stop();
 });
