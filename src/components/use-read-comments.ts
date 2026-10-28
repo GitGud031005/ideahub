@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
 import type { Comment } from "@/lib/domain";
+import { roomCommentVisible } from "@/lib/room-attention";
 import { visibleCommentIds } from "@/lib/comment-unread";
 
 type ReadState = { unreadIds: string[] };
@@ -32,15 +33,18 @@ export function useReadComments(ideaId:string,userId:string|undefined,joined:boo
     if(!ids.length)return;
     function attempt(){
       clearTimeout(timer);
-      if(document.hidden||!document.hasFocus())return;
+      if(document.hidden)return;
       timer=setTimeout(async()=>{
-        if(disposed||document.hidden||!document.hasFocus())return;
+        if(disposed||document.hidden)return;
+        const reading=ids.filter(id=>roomCommentVisible(ideaId,id,userId!));
+        if(!reading.length)return;
         try{
-          await api(`/ideas/${encodeURIComponent(ideaId)}/read`,{method:"POST",body:JSON.stringify({commentIds:ids}),signal:controller.signal});
+          await api(`/ideas/${encodeURIComponent(ideaId)}/read`,{method:"POST",body:JSON.stringify({commentIds:reading}),signal:controller.signal});
           if(disposed)return;
-          setReceipts(current=>({scope,ids:new Set([...(current.scope===scope?current.ids:[]),...ids])}));
-          client.setQueryData<ReadState>(["unread-comments",ideaId,userId],current=>current?{unreadIds:current.unreadIds.filter(id=>!ids.includes(id))}:current);
+          setReceipts(current=>({scope,ids:new Set([...(current.scope===scope?current.ids:[]),...reading])}));
+          client.setQueryData<ReadState>(["unread-comments",ideaId,userId],current=>current?{unreadIds:current.unreadIds.filter(id=>!reading.includes(id))}:current);
           void client.invalidateQueries({queryKey:["unread",userId]});
+          void client.invalidateQueries({queryKey:["notifications",userId]});
         }catch{if(!disposed)timer=setTimeout(attempt,5000);}
       },600);
     }

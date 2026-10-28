@@ -108,6 +108,7 @@ export class PostgresIdeaRepository implements IdeaRepository {
   async readNotifications(userId:string,ids:string[]|"all"){await this.pool.query("UPDATE ideahub_private.notifications SET read_at=COALESCE(read_at,now()) WHERE user_id=$1 AND ($2::boolean OR id=ANY($3::text[]))",[userId,ids==="all",ids==="all"?[]:ids]);}
   async roomMuted(id:string,userId:string){const r=await this.pool.query<{notifications_muted:boolean}>("SELECT notifications_muted FROM public.memberships WHERE idea_id=$1 AND user_id=$2",[id,userId]);return r.rows[0]?.notifications_muted??false;}
   async muteRoom(id:string,userId:string,muted:boolean){if(!(await this.pool.query("UPDATE public.memberships SET notifications_muted=$3 WHERE idea_id=$1 AND user_id=$2",[id,userId,muted])).rowCount)throw new AppError(403,"NOT_JOINED","Tham gia ý tưởng để đổi thông báo");}
+  async pushUnread(id:string,userId:string){return !!(await this.pool.query("SELECT 1 FROM ideahub_private.notifications WHERE id=$1 AND user_id=$2 AND read_at IS NULL AND push_state='pending'",[id,userId])).rowCount;}
   async pushKeys(){const ec=createECDH("prime256v1");ec.generateKeys();await this.pool.query("INSERT INTO ideahub_private.push_keys(singleton,public_key,private_key) VALUES(true,$1,$2) ON CONFLICT DO NOTHING",[ec.getPublicKey().toString("base64url"),ec.getPrivateKey().toString("base64url")]);const row=(await this.pool.query<{public_key:string;private_key:string}>("SELECT public_key,private_key FROM ideahub_private.push_keys WHERE singleton=true")).rows[0];return {publicKey:row.public_key,privateKey:row.private_key};}
   async savePush(userId:string,s:PushRegistration){await this.pool.query(`INSERT INTO ideahub_private.push_subscriptions(endpoint,user_id,p256dh,auth) VALUES($1,$2,$3,$4) ON CONFLICT(endpoint) DO UPDATE SET user_id=$2,p256dh=$3,auth=$4`,[s.endpoint,userId,s.keys.p256dh,s.keys.auth]);}
   async removePush(userId:string,endpoint:string){await this.pool.query("DELETE FROM ideahub_private.push_subscriptions WHERE user_id=$1 AND endpoint=$2",[userId,endpoint]);}
@@ -266,6 +267,7 @@ export class PostgresIdeaRepository implements IdeaRepository {
       SELECT $1,$2,c.id FROM public.comments c JOIN public.memberships m ON m.idea_id=c.idea_id AND m.user_id=$2
       WHERE c.idea_id=$1 AND c.id=ANY($3::text[]) AND c.author_id<>$2 AND c.read_sequence>m.last_read_sequence
       ON CONFLICT DO NOTHING`,[ideaId,userId,ids]);
+    await db.query("UPDATE ideahub_private.notifications SET read_at=now() WHERE idea_id=$1 AND user_id=$2 AND comment_id=ANY($3::text[]) AND read_at IS NULL",[ideaId,userId,ids]);
   });}
   async createComment(ideaId: string, user: Author, input: CreateCommentInput): Promise<Comment> {
     return this.transaction(async db => {

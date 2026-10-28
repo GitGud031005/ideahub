@@ -721,8 +721,16 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 }
 
 /* Only the message pane owns chat scrolling; manual anchors avoid native double correction. */
-.ih-thread-comments{overflow-anchor:none;scroll-padding-block:16px}
+.ih-thread-comments{overflow-anchor:none;scroll-padding-block:16px;-webkit-overflow-scrolling:touch}
 .ih-comment-located{animation:ih-located 2.4s ease-out;outline:none;border-radius:6px}
 @keyframes ih-located{0%,40%{background:#eeeee5;box-shadow:0 0 0 8px #eeeee5}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
 
 .ih-message-navigation-status{position:absolute;z-index:16;top:12px;left:50%;transform:translateX(-50%);max-width:calc(100% - 24px);padding:8px 14px;border:1px solid #e0e0d7;border-radius:20px;background:#fffffff5;box-shadow:0 2px 12px #0000000a;font-size:11px;color:#737365;pointer-events:none}
+
+/* Only the active inline editor occupies the mobile keyboard's reading area. Keep the main draft mounted. */
+@media(max-width:760px),(max-width:1000px) and (max-height:500px){
+ .ih-thread-main:has(.ih-reply-form)>.ih-thread-composer{display:none}
+ .ih-thread-main:has(.ih-reply-form:focus-within)>.ih-new-messages{display:none}
+ .ih-reply-form textarea{max-height:min(160px,calc(var(--ih-viewport-height,100dvh)*.3))}
+ .ih-reply-form{scroll-margin-block:12px}
+}

@@ -22,6 +22,8 @@ import { SharedFiles } from "./shared-files";
 import { AttachmentViewer } from "./attachment-view";
 import {RoomSearch} from "./room-search";
 import {NotificationBell} from "./notification-bell";
+import { RoomScrollActivity, restoreRoomScroll, type RoomScrollAnchor } from "@/lib/room-scroll";
+import {extendOpenReplies} from "@/lib/live-room-feed";
 import {useRoomFeed} from "./use-room-feed";
 
 export function Discussion({ id,requestedComment }: { id: string;requestedComment?:string }) {
@@ -31,8 +33,8 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const [mobile, setMobile] = useState(false),[selectedImage,setSelectedImage]=useState<Attachment|null>(null);
   const [searchOpen,setSearchOpen]=useState(false),[navigationError,setNavigationError]=useState(""),[navigationLoading,setNavigationLoading]=useState(false);
   const [navigation,setNavigation]=useState<{commentId:string;sequence:number;instant:boolean}|null>(null);
-  const navigationSequence=useRef(0),positioning=useRef(false),scrollFrame=useRef(0),failedTarget=useRef("");
-  const anchor=useRef<{id:string;top:number}|null>(null),searchButton=useRef<HTMLButtonElement>(null);
+  const navigationSequence=useRef(0),positioning=useRef(false),scrollIdle=useRef<ReturnType<typeof setTimeout>|undefined>(undefined),scrollActivity=useRef(new RoomScrollActivity()),failedTarget=useRef("");
+  const anchor=useRef<RoomScrollAnchor|null>(null),searchButton=useRef<HTMLButtonElement>(null);
   const scrollBox = useRef<HTMLElement>(null), followLatest = useRef(true), previousSort = useRef(sort);
   const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
   const liveInterval = useLiveComments(id, user?.id, !!idea.data);
@@ -40,9 +42,15 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const members=useQuery({queryKey:["room-members",id,user?.id],queryFn:({signal})=>api<Author[]>(`/ideas/${encodeURIComponent(id)}/members`,{signal}),enabled:!!user&&!!idea.data,refetchInterval:30000});
   const settings=useQuery({queryKey:["room-notification-settings",id,user?.id],queryFn:({signal})=>api<{muted:boolean}>(`/ideas/${encodeURIComponent(id)}/notification-settings`,{signal}),enabled:!!user&&!!idea.data?.joined});
   const mute=useMutation({mutationFn:(muted:boolean)=>api<{muted:boolean}>(`/ideas/${encodeURIComponent(id)}/notification-settings`,{method:"POST",body:JSON.stringify({muted})}),onSuccess:result=>{client.setQueryData(["room-notification-settings",id,user?.id],result);client.setQueryData<Idea>(["idea",id],current=>current?{...current,notificationsMuted:result.muted}:current);void client.invalidateQueries({queryKey:["ideas"]});}});
-  const feed=useRoomFeed(comments.data,user?.id,followLatest);
+  const knownComments=useRef(new Set<string>());
+  useLayoutEffect(()=>{
+    if(!comments.data)return;
+    const previous=knownComments.current;knownComments.current=new Set(comments.data.map(c=>c.id));
+    if(previous.size)setExpanded(current=>extendOpenReplies(previous,comments.data!,current) as Set<string>);
+  },[comments.data]);
+  const feed=useRoomFeed(comments.data,user?.id,followLatest,expanded);
   async function editComment(commentId:string,text:string,mentions:Mention[],revision:number){const updated=await api<Comment>(`/ideas/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/edit`,{method:"POST",body:JSON.stringify({text,mentions,revision})});client.setQueryData<Comment[]>(["comments",id,user?.id],current=>current?.map(c=>c.id===commentId?updated:c));void client.invalidateQueries({queryKey:["room-search",id]});void client.invalidateQueries({queryKey:["notifications"]});return updated;}
-  const unreadComments=useReadComments(id,user?.id,!!idea.data?.joined,comments.data,expanded,!mobile||!sidebarOpen);
+  const unreadComments=useReadComments(id,user?.id,!!idea.data?.joined,feed.items,expanded,!mobile||!sidebarOpen);
   const pin=useMutation({
     mutationFn:({commentId,pinned}:{commentId:string;pinned:boolean})=>api(`/ideas/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}/pin`,{method:"POST",body:JSON.stringify({pinned})}),
     onSuccess:(_result,{commentId,pinned})=>{client.setQueryData<Comment[]>(["comments",id,user?.id],current=>current?.map(c=>c.id===commentId?{...c,pinnedAt:pinned?new Date().toISOString():null}:c));void client.invalidateQueries({queryKey:["comments",id,user?.id]});},
@@ -85,7 +93,17 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
       return;
     }
-    if(box&&!positioning.current){if(sort==="old"&&followLatest.current)box.scrollTop=box.scrollHeight;else if(!followLatest.current&&anchor.current){const el=document.getElementById(anchor.current.id);if(el)box.scrollTop+=el.getBoundingClientRect().top-anchor.current.top;}}
+    if(box&&!positioning.current){
+      const moving=scrollActivity.current.active(performance.now());
+      // Coordinates within the content exclude the user's own scroll distance.
+      if(moving){anchor.current=null;return;}
+      const el=anchor.current?document.getElementById(anchor.current.id):null;
+      const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
+      const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      // Rebase after a content change so later updates cannot apply the same delta twice.
+      if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
+    }
   }, [thread, sort]);
   function submit(text:string,parentId:string|null=null,files:File[]=[],mentions:Mention[]=[]){
     const entry=outbox.enqueue(text,parentId,files,mentions);if(!entry)return;
@@ -108,7 +126,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       }
       if(sequence!==navigationSequence.current)return;
       feed.release(snapshot);
-      setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));let parent=byId.get(commentId)?.parentId;
+      setExpanded(current=>{const next=new Set(current),seen=new Set<string>(),byId=new Map(snapshot.map(c=>[c.id,c]));next.add(commentId);let parent=byId.get(commentId)?.parentId;
         while(parent&&!seen.has(parent)){seen.add(parent);next.add(parent);parent=byId.get(parent)?.parentId;}return next;});
       setNavigation({commentId,sequence,instant});
     }catch(error){if(sequence!==navigationSequence.current)return;positioning.current=false;setNavigationLoading(false);setNavigationError(error instanceof ApiError&&error.status===404?"Tin nhắn này đã bị xóa hoặc không thuộc phòng":"Chưa mở được tin nhắn. Vui lòng thử lại");}
@@ -119,7 +137,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     const box=scrollBox.current,el=document.getElementById(`comment-${navigation.commentId}`);
     if(!box||!el||mobile&&sidebarOpen)return;
     let timer:ReturnType<typeof setTimeout>|undefined,frame=0,observer:ResizeObserver|undefined;
-    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;anchor.current={id:el.id,top:el.getBoundingClientRect().top};setNavigation(null);setNavigationLoading(false);};
+    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;anchor.current={id:el.id,offset:el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop};setNavigation(null);setNavigationLoading(false);};
     // Two frames allow viewport/composer CSS to settle after a mobile dialog closes.
     frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
       if(navigation.sequence!==navigationSequence.current)return;
@@ -138,26 +156,39 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       timer=setTimeout(finish,700);
     });});
     return()=>{cancelAnimationFrame(frame);clearTimeout(timer);observer?.disconnect();};
-  },[navigation,thread,expanded,mobile,sidebarOpen]);
+  },[navigation,thread,expanded,mobile,sidebarOpen,sort]);
   useEffect(()=>{const reveal=(event:Event)=>{const detail=(event as CustomEvent<{ideaId:string;commentId:string}>).detail;if(detail?.ideaId===id)void revealCommentRef.current(detail.commentId);};window.addEventListener("ideahub:reveal-comment",reveal);return()=>window.removeEventListener("ideahub:reveal-comment",reveal);},[id]);
   useEffect(()=>{const composer=scrollBox.current?.parentElement?.querySelector<HTMLElement>(".ih-thread-composer");if(!composer)return;const update=()=>composer.parentElement?.style.setProperty("--composer-height",`${composer.getBoundingClientRect().height}px`);const observer=new ResizeObserver(update);observer.observe(composer);update();return()=>observer.disconnect();},[user?.id,!!idea.data]);
   const deepLinkDone=useRef("");
   useEffect(()=>{if(!requestedComment){deepLinkDone.current="";return;}const key=`${id}:${user?.id}:${requestedComment}`;if(!user||!comments.data||deepLinkDone.current===key)return;deepLinkDone.current=key;void revealCommentRef.current(requestedComment,true);},[id,user?.id,requestedComment,comments.data]);
   useEffect(()=>{const handler=(event:MessageEvent)=>{if(event.data?.type!=="CHECK_COMMENT")return;const el=document.getElementById(`comment-${event.data.commentId}`),box=scrollBox.current,a=el?.getBoundingClientRect(),b=box?.getBoundingClientRect();event.ports[0]?.postMessage({visible:!!user&&user.id===event.data.userId&&!document.hidden&&document.hasFocus()&&!!el?.getClientRects().length&&!!a&&!!b&&a.bottom>b.top&&a.top<b.bottom&&!(mobile&&sidebarOpen),userId:user?.id??null});};navigator.serviceWorker?.addEventListener("message",handler);return()=>navigator.serviceWorker?.removeEventListener("message",handler);},[user,mobile,sidebarOpen]);
   function cancelNavigation(){if(!positioning.current)return;navigationSequence.current++;positioning.current=false;setNavigation(null);setNavigationLoading(false);}
-  function recordScroll(){
-    if(positioning.current||scrollFrame.current)return;
-    scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=0;const box=scrollBox.current;if(!box||positioning.current)return;
-      followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;
-      const top=box.getBoundingClientRect().top;const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);if(el)anchor.current={id:el.id,top:el.getBoundingClientRect().top};
-    });
+  function captureScrollAnchor(){
+    const box=scrollBox.current;
+    if(!box||positioning.current||scrollActivity.current.active(performance.now()))return;
+    const top=box.getBoundingClientRect().top;
+    const el=[...box.querySelectorAll<HTMLElement>("article.ih-comment")].find(el=>el.getBoundingClientRect().bottom>top+5);
+    anchor.current=el?{id:el.id,offset:el.getBoundingClientRect().top-top+box.scrollTop}:null;
   }
-  useEffect(()=>()=>{cancelAnimationFrame(scrollFrame.current);navigationSequence.current++;},[]);
+  function recordScroll(){
+    const box=scrollBox.current;if(!box||positioning.current)return;
+    scrollActivity.current.scroll(performance.now());
+    followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;
+    // Do not measure every article on every animation frame. Capture once at rest.
+    clearTimeout(scrollIdle.current);scrollIdle.current=setTimeout(captureScrollAnchor,220);
+  }
+  useEffect(()=>{
+    const box=scrollBox.current;if(!box)return;
+    const start=()=>{scrollActivity.current.touchStart(performance.now());clearTimeout(scrollIdle.current);};
+    const end=()=>{scrollActivity.current.touchEnd(performance.now());clearTimeout(scrollIdle.current);scrollIdle.current=setTimeout(captureScrollAnchor,220);};
+    box.addEventListener("touchstart",start,{passive:true});box.addEventListener("touchend",end,{passive:true});box.addEventListener("touchcancel",end,{passive:true});
+    return()=>{box.removeEventListener("touchstart",start);box.removeEventListener("touchend",end);box.removeEventListener("touchcancel",end);clearTimeout(scrollIdle.current);navigationSequence.current++;};
+  },[]);
   const error = session.error || idea.error;
   return <main className="ih-discussion" aria-labelledby="discussion-title"><section className={`ih-discussion-page${!sidebarOpen ? " ih-aside-collapsed" : ""}`}>
     <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
     <button type="button" className="ih-aside-scrim" hidden={!sidebarOpen} aria-label="Đóng thanh thông tin ý tưởng" onClick={() => toggleSidebar(false)}/>
-    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}>{navigationLoading&&<p className="ih-message-navigation-status" role="status">Đang mở tin nhắn…</p>}<section ref={scrollBox} className="ih-thread-comments" aria-label="Nội dung thảo luận" aria-busy={navigationLoading} onPointerDown={cancelNavigation} onWheel={cancelNavigation} onKeyDown={event=>{if(["ArrowUp","ArrowDown","PageUp","PageDown","Home","End"].includes(event.key))cancelNavigation();}} onScroll={recordScroll}>
+    <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}>{navigationLoading&&<p className="ih-message-navigation-status" role="status">Đang mở tin nhắn…</p>}<section ref={scrollBox} className="ih-thread-comments" data-idea-id={id} data-user-id={user?.id} aria-label="Nội dung thảo luận" aria-busy={navigationLoading} onPointerDown={cancelNavigation} onWheel={cancelNavigation} onKeyDown={event=>{if(["ArrowUp","ArrowDown","PageUp","PageDown","Home","End"].includes(event.key))cancelNavigation();}} onScroll={recordScroll}>
       {error ? <ErrorState error={error} retry={() => { session.refetch(); idea.refetch(); }}/> : !idea.data ? <LoadingState label="Đang mở thảo luận..."/> : <>
         {navigationError&&<p className="ih-inline-error" role="alert">{navigationError}<button className="ih-reply-button" onClick={()=>void revealComment(failedTarget.current)}>Thử lại</button></p>}{mute.error&&<p className="ih-inline-error" role="alert">{mute.error.message}</p>}{pin.error&&<p className="ih-inline-error" role="alert">{pin.error.message}</p>}
         {join.error && <div className="ih-inline-error" role="alert">{join.error.message}<button className="ih-reply-button" onClick={() => join.mutate()} disabled={join.isPending}>Thử tham gia lại</button></div>}

@@ -3,13 +3,19 @@ import {commentHref} from "@/lib/mentions";
 import type {IdeaRepository} from "./repository";
 export function allowedPushEndpoint(endpoint:string){try{const u=new URL(endpoint);return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&!u.hash&&(["fcm.googleapis.com","web.push.apple.com","updates.push.services.mozilla.com"].includes(u.hostname)||u.hostname.endsWith(".push.apple.com")||u.hostname.endsWith(".push.services.mozilla.com")||u.hostname.endsWith(".notify.windows.com"));}catch{return false;}}
 /** Drain multiple recipient batches so a busy room does not strand everyone after member 20. */
-export async function dispatchPendingPush(repo:IdeaRepository,send:typeof fetch=fetch){
+export function pushReceiptDelay(createdAt:string,now=Date.now()) {const created=Date.parse(createdAt);return Number.isFinite(created)?Math.max(0,Math.min(3000,created+3000-now)):0;}
+export async function dispatchPendingPush(repo:IdeaRepository,send:typeof fetch=fetch,pause:(ms:number)=>Promise<void>=ms=>new Promise(resolve=>setTimeout(resolve,ms))){
  const deadline=Date.now()+40000;
  for(let batch=0;batch<5&&Date.now()<deadline;batch++){
   const jobs=await repo.claimPush();if(!jobs.length)return;const keys=await repo.pushKeys();
   await Promise.allSettled(jobs.map(async n=>{let retry=false;
    try{if(!await repo.roomMuted(n.ideaId,n.userId)){
-    await Promise.all((await repo.subscriptions(n.userId)).map(async subscription=>{
+    const subscriptions=await repo.subscriptions(n.userId);
+    // Let the live room acknowledge a message before handing it to the OS.
+    // A received Web Push must still display a notification on iOS.
+    const delay=pushReceiptDelay(n.createdAt);if(subscriptions.length&&delay)await pause(delay);
+    if(!await repo.pushUnread(n.id,n.userId)){await repo.finishPush(n.id,false);return;}
+    await Promise.all(subscriptions.map(async subscription=>{
      if(!allowedPushEndpoint(subscription.endpoint)){await repo.removePush(n.userId,subscription.endpoint);return;}
      try{
       const action=n.kind==="mention"?"đã nhắc đến bạn":n.kind==="reply"?"đã trả lời bạn":"đã gửi tin nhắn mới";

@@ -1,4 +1,5 @@
 "use client";
+import {useInlineEditorViewport} from "./use-inline-editor-viewport";
 import {createPortal} from "react-dom";
 import {useFloatingPanel} from "./use-floating-panel";
 import { CornerDownLeft, Paperclip, X } from "lucide-react";
@@ -13,6 +14,7 @@ import { useDraft } from "./providers";
 interface Props { draftKey: string; label: string; reply?: boolean; pending: boolean; error?: string; onSubmit: (text: string,files?:File[],mentions?:Mention[]) => void;members?:Author[];initialText?:string;initialMentions?:Mention[];editing?:boolean; onCancel?: () => void }
 export function CommentEditor({ draftKey, label, reply, pending, error, onSubmit, onCancel,members=[],initialText,initialMentions=[],editing=false }: Props) {
   const [text, setText] = useDraft(draftKey), field = useRef<HTMLTextAreaElement>(null);
+  useInlineEditorViewport(!!reply,field);
   const [mentions,setMentions]=useState<Mention[]>(initialMentions),[caret,setCaret]=useState(0),[choice,setChoice]=useState(0),[dismissed,setDismissed]=useState(false),initialized=useRef(false);
   useEffect(()=>{if(initialText!==undefined&&!initialized.current){initialized.current=true;setText(initialText);setMentions(initialMentions);}},[initialText,initialMentions,setText]);
   useEffect(()=>{if(editing)return;try{setMentions(validMentions(text,JSON.parse(sessionStorage.getItem(`mentions:${draftKey}`)||"[]")));}catch{}},[draftKey]);
