@@ -85,9 +85,11 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const thread=useMemo(()=>mergeComments(feed.items,outbox.items),[feed.items,outbox.items]);
   const allTree=useMemo(()=>buildCommentForest(mergeComments(comments.data??[],outbox.items),sort),[comments.data,outbox.items,sort]);
   const tree=useMemo(()=>buildCommentForest(thread,sort),[thread,sort]);
+  const previousThread=useRef<ReadonlySet<string>>(new Set());
   useLayoutEffect(() => { followLatest.current = true; }, [id]);
   useLayoutEffect(() => {
-    const box = scrollBox.current;
+    const box = scrollBox.current,previousIds=previousThread.current;
+    previousThread.current=new Set(thread.map(c=>c.id));
     if (previousSort.current !== sort) {
       previousSort.current = sort;
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
@@ -100,7 +102,11 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const el=anchor.current?document.getElementById(anchor.current.id):null;
       const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
       const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
-      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      const anchored=anchor.current?thread.find(c=>`comment-${c.id}`===anchor.current!.id):undefined;
+      // A new sibling belongs at the visible anchor in newest-first order.
+      // Compensating its insertion would hide it above the pane and trigger an alert.
+      const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
       // Rebase after a content change so later updates cannot apply the same delta twice.
       if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }
