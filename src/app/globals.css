@@ -721,7 +721,7 @@ body{padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inse
 }
 
 /* Only the message pane owns chat scrolling; manual anchors avoid native double correction. */
-.ih-thread-comments{overflow-anchor:none;scroll-padding-block:16px}
+.ih-thread-comments{overflow-anchor:none;scroll-padding-block:16px;-webkit-overflow-scrolling:touch}
 .ih-comment-located{animation:ih-located 2.4s ease-out;outline:none;border-radius:6px}
 @keyframes ih-located{0%,40%{background:#eeeee5;box-shadow:0 0 0 8px #eeeee5}100%{background:transparent;box-shadow:0 0 0 8px transparent}}
 

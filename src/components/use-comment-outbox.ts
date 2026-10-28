@@ -7,6 +7,8 @@ import { api,ApiError,fetchComments } from "@/lib/api-client";
 import { outboxKey, type PendingComment } from "@/lib/comment-outbox";
 import { useUi } from "./providers";
 
+const EMPTY_OUTBOX: PendingComment[] = [];
+
 export function useCommentOutbox(ideaId:string,user:Account|null) {
   const {outbox,setOutbox}=useUi(),client=useQueryClient(),inFlight=useRef(new Set<string>());
   function update(entry:PendingComment,change:(items:PendingComment[])=>PendingComment[]){
@@ -54,6 +56,6 @@ export function useCommentOutbox(ideaId:string,user:Account|null) {
     const entry:PendingComment={id:crypto.randomUUID(),ideaId,parentId,author:user,text:text.trim(),mentions,createdAt:new Date().toISOString(),delivery:"sending",localFiles:files,uploadedIds:[],attachments:files.map(file=>({id:crypto.randomUUID(),name:file.name,mime:file.type,size:file.size,kind:file.type.startsWith("image/")?"image":"file",url:URL.createObjectURL(file)}))};
     update(entry,items=>[...items,entry]);transmit(entry);return entry;
   }
-  const items=user?outbox[outboxKey(ideaId,user.id)]??[]:[];
+  const items=user?outbox[outboxKey(ideaId,user.id)]??EMPTY_OUTBOX:EMPTY_OUTBOX;
   return {items,enqueue,revise:(id:string,text:string,mentions:Mention[])=>{const entry=items.find(c=>c.id===id);if(!entry||entry.delivery!=="failed")return;const changed={...entry,text,mentions,originalText:entry.originalText??entry.text,delivery:"sending" as const,deliveryError:undefined};update(entry,list=>list.map(c=>c.id===id?changed:c));transmit(changed);},retry:(id:string)=>{const entry=items.find(c=>c.id===id);if(!entry||entry.delivery!=="failed")return;update(entry,list=>list.map(c=>c.id===id?{...c,delivery:"sending",deliveryError:undefined}:c));transmit({...entry,delivery:"sending",deliveryError:undefined});},dismiss:(id:string)=>{const entry=items.find(c=>c.id===id);if(entry?.delivery==="failed"){void removePending(id).catch(()=>{});for(const a of entry.attachments??[])if(a.url.startsWith("blob:"))URL.revokeObjectURL(a.url);update(entry,list=>list.filter(c=>c.id!==id));}}};
 }
