@@ -107,6 +107,16 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       // Compensating its insertion would hide it above the pane and trigger an alert.
       const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
       restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
+      // Notification navigation can finish while a newest-first sibling arrives.
+      // Keep that incoming sibling on screen when the opened target is still visible.
+      const opened=requestedComment?thread.find(c=>c.id===requestedComment):undefined;
+      const openedElement=opened?document.getElementById(`comment-${opened.id}`):null;
+      const bounds=box.getBoundingClientRect(),openedBounds=openedElement?.getBoundingClientRect();
+      if(sort==="new"&&opened?.parentId&&openedBounds&&openedBounds.bottom>bounds.top&&openedBounds.top<bounds.bottom&&!box.querySelector(".ih-reply-form:focus-within")){
+        const incoming=thread.find(c=>c.parentId===opened.parentId&&!previousIds.has(c.id));
+        const rect=incoming?document.getElementById(`comment-${incoming.id}`)?.getBoundingClientRect():null;
+        if(rect&&rect.top<bounds.top)box.scrollTop=Math.max(0,box.scrollTop+rect.top-bounds.top-16);
+      }
       // Rebase after a content change so later updates cannot apply the same delta twice.
       if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }
