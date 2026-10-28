@@ -44,12 +44,20 @@ async function verify() {
   assert.equal(live.status, 401, "Live comments endpoint must exist and reject anonymous access");
   assert.match(live.headers.get("content-type") ?? "", /application\/json/);
   assert.equal((await live.json()).error?.code, "AUTH_REQUIRED");
+
+  for(const path of ["/api/notifications/stream","/api/ideas/__deployment_probe__/comments/__message_probe__/context"]){
+    const response=await request(path);assert.equal(response.status,401,`${path} must reject anonymous access`);assert.equal((await response.json()).error?.code,"AUTH_REQUIRED");
+  }
+  const worker=await request("/sw.js");assert.equal(worker.status,200);
+  const source=await worker.text();assert(source.includes('type:"OPEN_COMMENT"'),"Worker must reuse ready app navigation");assert(source.includes('type:"NOTIFICATIONS_CHANGED"'),"Push delivery must refresh the inbox");
+  for(const path of ["/__qa_mobile.html","/__qa_bundle.js"]){const response=await request(path);assert.equal(response.status,404,"QA assets must not be served in production");await response.body?.cancel();}
+
 }
 
 for (let attempt = 1; ; attempt++) {
   try {
     await verify();
-    console.log(`Deployment verified: ${base.origin} (homepage, PostgreSQL, idea cursor pagination and live endpoint)`);
+    console.log(`Deployment verified: ${base.origin} (homepage, PostgreSQL, cursors, authenticated chat/inbox routes, push navigation and QA isolation)`);
     break;
   } catch (error) {
     if (attempt === 6) throw error;
