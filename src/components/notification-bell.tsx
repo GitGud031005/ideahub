@@ -36,7 +36,7 @@ export function NotificationRuntime(){
   const fresh=[...inbox.data.items].reverse().filter(n=>!seen.current!.ids.has(n.id));
   for(const n of fresh){seen.current.ids.add(n.id);
    pending.current=pending.current.then(async()=>{
-    if(n.readAt||n.actor.id===user.id||document.hidden||!document.hasFocus()||activeUser.current!==user.id)return;
+    if(n.readAt||n.actor.id===user.id||document.hidden||activeUser.current!==user.id)return;
     const settings=await api<{muted:boolean}>(`/ideas/${encodeURIComponent(n.ideaId)}/notification-settings`);
     if(settings.muted||activeUser.current!==user.id)return;
     const show=()=>{const key=`ih-notification:${user.id}:${n.id}`;if(localStorage.getItem(key))return;localStorage.setItem(key,"1");setToast(n);sound.current?.play();};

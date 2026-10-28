@@ -84,7 +84,7 @@ window.addEventListener("message",event=>{
  if(!["QA_ADD_COMMENT","QA_ADD_REPLY","QA_ADD_SELF","QA_ADD_BURST"].includes(event.data))return;
  setTimeout(()=>{
  for(let i=0;i<(event.data==="QA_ADD_BURST"?4:1);i++){
-  const own=event.data==="QA_ADD_SELF",comment={...comments[0],id:crypto.randomUUID(),author:own?person:roomMembers[1],parentId:event.data==="QA_ADD_REPLY"?"qa-comment-12":null,text:`Tin mới ${++qaVersion}: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận`,attachments:[],pinnedAt:null,createdAt:new Date().toISOString()};comments.push(comment);
+  const own=event.data==="QA_ADD_SELF",comment={...comments[0],id:crypto.randomUUID(),author:own?person:roomMembers[1],parentId:event.data==="QA_ADD_REPLY"?"qa-comment-1":null,text:`Tin mới ${++qaVersion}: mình vừa bổ sung một góc nhìn để mọi người cùng thảo luận`,attachments:[],pinnedAt:null,createdAt:new Date().toISOString()};comments.push(comment);
   if(!own)notifications.unshift({id:crypto.randomUUID(),userId:person.id,ideaId:ideas[0].id,ideaTitle:ideas[0].title,commentId:comment.id,actor:comment.author,kind:"message",excerpt:comment.text,createdAt:comment.createdAt,readAt:null});
  }
  for(const source of sources){source.dispatchEvent(new MessageEvent("comments-changed"));source.dispatchEvent(new MessageEvent("notifications-changed"));}
