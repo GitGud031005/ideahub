@@ -85,11 +85,9 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const thread=useMemo(()=>mergeComments(feed.items,outbox.items),[feed.items,outbox.items]);
   const allTree=useMemo(()=>buildCommentForest(mergeComments(comments.data??[],outbox.items),sort),[comments.data,outbox.items,sort]);
   const tree=useMemo(()=>buildCommentForest(thread,sort),[thread,sort]);
-  const previousThread=useRef<ReadonlySet<string>>(new Set());
   useLayoutEffect(() => { followLatest.current = true; }, [id]);
   useLayoutEffect(() => {
-    const box = scrollBox.current,previousIds=previousThread.current;
-    previousThread.current=new Set(thread.map(c=>c.id));
+    const box = scrollBox.current;
     if (previousSort.current !== sort) {
       previousSort.current = sort;
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
@@ -102,21 +100,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const el=anchor.current?document.getElementById(anchor.current.id):null;
       const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
       const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
-      const anchored=anchor.current?thread.find(c=>`comment-${c.id}`===anchor.current!.id):undefined;
-      // A new sibling belongs at the visible anchor in newest-first order.
-      // Compensating its insertion would hide it above the pane and trigger an alert.
-      const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
-      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
-      // Notification navigation can finish while a newest-first sibling arrives.
-      // Keep that incoming sibling on screen when the opened target is still visible.
-      const opened=requestedComment?thread.find(c=>c.id===requestedComment):undefined;
-      const openedElement=opened?document.getElementById(`comment-${opened.id}`):null;
-      const bounds=box.getBoundingClientRect(),openedBounds=openedElement?.getBoundingClientRect();
-      if(sort==="new"&&opened?.parentId&&openedBounds&&openedBounds.bottom>bounds.top&&openedBounds.top<bounds.bottom&&!box.querySelector(".ih-reply-form:focus-within")){
-        const incoming=thread.find(c=>c.parentId===opened.parentId&&!previousIds.has(c.id));
-        const rect=incoming?document.getElementById(`comment-${incoming.id}`)?.getBoundingClientRect():null;
-        if(rect&&rect.top<bounds.top)box.scrollTop=Math.max(0,box.scrollTop+rect.top-bounds.top-16);
-      }
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
       // Rebase after a content change so later updates cannot apply the same delta twice.
       if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }

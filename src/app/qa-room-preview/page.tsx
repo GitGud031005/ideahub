@@ -1,4 +1,1 @@
-"use client";
-import dynamic from "next/dynamic";
-const Fixture=dynamic(()=>import("../../../scripts/qa/room-live"),{ssr:false});
-export default function QaRoom(){return <Fixture/>;}
+import {Hero} from "@/components/hero"; export default function QaHero(){return <main className="ih-main"><Hero/></main>;}
