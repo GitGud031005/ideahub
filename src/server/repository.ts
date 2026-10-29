@@ -29,6 +29,7 @@ export interface IdeaRepository {
   listIdeas(userId: string, query: IdeaQuery): Promise<IdeasPage>;
   getIdea(id: string, userId: string): Promise<Idea>;
   createIdea(user: Author, input: CreateIdeaInput): Promise<Idea>;
+  deleteIdea(id:string,userId:string):Promise<void>;
   joinIdea(id: string, userId: string,user?:Author): Promise<Idea>;
   setIdeaStatus(id: string, userId: string, status: JoinedIdeaStatus): Promise<Idea>;
   listComments(ideaId: string, cursor?: string, limit?: number): Promise<CommentsPage>;
@@ -142,6 +143,15 @@ export class StateIdeaRepository implements IdeaRepository {
       state.ideas.push(idea); return present(idea, state, user.id);
     });
   }
+  deleteIdea(id:string,userId:string){return this.store.transact(state=>{
+    const idea=state.ideas.find(i=>i.id===id);if(!idea)throw notFound();
+    if(idea.creator.id!==userId)throw new AppError(403,"NOT_OWNER","Chỉ chủ idea mới có thể xóa idea này");
+    state.ideas=state.ideas.filter(i=>i.id!==id);
+    state.comments=state.comments.filter(c=>c.ideaId!==id);
+    state.attachments=state.attachments?.filter(a=>a.ideaId!==id);
+    state.notifications=state.notifications?.filter(n=>n.ideaId!==id);
+    for(const ids of Object.values(state.mutedRooms??{})){const index=ids.indexOf(id);if(index>=0)ids.splice(index,1);}
+  });}
   setIdeaStatus(id: string, userId: string, status: JoinedIdeaStatus) {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();

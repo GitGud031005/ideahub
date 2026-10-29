@@ -14,6 +14,7 @@ import { CommentEditor } from "./comment-editor";
 import { Avatar } from "./avatar";
 import { CommentTree } from "./comment-tree";
 import { useAuth, useSession, useUi } from "./providers";
+import {DeleteIdea} from "./delete-idea";
 import { IdeaStatusControl } from "./idea-status";
 import { Select } from "./select";
 import { RecapFiles } from "./recap-files";
@@ -85,9 +86,11 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const thread=useMemo(()=>mergeComments(feed.items,outbox.items),[feed.items,outbox.items]);
   const allTree=useMemo(()=>buildCommentForest(mergeComments(comments.data??[],outbox.items),sort),[comments.data,outbox.items,sort]);
   const tree=useMemo(()=>buildCommentForest(thread,sort),[thread,sort]);
+  const previousThread=useRef<ReadonlySet<string>>(new Set());
   useLayoutEffect(() => { followLatest.current = true; }, [id]);
   useLayoutEffect(() => {
-    const box = scrollBox.current;
+    const box = scrollBox.current,previousIds=previousThread.current;
+    previousThread.current=new Set(thread.map(c=>c.id));
     if (previousSort.current !== sort) {
       previousSort.current = sort;
       if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
@@ -100,7 +103,21 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const el=anchor.current?document.getElementById(anchor.current.id):null;
       const offset=el?el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop:undefined;
       const delta=offset!==undefined&&anchor.current?offset-anchor.current.offset:undefined;
-      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current?delta:undefined);
+      const anchored=anchor.current?thread.find(c=>`comment-${c.id}`===anchor.current!.id):undefined;
+      // A new sibling belongs at the visible anchor in newest-first order.
+      // Compensating its insertion would hide it above the pane and trigger an alert.
+      const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
+      restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
+      // Notification navigation can finish while a newest-first sibling arrives.
+      // Keep that incoming sibling on screen when the opened target is still visible.
+      const opened=requestedComment?thread.find(c=>c.id===requestedComment):undefined;
+      const openedElement=opened?document.getElementById(`comment-${opened.id}`):null;
+      const bounds=box.getBoundingClientRect(),openedBounds=openedElement?.getBoundingClientRect();
+      if(sort==="new"&&opened?.parentId&&openedBounds&&openedBounds.bottom>bounds.top&&openedBounds.top<bounds.bottom&&!box.querySelector(".ih-reply-form:focus-within")){
+        const incoming=thread.find(c=>c.parentId===opened.parentId&&!previousIds.has(c.id));
+        const rect=incoming?document.getElementById(`comment-${incoming.id}`)?.getBoundingClientRect():null;
+        if(rect&&rect.top<bounds.top)box.scrollTop=Math.max(0,box.scrollTop+rect.top-bounds.top-16);
+      }
       // Rebase after a content change so later updates cannot apply the same delta twice.
       if(anchor.current&&offset!==undefined)anchor.current.offset=offset;
     }
@@ -196,7 +213,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       </>}
       <p className="ih-sr" role="status" aria-live="polite">{status}</p>
     </section>{feed.queued.length>0&&<button className="ih-new-messages" onClick={()=>{const first=feed.release();if(first)revealComment(first);}}>{sort==="old"&&<ArrowDown size={14}/>}<span>{feed.queued.length} tin mới</span></button>}{idea.data && user && <CommentEditor draftKey={`comment:${id}`} label="Thêm góc nhìn của bạn" members={members.data??[]} pending={false} onSubmit={(text,files,mentions)=>submit(text,null,files,mentions)}/>}</div>
-    <aside ref={panel} hidden={!sidebarOpen} className="ih-thread-aside" id="idea-panel" role={mobile && sidebarOpen ? "dialog" : undefined} aria-modal={mobile && sidebarOpen ? true : undefined} aria-label={searchOpen?"Tìm trong phòng":"Thông tin ý tưởng"}>{searchOpen?<RoomSearch ideaId={id} members={members.data??[]} onReveal={revealComment} onClose={()=>{setSearchOpen(false);if(mobile)setSidebarOpen(false);searchButton.current?.focus();}}/>:<><div className="ih-about-top"><span className="ih-about-label">VỀ Ý TƯỞNG NÀY</span><button ref={close} className="ih-about-close" aria-label="Thu gọn thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={true} onClick={() => toggleSidebar(false)}><X size={15} aria-hidden="true"/></button></div>{idea.data ? <><h2 id="idea-title">{idea.data.title}</h2><p className="ih-thread-description">{idea.data.description}</p><IdeaStatusControl idea={idea.data}/>{user&&idea.data.joined&&<button className="ih-room-mute" disabled={mute.isPending||!settings.data} onClick={()=>mute.mutate(!settings.data?.muted)}>{settings.data?.muted?<BellOff size={14}/>:<Bell size={14}/>}<span>{settings.data?.muted?"Bật thông báo phòng":"Tắt popup và push của phòng"}</span></button>}<div className="ih-about-divider"/><div className="ih-about-label">NGƯỜI KHỞI XƯỚNG</div><div className="ih-post-byline"><Avatar person={idea.data.creator}/><div><span className="ih-thread-owner">{idea.data.creator.name}</span><time dateTime={idea.data.createdAt}>Tạo {relativeTime(idea.data.createdAt)}</time></div></div><div className="ih-about-divider"/><div className="ih-about-members"><strong>{idea.data.memberCount}</strong><span>người tham gia</span></div><div className="ih-about-divider"/><div className="ih-about-label">TAGS</div><div className="ih-about-tags">{idea.data.tags.map(tag => <span key={tag} className="ih-tag">{tag}</span>)}</div><div className="ih-about-divider"/><SharedFiles comments={comments.data??[]} onReveal={revealComment} onImage={setSelectedImage}/><div className="ih-about-divider"/><RecapFiles key={`${id}:${user?.id ?? "guest"}`} ideaId={id} onReveal={revealComment}/><span className="ih-thread-side-brand">ideahub.</span></>: <p className="ih-thread-empty">{error ? "Thông tin chưa có sẵn" : "Đang tải thông tin..."}</p>}</>}</aside>
+    <aside ref={panel} hidden={!sidebarOpen} className="ih-thread-aside" id="idea-panel" role={mobile && sidebarOpen ? "dialog" : undefined} aria-modal={mobile && sidebarOpen ? true : undefined} aria-label={searchOpen?"Tìm trong phòng":"Thông tin ý tưởng"}>{searchOpen?<RoomSearch ideaId={id} members={members.data??[]} onReveal={revealComment} onClose={()=>{setSearchOpen(false);if(mobile)setSidebarOpen(false);searchButton.current?.focus();}}/>:<><div className="ih-about-top"><span className="ih-about-label">VỀ Ý TƯỞNG NÀY</span><button ref={close} className="ih-about-close" aria-label="Thu gọn thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={true} onClick={() => toggleSidebar(false)}><X size={15} aria-hidden="true"/></button></div>{idea.data ? <><h2 id="idea-title">{idea.data.title}</h2><p className="ih-thread-description">{idea.data.description}</p><IdeaStatusControl idea={idea.data}/>{user&&idea.data.joined&&<button className="ih-room-mute" disabled={mute.isPending||!settings.data} onClick={()=>mute.mutate(!settings.data?.muted)}>{settings.data?.muted?<BellOff size={14}/>:<Bell size={14}/>}<span>{settings.data?.muted?"Bật thông báo phòng":"Tắt popup và push của phòng"}</span></button>}<div className="ih-about-divider"/><div className="ih-about-label">NGƯỜI KHỞI XƯỚNG</div><div className="ih-post-byline"><Avatar person={idea.data.creator}/><div><span className="ih-thread-owner">{idea.data.creator.name}</span><time dateTime={idea.data.createdAt}>Tạo {relativeTime(idea.data.createdAt)}</time></div></div><div className="ih-about-divider"/><div className="ih-about-members"><strong>{idea.data.memberCount}</strong><span>người tham gia</span></div><div className="ih-about-divider"/><div className="ih-about-label">TAGS</div><div className="ih-about-tags">{idea.data.tags.map(tag => <span key={tag} className="ih-tag">{tag}</span>)}</div><div className="ih-about-divider"/><SharedFiles comments={comments.data??[]} onReveal={revealComment} onImage={setSelectedImage}/><div className="ih-about-divider"/><RecapFiles key={`${id}:${user?.id ?? "guest"}`} ideaId={id} onReveal={revealComment}/>{user?.id===idea.data.creator.id&&<DeleteIdea idea={idea.data}/>}<span className="ih-thread-side-brand">ideahub.</span></>: <p className="ih-thread-empty">{error ? "Thông tin chưa có sẵn" : "Đang tải thông tin..."}</p>}</>}</aside>
     </div>
   </section>{selectedImage&&<AttachmentViewer attachment={selectedImage} onClose={()=>setSelectedImage(null)}/>}</main>;
 }

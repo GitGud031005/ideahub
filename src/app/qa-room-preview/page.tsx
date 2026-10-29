@@ -1,1 +1,1 @@
-import {Hero} from "@/components/hero"; export default function QaHero(){return <main className="ih-main"><Hero/></main>;}
+"use client"; import dynamic from "next/dynamic"; const Fixture=dynamic(()=>import("../../../scripts/qa/delete-idea"),{ssr:false}); export default function QA(){return <Fixture/>;}

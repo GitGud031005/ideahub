@@ -22,6 +22,7 @@ export class CachedIdeaRepository implements IdeaRepository {
   subscriptions(userId:string){return this.inner.subscriptions(userId);}
   claimPush(){return this.inner.claimPush();}
   finishPush(id:string,retry:boolean){return this.inner.finishPush(id,retry);}
+  async deleteIdea(id:string,userId:string){await this.inner.deleteIdea(id,userId);await this.cache.invalidate();}
   listIdeas(userId:string,query:IdeaQuery){return this.inner.listIdeas(userId,query);}
   setIdeaStatus(id:string,userId:string,status:JoinedIdeaStatus){return this.inner.setIdeaStatus(id,userId,status);}
   getIdea(id:string,userId:string){return this.inner.getIdea(id,userId);}

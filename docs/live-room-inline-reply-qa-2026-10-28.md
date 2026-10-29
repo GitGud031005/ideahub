@@ -2,7 +2,7 @@
 
 Date: 2026-10-28 (Asia/Ho_Chi_Minh)
 Base commit: `63c0a4846424b2e5cc8a60408d931f3c03c45a64`
-Status: local implementation and automated checks complete; browser acceptance and deployment pending.
+Status: local automated checks and synthetic browser acceptance passed; production deployment pending.
 
 ## Reported problems
 
@@ -27,7 +27,15 @@ Status: local implementation and automated checks complete; browser acceptance a
 - Regression cases cover continued/deep replies, out-of-order snapshots, intentionally collapsed paths, fresh feed snapshots after notification navigation, and new-message markers under collapsed ancestors.
 - Geometry tests cover viewport heights 280, 320, 390, 480, 568, 667, and 844 pixels, with viewport offsets of 0 and 48 pixels. These are numeric tests, not device or browser screenshots.
 
-## Browser acceptance still required
+## Synthetic browser acceptance completed
+
+Chrome preview checks reproduced an additional sibling-insertion bug: preserving the previous anchor hid the newest sibling above the viewport. The patch now brings a new sibling into view when its notification target remains visible and the reader is idle. Touch/momentum and focused inline-editor guards remain active.
+
+At 390×844, after clicking the notification, incoming sibling, child, and nested replies were visible inside the pane, with no toast and no unread badge. The synthetic inbox event preceded the room event.
+
+Inline replies were checked at 390×480, 320×390, and 844×390. The main composer had zero rendered height; the textarea and send button fit inside the pane after viewport settlement. Canceling restored the original main-composer draft.
+
+## Fixture and remaining device acceptance
 
 The synthetic fixture in `scripts/qa/room-live.tsx` uses fake users, comments, notifications, fetch responses, and event streams. It deliberately delivers the inbox event before the comment-stream event. The preview wrapper is `public/__qa_mobile.html`; its iframe renders `/qa-room-preview`.
 
@@ -39,10 +47,8 @@ Before production release, verify:
 4. Enter a main-composer draft, open an inline reply, resize the visual viewport, type, and cancel. Confirm the reply/send controls stay accessible and the original draft returns.
 5. Verify physical iOS and Android keyboard/pan behavior, inertia, background delivery, and OS notification-click navigation. None of these physical-device checks has been completed for this patch.
 
-## Publication boundary
+## Publication
 
-Automatic approval review rejected both a compiled QA bundle upload and a subsequent source-tree upload to the public repository `https://github.com/GitGud031005/ideahub`. Its reason was missing explicit authorization for publishing this exact application/QA source payload to that public destination. Neither attempt published these changes. Production remains at the base commit above.
+The user explicitly approved publication to `GitGud031005/ideahub` and the preview-to-production workflow after an earlier automatic-review block. Preview builds and browser checks subsequently succeeded.
 
-Requested next publication: application changes, regression tests, this report, and synthetic QA source to the existing preview branch `feat/push-opt-in`; after browser acceptance, publish the application changes/tests/report to `main`, triggering the existing Vercel deployment at `https://ideahub-umber.vercel.app/`.
-
-Preview-only files `public/__qa_mobile.html` and `src/app/qa-room-preview/page.tsx` must be excluded from the production tree. No real user messages, credentials, or production screenshots are part of the QA fixture.
+The production tree excludes `public/__qa_mobile.html` and `src/app/qa-room-preview/page.tsx`, and retains the original production frame security headers. The same-origin framing exception exists only on the synthetic preview branch. No real user messages, credentials, or production screenshots are included in the fixture.
