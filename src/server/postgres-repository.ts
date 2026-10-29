@@ -70,6 +70,11 @@ async function requireIdea(db: Executor, id: string) {
 /** SQL is parameterized and unnamed, compatible with Supabase transaction pooling. */
 export class PostgresIdeaRepository implements IdeaRepository {
   constructor(private pool: DatabasePool) {}
+  async deleteIdea(id:string,userId:string){
+    // Ownership is part of the mutation itself; dependent room records cascade atomically.
+    const deleted=await this.pool.query("DELETE FROM public.ideas WHERE id=$1 AND creator_id=$2 RETURNING id",[id,userId]);
+    if(!deleted.rowCount){await requireIdea(this.pool,id);throw new AppError(403,"NOT_OWNER","Chỉ chủ idea mới có thể xóa idea này");}
+  }
   private async transaction<T>(work: (client: DatabaseClient) => Promise<T>, readOnly = false): Promise<T> {
     const client = await this.pool.connect();
     let broken = false;

@@ -113,7 +113,7 @@ export async function handleApi(request: Request, path: string[], repository?: I
       if(route==="push/unsubscribe"&&method==="POST"){const input=await readJson(request,z.object({endpoint:z.string().max(2048)}).strict());await repo.removePush(user.id,input.endpoint);return json({ok:true});}
       throw new AppError(404,"NOT_FOUND","Không tìm thấy API này");
     }
-    if (!/^ideas(?:\/[^/]+(?:\/(?:join|read|status|members|search|notification-settings|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/(?:pin|edit|context)))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
+    if (!/^ideas(?:\/[^/]+(?:\/(?:delete|join|read|status|members|search|notification-settings|attachments(?:\/[^/]+)?|comments(?:\/(?:stream|[^/]+\/(?:pin|edit|context)))?|recaps(?:\/[^/]+)?))?)?$/.test(route)) throw new AppError(404, "NOT_FOUND", "Không tìm thấy API này");
     const user = await auth.user(token), repo = repository ?? getRepository(), url = new URL(request.url);
     if ((method === "POST" || path[2] === "comments" || path[2] === "recaps" || path[2]==="attachments" || path[2]==="read") && !user) throw new AppError(401, "AUTH_REQUIRED", "Đăng nhập để tham gia cùng mọi người");
     const viewerId = user?.id ?? "__anonymous__";
@@ -124,6 +124,11 @@ export async function handleApi(request: Request, path: string[], repository?: I
     }
     const id = path[1];
     if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) throw new AppError(400, "INVALID_ID", "Mã ý tưởng không hợp lệ");
+    if(path[2]==="delete"){
+      if(method!=="POST")return json({error:{code:"METHOD_NOT_ALLOWED",message:"Dùng POST để xóa idea"}},405,{Allow:"POST"});
+      await readJson(request,z.object({}).strict());
+      await repo.deleteIdea(id,user!.id);return json({ok:true});
+    }
     if(path[2]==="members"||path[2]==="search"||path[2]==="notification-settings"){
       if(!user)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để tham gia cùng mọi người");
       if(path[2]==="members"&&method==="GET")return json(await repo.listMembers(id,user.id));
