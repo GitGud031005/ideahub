@@ -1,4 +1,5 @@
 "use client";
+import styles from "./delete-idea.module.css";
 import {useEffect,useRef,useState} from "react";
 import {createPortal} from "react-dom";
 import {useMutation,useQueryClient} from "@tanstack/react-query";
@@ -21,7 +22,7 @@ export function DeleteIdea({idea}:{idea:Idea}){
  }});
  useSurface(open,()=>{if(!mutation.isPending)setOpen(false);});
  if(!user||user.id!==idea.creator.id)return null;
- return <><button ref={trigger} type="button" className="ih-room-mute ih-delete-idea-trigger" aria-label="Xóa idea" title="Xóa idea" onClick={()=>{mutation.reset();setOpen(true);}}><Trash2 size={16}/><span>Xóa idea</span></button>{open&&createPortal(<DeleteIdeaDialog title={idea.title} pending={mutation.isPending} error={mutation.error?.message} cancel={()=>{if(!mutation.isPending){setOpen(false);requestAnimationFrame(()=>trigger.current?.focus({preventScroll:true}));}}} confirm={()=>mutation.mutate()}/>,document.body)}</>;
+ return <><button ref={trigger} type="button" className={styles.trigger} aria-label="Xóa idea" onClick={()=>{mutation.reset();setOpen(true);}}><Trash2 size={16}/><span>Xóa idea</span></button>{open&&createPortal(<DeleteIdeaDialog title={idea.title} pending={mutation.isPending} error={mutation.error?.message} cancel={()=>{if(!mutation.isPending){setOpen(false);requestAnimationFrame(()=>trigger.current?.focus({preventScroll:true}));}}} confirm={()=>mutation.mutate()}/>,document.body)}</>;
 }
 function DeleteIdeaDialog({title,pending,error,cancel,confirm}:{title:string;pending:boolean;error?:string;cancel:()=>void;confirm:()=>void}){
  const dialog=useRef<HTMLDialogElement>(null),safe=useRef<HTMLButtonElement>(null);
@@ -31,6 +32,6 @@ function DeleteIdeaDialog({title,pending,error,cancel,confirm}:{title:string;pen
   <p className="ih-delete-idea-name">{title}</p>
   <p id="delete-idea-description" className="ih-dialog-subtitle">Idea cùng toàn bộ bình luận, tệp đính kèm và AI recap trong phòng sẽ bị xóa. Thao tác này không thể hoàn tác.</p>
   {error&&<p className="ih-inline-error" role="alert">{error}</p>}
-  <div className="ih-delete-idea-actions" aria-busy={pending}><button ref={safe} type="button" className="ih-secondary" disabled={pending} onClick={cancel}>Hủy</button><button type="button" className="ih-primary ih-delete-idea-confirm" disabled={pending} onClick={confirm}>{pending?"Đang xóa…":"Xóa idea"}</button></div>
+  <div className="ih-delete-idea-actions" aria-busy={pending}><button ref={safe} type="button" className="ih-secondary" disabled={pending} onClick={cancel}>Hủy</button><button type="button" className={styles.confirm} disabled={pending} onClick={confirm}>{pending?"Đang xóa…":"Xóa idea"}</button></div>
  </dialog>;
 }
