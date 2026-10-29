@@ -1,0 +1,15 @@
+.trigger,.confirm{
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ min-height:44px;max-width:100%;padding:11px 16px;
+ border:1px solid #b42318;border-radius:6px;
+ background:#b42318;color:#fff;font-size:12px;font-weight:600;line-height:1.5;
+ cursor:pointer;transition:background-color .15s,border-color .15s;
+}
+.trigger{margin-top:20px}
+.trigger:hover,.confirm:hover:enabled{background:#912018;border-color:#912018}
+.trigger:active,.confirm:active:enabled{background:#7a1b14;border-color:#7a1b14}
+.trigger:focus-visible,.confirm:focus-visible{outline:2px solid #b42318;outline-offset:3px}
+.trigger svg{flex-shrink:0}
+.confirm:disabled{opacity:.65;cursor:wait}
+@media(max-width:420px){.confirm{flex:1}}
+@media(prefers-reduced-motion:reduce){.trigger,.confirm{transition:none}}
