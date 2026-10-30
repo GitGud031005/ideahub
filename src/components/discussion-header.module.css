@@ -1,0 +1,25 @@
+.header.header{
+ --control-height:44px;
+ container-type:inline-size;
+ container-name:discussion-toolbar;
+}
+.actions.actions{height:44px;align-items:center;gap:10px}
+.actions :global(.ih-notifications){--control-height:44px;height:44px;align-items:center}
+.actions :global(.ih-about-toggle){width:44px;height:44px;min-height:44px}
+.sort.sort{position:relative;display:flex;align-items:center;width:208px;height:44px;flex-shrink:0;gap:0}
+.sort.sort :global(.ih-sort-caption){display:none}
+.sort.sort :global(.ih-picker){width:100%;height:44px}
+.sort.sort :global(.ih-picker-trigger){width:100%;height:44px;min-height:44px;padding:0 12px 0 36px;border:1px solid #e4e4db;border-radius:5px;background:#fff;font-size:12px;line-height:20px;align-items:center;gap:8px}
+.sort.sort :global(.ih-picker-trigger):hover:enabled,.sort.sort :global(.ih-picker-trigger)[aria-expanded=true]{background:#f0f0e9;border-color:#dcdcd1}
+.sort.sort :global(.ih-picker-trigger):focus-visible{outline:2px solid #8b8b7d;outline-offset:2px}
+.sort.sort :global(.ih-picker-trigger)>span{display:inline-flex;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.sort.sort :global(.ih-picker-trigger)>svg{display:block;flex-shrink:0}
+.sort.sort>:global(.ih-sort-compact-icon){display:block;position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;pointer-events:none;z-index:1}
+@container discussion-toolbar (max-width:640px){
+ .actions.actions{gap:5px}
+ .sort.sort{width:44px}
+ .sort.sort :global(.ih-picker-trigger){width:44px;min-width:44px;padding:0;justify-content:center}
+ .sort.sort :global(.ih-picker-trigger)>span,.sort.sort :global(.ih-picker-trigger)>svg{display:none}
+ .sort.sort>:global(.ih-sort-compact-icon){left:50%;transform:translate(-50%,-50%)}
+}
+@media(max-width:400px){.actions.actions{gap:3px}}
