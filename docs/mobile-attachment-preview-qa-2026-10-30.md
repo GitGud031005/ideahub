@@ -1,6 +1,6 @@
 # Mobile attachment preview repair
 
-Status: implementation, automated tests and local production build complete. Browser acceptance and deployment are pending public-repository publication approval.
+Status: implementation, automated tests, local production build and synthetic browser acceptance passed; production deployment pending.
 
 ## Finding and prepared change
 
@@ -26,10 +26,21 @@ The prepared implementation:
 - Existing file ownership, authentication, upload validation and private delivery tests remain passing.
 - `scripts/qa/attachments.tsx` supplies synthetic PDF, TXT, CSV, Office fallback, broken PDF/image, and a fail-once/retry response. No real message or document content is included.
 
-## Remaining acceptance
+## Browser acceptance completed
 
-The current patch has not been inspected in a browser or on physical iOS/Android devices. Before release, check 320/390/430px widths and short landscape viewports, opening from both UI locations, PDF page changes/zoom/resize/rapid close-reopen, image timeout/retry, TXT/CSV scrolling, unsupported formats, and failed-network recovery.
+Chrome preview checks used synthetic documents only:
+- Opened PDF in the dialog at 390×844; its worker/assets loaded successfully and the first page rasterized.
+- Changed to page 2, zoomed to 150%, resized to 320×480 and confirmed the header and every PDF control remained visible, with 44px buttons.
+- A deliberately failed fetch displayed an error; Retry subsequently rendered the PDF.
+- Broken PDF and image sources displayed error/retry states rather than a blank pane.
+- Opened TXT from the shared-content section; its 5,738px text body scrolled inside a 401px viewport while the header remained outside the scrolling region. Embedded script-like text remained inert.
+- CSV displayed its UTF-8 content. Office fallback exposed an explicit unsupported-preview message and download action.
+- Image preview fit within an 844×390 landscape viewport.
 
-Automatic approval review rejected creating the preview source tree in the public GitHub repository `GitGud031005/ideahub`, because explicit authorization was required for public disclosure of this application source, dependency lockfile and synthetic preview route. No retry or alternate publication path was used after that rejection. Production is unchanged.
+Physical iOS/Android devices and OS download UI were not exercised. The synthetic browser checks establish responsive layout and document rendering, not physical-device certification.
 
-The requested next step is to publish the reviewed source/dependency/QA changes to the existing preview branch, complete browser acceptance, then deploy the production subset to main. The synthetic public wrapper, preview route, and same-origin frame-header exception must be excluded from production. Generated PDF runtime assets are built from the pinned dependency and are not committed as bundled application artifacts.
+## Publication
+
+After automatic review initially rejected public source publication, the user explicitly authorized publishing the source, pinned PDF dependency, and synthetic QA to `GitGud031005/ideahub`, followed by browser acceptance and production deployment. Preview publication and browser acceptance then succeeded.
+
+The production subset excludes the synthetic public wrapper, preview route and same-origin frame-header exception. Generated PDF runtime assets are built from the pinned dependency and are not committed as bundled application artifacts. No real message/document content is included in QA.

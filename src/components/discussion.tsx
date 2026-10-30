@@ -93,7 +93,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     previousThread.current=new Set(thread.map(c=>c.id));
     if (previousSort.current !== sort) {
       previousSort.current = sort;
-      if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||box.scrollHeight <= box.clientHeight + 96; }
+      if (box) { box.scrollTop = 0; followLatest.current = sort==="new"||sort==="old"&&box.scrollHeight <= box.clientHeight + 96; }
       return;
     }
     if(box&&!positioning.current){
@@ -106,7 +106,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
       const anchored=anchor.current?thread.find(c=>`comment-${c.id}`===anchor.current!.id):undefined;
       // A new sibling belongs at the visible anchor in newest-first order.
       // Compensating its insertion would hide it above the pane and trigger an alert.
-      const liveSibling=!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
+      const liveSibling=sort!=="discussed"&&!!anchored?.parentId&&thread.some(c=>c.parentId===anchored.parentId&&!previousIds.has(c.id));
       restoreRoomScroll(box,false,sort==="old"&&followLatest.current,!followLatest.current&&!liveSibling?delta:undefined);
       // Notification navigation can finish while a newest-first sibling arrives.
       // Keep that incoming sibling on screen when the opened target is still visible.
@@ -154,7 +154,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
     const box=scrollBox.current,el=document.getElementById(`comment-${navigation.commentId}`);
     if(!box||!el||mobile&&sidebarOpen)return;
     let timer:ReturnType<typeof setTimeout>|undefined,frame=0,observer:ResizeObserver|undefined;
-    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;anchor.current={id:el.id,offset:el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop};setNavigation(null);setNavigationLoading(false);};
+    const finish=()=>{if(navigation.sequence!==navigationSequence.current)return;positioning.current=false;followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:sort==="new"&&box.scrollTop<96;anchor.current={id:el.id,offset:el.getBoundingClientRect().top-box.getBoundingClientRect().top+box.scrollTop};setNavigation(null);setNavigationLoading(false);};
     // Two frames allow viewport/composer CSS to settle after a mobile dialog closes.
     frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
       if(navigation.sequence!==navigationSequence.current)return;
@@ -190,7 +190,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   function recordScroll(){
     const box=scrollBox.current;if(!box||positioning.current)return;
     scrollActivity.current.scroll(performance.now());
-    followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:box.scrollTop<96;
+    followLatest.current=sort==="old"?box.scrollHeight-box.scrollTop-box.clientHeight<96:sort==="new"&&box.scrollTop<96;
     // Do not measure every article on every animation frame. Capture once at rest.
     clearTimeout(scrollIdle.current);scrollIdle.current=setTimeout(captureScrollAnchor,220);
   }
@@ -203,7 +203,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   },[]);
   const error = session.error || idea.error;
   return <main className="ih-discussion" aria-labelledby="discussion-title"><section className={`ih-discussion-page${!sidebarOpen ? " ih-aside-collapsed" : ""}`}>
-    <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
+    <header className="ih-discussion-header" inert={mobile && sidebarOpen}><div className="ih-discussion-heading"><Link className="ih-thread-back" href="/" scroll={false} aria-label="Quay lại bảng ý tưởng"><ChevronLeft size={16} aria-hidden="true"/></Link><h1 id="discussion-title">Thảo luận <span className="ih-comment-count">{comments.data?mergeComments(comments.data,outbox.items).length:(idea.data?.commentCount??0)+outbox.items.length}</span></h1></div><div className="ih-discussion-actions"><NotificationBell/>{user&&<button ref={searchButton} className="ih-about-toggle" aria-label="Tìm trong phòng" aria-expanded={searchOpen&&sidebarOpen} onClick={()=>{if(searchOpen&&sidebarOpen){setSearchOpen(false);if(mobile)setSidebarOpen(false);return;}window.dispatchEvent(new CustomEvent("ideahub:surface-open",{detail:"room-search"}));setSearchOpen(true);setSidebarOpen(true);}}><Search size={17}/></button>}<div className="ih-discussion-sort"><ArrowDownUp className="ih-sort-compact-icon" size={16} aria-hidden="true"/><span className="ih-sort-caption">Sắp xếp</span><Select label="Sắp xếp bình luận" value={sort} onChange={setSort} disabled={!idea.data} options={[{ value: "old", label: "Cũ nhất" }, { value: "new", label: "Mới nhất" }, { value: "discussed", label: "Bàn luận nhiều nhất" }]}/></div>{!sidebarOpen && <button ref={reveal} className="ih-about-toggle" aria-label="Mở thanh thông tin ý tưởng" aria-controls="idea-panel" aria-expanded={false} onClick={() => toggleSidebar(true)}><PanelRightOpen size={17} aria-hidden="true"/></button>}</div></header>
     <button type="button" className="ih-aside-scrim" hidden={!sidebarOpen} aria-label="Đóng thanh thông tin ý tưởng" onClick={() => toggleSidebar(false)}/>
     <div className="ih-thread-layout"><div className="ih-thread-main" inert={mobile && sidebarOpen}>{navigationLoading&&<p className="ih-message-navigation-status" role="status">Đang mở tin nhắn…</p>}<section ref={scrollBox} className="ih-thread-comments" data-idea-id={id} data-user-id={user?.id} aria-label="Nội dung thảo luận" aria-busy={navigationLoading} onPointerDown={cancelNavigation} onWheel={cancelNavigation} onKeyDown={event=>{if(["ArrowUp","ArrowDown","PageUp","PageDown","Home","End"].includes(event.key))cancelNavigation();}} onScroll={recordScroll}>
       {error ? <ErrorState error={error} retry={() => { session.refetch(); idea.refetch(); }}/> : !idea.data ? <LoadingState label="Đang mở thảo luận..."/> : <>
