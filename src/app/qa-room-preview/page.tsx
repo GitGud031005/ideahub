@@ -1,1 +1,1 @@
-"use client"; import dynamic from "next/dynamic"; const Fixture=dynamic(()=>import("../../../scripts/qa/delete-idea"),{ssr:false}); export default function QA(){return <Fixture/>;}
+"use client"; import dynamic from "next/dynamic"; const Fixture=dynamic(()=>import("../../../scripts/qa/attachments"),{ssr:false}); export default function QA(){return <Fixture/>;}
