@@ -47,7 +47,7 @@ export interface CreateIdeaInput { title: string; description: string; tags: str
 export interface CreateCommentInput { text: string; parentId?: string | null; clientId?: string; attachmentIds?:string[];mentions?:Mention[] }
 export type IdeaView = "all" | "new" | "potential" | "archived" | "mine";
 export type IdeaSort = "activity" | "new" | "popular";
-export type CommentSort = "old" | "new";
+export type CommentSort = "old" | "new" | "discussed";
 export interface IdeaQuery { q: string; view: IdeaView; sort: IdeaSort; limit: number; offset: number; cursor?: string }
 export interface IdeasPage { items: Idea[]; total: number; counts: Record<IdeaView, number>; nextCursor: string | null }
 export interface CommentsPage { items: Comment[]; total: number; nextCursor: string | null }
