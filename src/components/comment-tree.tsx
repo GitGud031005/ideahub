@@ -3,7 +3,7 @@ import { useMemo,useState } from "react";
 import { branchCommentCounts } from "@/lib/comment-unread";
 import { ChevronDown, Pin, PinOff, Pencil, RefreshCw, AlertCircle, Copy, X } from "lucide-react";
 import type { Author, Comment, Mention, Attachment } from "@/lib/domain";
-import { AttachmentList } from "./attachment-view";
+import { AttachmentList } from "./attachment-list";
 import {CommentText} from "./comment-text";
 import {CommentMenu} from "./comment-menu";
 import type { ThreadComment } from "@/lib/comment-outbox";
