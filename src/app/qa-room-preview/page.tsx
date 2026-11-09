@@ -1,1 +1,2 @@
-"use client"; import dynamic from "next/dynamic"; const Fixture=dynamic(()=>import("../../../scripts/qa/discussion-sort"),{ssr:false}); export default function QA(){return <Fixture/>;}
+import {SiteFooter} from "../../components/site-footer";
+export default function Preview(){return <><main style={{flex:1,padding:24}}>Footer layout QA</main><SiteFooter/></>}
