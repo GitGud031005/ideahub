@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {attachmentPreview,attachmentDownloadUrl,previewCanvasSize} from '../src/lib/attachment-preview';
+import {attachmentPreview,attachmentDownloadUrl,previewCanvasSize,clampPdfZoom} from '../src/lib/attachment-preview';
+test('PDF zoom supports reduction below fit width and bounded wheel increments without floating-point drift',()=>{
+ assert.equal(clampPdfZoom(.75),.75);assert.equal(clampPdfZoom(.1),.25);assert.equal(clampPdfZoom(4),3);
+ let zoom=1;for(let i=0;i<5;i++)zoom=clampPdfZoom(zoom-.1);assert.equal(zoom,.5);
+ for(let i=0;i<5;i++)zoom=clampPdfZoom(zoom+.1);assert.equal(zoom,1);
+});
 test('file previews recognize existing octet-stream receipts without rendering office or archive files as HTML',()=>{
  for(const name of ['notes.PDF','notes.pdf'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'pdf');
  for(const name of ['notes.txt','notes.CSV'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'text');

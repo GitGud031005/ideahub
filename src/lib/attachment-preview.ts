@@ -15,3 +15,5 @@ export function previewCanvasSize(width:number,height:number,dpr:number){
  const ratio=Math.min(Math.max(1,dpr),2,Math.sqrt(4_000_000/(width*height)));
  return {width:Math.max(1,Math.floor(width*ratio)),height:Math.max(1,Math.floor(height*ratio)),ratio};
 }
+
+export function clampPdfZoom(zoom:number){return Math.max(.25,Math.min(3,Math.round(zoom*100)/100));}
