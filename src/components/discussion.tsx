@@ -38,7 +38,7 @@ export function Discussion({ id,requestedComment }: { id: string;requestedCommen
   const navigationSequence=useRef(0),positioning=useRef(false),scrollIdle=useRef<ReturnType<typeof setTimeout>|undefined>(undefined),scrollActivity=useRef(new RoomScrollActivity()),failedTarget=useRef("");
   const anchor=useRef<RoomScrollAnchor|null>(null),searchButton=useRef<HTMLButtonElement>(null);
   const scrollBox = useRef<HTMLElement>(null), followLatest = useRef(true), previousSort = useRef(sort);
-  const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 15000 });
+  const idea = useQuery({ queryKey: ["idea", id], queryFn: ({ signal }) => api<Idea>(`/ideas/${encodeURIComponent(id)}`, { signal }), enabled: !!session.data, refetchInterval: 5000 });
   const liveInterval = useLiveComments(id, user?.id, !!idea.data);
   const comments = useQuery({ queryKey: ["comments", id, user?.id], queryFn: ({ signal }) => fetchComments(id, signal), enabled: !!user && !!idea.data, refetchInterval: liveInterval, refetchOnWindowFocus: "always", refetchOnReconnect: "always" });
   const members=useQuery({queryKey:["room-members",id,user?.id],queryFn:({signal})=>api<Author[]>(`/ideas/${encodeURIComponent(id)}/members`,{signal}),enabled:!!user&&!!idea.data,refetchInterval:30000});

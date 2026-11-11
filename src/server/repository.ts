@@ -43,10 +43,10 @@ export interface IdeaRepository {
   pinComment(ideaId:string,commentId:string,userId:string,pinned:boolean):Promise<void>;
 }
 function present(idea: IdeaRecord, state: DataState, userId: string): Idea {
-  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberReadComments:_receipts, memberArchived:_archived, status:_legacy, ...record } = idea;
+  const { members, memberJoinedAt: _joinedAt, memberReadCursor:_read, discussionVersion:_version, memberReadComments:_receipts, memberArchived:_archived, status:_legacy, statusUpdatedBy:_by, statusUpdatedAt:_at, ...record } = idea;
   const comments=state.comments.filter(c=>c.ideaId===idea.id);
   const lastCommentAt=comments.reduce<string|null>((last,c)=>!last||Date.parse(c.createdAt)>Date.parse(last)?c.createdAt:last,null);
-  return { ...record, lastCommentAt, status: !members.includes(userId) ? "new" : idea.memberArchived?.[userId] ? "archived" : "potential", memberCount: members.length, commentCount: comments.length, joined: members.includes(userId), mine: idea.creator.id === userId, notificationsMuted: members.includes(userId) && (state.mutedRooms?.[userId]?.includes(idea.id) ?? false) };
+  return { ...record, lastCommentAt, status: idea.status === "archived" ? "archived" : "potential", isNew: idea.status !== "archived" && !members.includes(userId), memberCount: members.length, commentCount: comments.length, joined: members.includes(userId), mine: idea.creator.id === userId, notificationsMuted: members.includes(userId) && (state.mutedRooms?.[userId]?.includes(idea.id) ?? false) };
 }
 export class StateIdeaRepository implements IdeaRepository {
   constructor(private store: StateStore) {}
@@ -116,14 +116,14 @@ export class StateIdeaRepository implements IdeaRepository {
       const ranked = state.ideas.filter(i => before(i.createdAt)).map(i => {
         const item = present(i, state, userId);
         const joined = i.members.includes(userId) && before(i.memberJoinedAt?.[userId]);
-        return { item: { ...item, lastCommentAt:latest.get(i.id)??null, joined, notificationsMuted:joined && !!item.notificationsMuted, status: !joined ? "new" as const : i.memberArchived?.[userId] ? "archived" as const : "potential" as const },
+        return { item: { ...item, lastCommentAt:latest.get(i.id)??null, joined, notificationsMuted:joined && !!item.notificationsMuted, isNew: i.status !== "archived" && !joined },
           sortAt:query.sort==="activity"?(latest.get(i.id)??i.createdAt):i.createdAt,
           rank: query.sort === "popular" ? i.members.filter(id => before(i.memberJoinedAt?.[id])).length : 0 };
       });
-      const counts = { all: ranked.length, new: ranked.filter(p => p.item.status === "new").length,
-        potential: ranked.filter(p => p.item.status === "potential").length, archived: ranked.filter(p => p.item.status === "archived").length,
-        mine: ranked.filter(p => p.item.mine).length };
-      const filtered = ranked.filter(({ item: i }) => (query.view === "all" || (query.view === "mine" ? i.mine : i.status === query.view)) && normalize([i.title, i.description, ...i.tags].join(" ")).includes(q));
+      const counts = { all: ranked.filter(p=>p.item.status!=="archived").length, new: ranked.filter(p=>p.item.isNew).length,
+        potential: ranked.filter(p=>p.item.status==="potential").length, archived: ranked.filter(p=>p.item.status==="archived").length,
+        mine: ranked.filter(p=>p.item.mine&&p.item.status!=="archived").length };
+      const filtered = ranked.filter(({item:i})=>(query.view==="archived"?i.status==="archived":i.status!=="archived"&&(query.view==="new"?i.isNew:query.view==="mine"?i.mine:true))&&normalize([i.title,i.description,...i.tags].join(" ")).includes(q));
       const compare = (a: {rank: number; sortAt: string; id: string}, b: {rank: number; sortAt: string; id: string}) =>
         b.rank - a.rank || Date.parse(b.sortAt) - Date.parse(a.sortAt) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
       filtered.sort((a, b) => compare({ ...a.item, sortAt:a.sortAt, rank: a.rank }, { ...b.item, sortAt:b.sortAt, rank: b.rank }));
@@ -155,8 +155,8 @@ export class StateIdeaRepository implements IdeaRepository {
   setIdeaStatus(id: string, userId: string, status: JoinedIdeaStatus) {
     return this.store.transact(state => {
       const idea = state.ideas.find(i => i.id === id); if (!idea) throw notFound();
-      if (!idea.members.includes(userId)) throw new AppError(403, "NOT_JOINED", "Tham gia ý tưởng để thay đổi phân loại");
-      (idea.memberArchived ??= {})[userId] = status === "archived"; return present(idea, state, userId);
+      if (!userId) throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để đổi trạng thái chung");
+      idea.status=status;idea.statusUpdatedBy=userId;idea.statusUpdatedAt=new Date().toISOString();return present(idea,state,userId);
     });
   }
   joinIdea(id: string, userId: string,user?:Author) {

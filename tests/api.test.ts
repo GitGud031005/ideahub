@@ -92,23 +92,23 @@ test("missing resources/methods and per-instance write limiter retain their cont
   const key = randomUUID(); rateLimit(key, 2, 100); rateLimit(key, 2, 101); assert.throws(() => rateLimit(key, 2, 102)); rateLimit(key, 2, 60200);
 });
 
-test("idea classification API requires same-origin login and membership, rejects forged status payloads",async()=>{
+test("shared classification API requires same-origin login but not membership, rejects forged status payloads",async()=>{
   const {call,repo,auth}=fixture();
   const a=cookie(await call("auth/register",post({...payload,username:"statusowner"})));
   const b=cookie(await call("auth/register",post({...payload,username:"statusmember"})));
   const idea=await (await call("ideas",post(ideaInput),a)).json(),path=`ideas/${idea.id}/status`;
   assert.equal((await call(path,post({status:"archived"}))).status,401);
-  assert.equal((await call(path,post({status:"archived"}),b)).status,403);
+  assert.equal((await call(path,post({status:"archived"}),b)).status,200);
+  const nonMember=await (await call(`ideas/${idea.id}`,{},b)).json();assert.equal(nonMember.joined,false);assert.equal(nonMember.memberCount,1);
   assert.equal((await call(path,{...post({status:"archived"}),headers:{origin:"https://evil.test"}},a)).status,403);
   assert.equal((await call(path,post({status:"deleted"}),a)).status,422);
   assert.equal((await call(path,post({status:"new",userId:idea.creator.id}),a)).status,422);
   assert.equal((await call(path,{},a)).status,405);
-  await call(`ideas/${idea.id}/join`,{method:"POST"},b);
   const response=await call(path,post({status:"archived"}),b);assert.equal(response.status,200);assert.equal((await response.json()).status,"archived");
-  assert.equal((await (await call("ideas")).json()).items.some((i:{id:string})=>i.id===idea.id),true);
+  assert.equal((await (await call("ideas")).json()).items.some((i:{id:string})=>i.id===idea.id),false);
   const filtered=await handleApi(request("ideas?view=archived",{},b),["ideas"],repo,auth);
   assert.equal((await filtered.json()).items.some((i:{id:string})=>i.id===idea.id),true);
-  const publicIdea=await (await call(`ideas/${idea.id}`)).json();assert.equal(publicIdea.status,"new");
-  assert.equal((await (await call(`ideas/${idea.id}`,{},a)).json()).status,"potential");
+  const publicIdea=await (await call(`ideas/${idea.id}`)).json();assert.equal(publicIdea.status,"archived");assert.equal(publicIdea.isNew,false);
+  assert.equal((await (await call(`ideas/${idea.id}`,{},a)).json()).status,"archived");
   assert.equal((await call(path,post({status:"new"}),b)).status,422);
 });

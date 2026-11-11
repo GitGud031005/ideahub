@@ -18,6 +18,7 @@ export interface DatabasePool extends DatabaseExecutor { connect(): Promise<Data
 type Executor = DatabaseExecutor;
 interface IdeaRow {
   status: IdeaStatus;
+  is_new:boolean;
   id: string; title: string; description: string; category: Category; tags: string[];
   creator_id: string; display_name: string; initial: string; avatar_url: string | null; created_at: Date;
   member_count: number; comment_count: number; joined: boolean; mine: boolean; notifications_muted: boolean;
@@ -29,7 +30,7 @@ interface CommentRow {
   mentions:Mention[];edited_at:Date|null;revision:number;
   attachments:Attachment[]; pinned_at:Date|null;
 }
-const IDEA_SELECT = `SELECT i.id, CASE WHEN viewer.user_id IS NULL THEN 'new' WHEN viewer.archived THEN 'archived' ELSE 'potential' END AS status, i.title, i.description, i.category, i.tags, i.creator_id,
+const IDEA_SELECT = `SELECT i.id, CASE WHEN i.status='archived' THEN 'archived' ELSE 'potential' END AS status, (i.status <> 'archived' AND viewer.user_id IS NULL) AS is_new, i.title, i.description, i.category, i.tags, i.creator_id,
   u.display_name, u.initial, u.avatar_url, i.created_at,
   to_char(i.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time,
   (SELECT count(*)::int FROM public.memberships m WHERE m.idea_id = i.id) AS member_count,
@@ -43,7 +44,7 @@ const IDEA_SELECT = `SELECT i.id, CASE WHEN viewer.user_id IS NULL THEN 'new' WH
 const COMMENT_SELECT = `SELECT c.id, c.idea_id, c.parent_id, c.author_id, c.body, c.created_at, c.read_sequence::text,c.attachments,c.pinned_at,c.mentions,c.edited_at,c.revision,
   u.display_name, u.initial, u.avatar_url FROM public.comments c JOIN public.users u ON u.id = c.author_id`;
 function idea(row: IdeaRow): Idea {
-  return { id: row.id, status: row.status, title: row.title, description: row.description, category: row.category, tags: row.tags,
+  return { id: row.id, status: row.status, isNew: row.is_new, title: row.title, description: row.description, category: row.category, tags: row.tags,
     creator: { id: row.creator_id, name: row.display_name, initial: row.initial, avatarUrl: row.avatar_url }, createdAt: row.created_at.toISOString(),
     memberCount: row.member_count, commentCount: row.comment_count, lastCommentAt: row.last_comment_at?.toISOString()??null, joined: row.joined, mine: row.mine, notificationsMuted: row.notifications_muted };
 }
@@ -126,24 +127,21 @@ export class PostgresIdeaRepository implements IdeaRepository {
       const snapshot = cursor?.snapshot ?? (await db.query<{ snapshot: string }>(`SELECT
         to_char(transaction_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS snapshot`)).rows[0].snapshot;
       const values = [userId, normalize(query.q), query.view, snapshot];
-      const countRow = (await db.query<{ all:number; new:number; potential:number; archived:number; mine:number; total:number }>(`WITH visible AS (
-        SELECT i.creator_id, i.search_text,
-          CASE WHEN viewer.user_id IS NULL THEN 'new' WHEN viewer.archived THEN 'archived' ELSE 'potential' END AS status
-        FROM public.ideas i LEFT JOIN public.memberships viewer ON viewer.idea_id = i.id AND viewer.user_id = $1 AND viewer.joined_at <= $4::timestamptz
+      const countRow = (await db.query<{all:number;new:number;potential:number;archived:number;mine:number;total:number}>(`WITH visible AS (
+        SELECT i.creator_id,i.search_text,i.status='archived' AS archived,viewer.user_id IS NULL AS unseen
+        FROM public.ideas i LEFT JOIN public.memberships viewer ON viewer.idea_id=i.id AND viewer.user_id=$1 AND viewer.joined_at <= $4::timestamptz
         WHERE i.created_at <= $4::timestamptz
-      ) SELECT count(*)::int AS all,
-        count(*) FILTER (WHERE status = 'new')::int AS new,
-        count(*) FILTER (WHERE status = 'potential')::int AS potential,
-        count(*) FILTER (WHERE status = 'archived')::int AS archived,
-        count(*) FILTER (WHERE creator_id = $1)::int AS mine,
-        count(*) FILTER (WHERE strpos(search_text, $2) > 0 AND ($3 = 'all' OR ($3 = 'mine' AND creator_id = $1) OR status = $3))::int AS total
-        FROM visible`, values)).rows[0];
-      const { total, ...counts } = countRow;
-      const where = `WHERE strpos(i.search_text, $2) > 0 AND i.created_at <= $4::timestamptz
-        AND ($3 = 'all' OR ($3 = 'mine' AND i.creator_id = $1)
-          OR ($3 = 'new' AND viewer.user_id IS NULL)
-          OR ($3 = 'potential' AND viewer.user_id IS NOT NULL AND NOT viewer.archived)
-          OR ($3 = 'archived' AND viewer.archived))`;
+      ) SELECT count(*) FILTER (WHERE NOT archived)::int AS all,
+        count(*) FILTER (WHERE NOT archived AND unseen)::int AS new,
+        count(*) FILTER (WHERE NOT archived)::int AS potential,
+        count(*) FILTER (WHERE archived)::int AS archived,
+        count(*) FILTER (WHERE NOT archived AND creator_id=$1)::int AS mine,
+        count(*) FILTER (WHERE strpos(search_text,$2)>0 AND (CASE WHEN $3='archived' THEN archived ELSE NOT archived AND ($3<>'new' OR unseen) AND ($3<>'mine' OR creator_id=$1) END))::int AS total
+        FROM visible`,values)).rows[0];
+      const {total,...counts}=countRow;
+      const where=`WHERE strpos(i.search_text,$2)>0 AND i.created_at <= $4::timestamptz
+        AND (CASE WHEN $3='archived' THEN i.status='archived' ELSE i.status<>'archived'
+          AND ($3<>'new' OR viewer.user_id IS NULL) AND ($3<>'mine' OR i.creator_id=$1) END)`;
       // Freeze membership and message activity at the first page so writes do not move rows across its cursor.
       const rank = query.sort === "popular" ? `(SELECT count(*)::int FROM public.memberships m
         WHERE m.idea_id = i.id AND m.joined_at <= $4::timestamptz)` : "0";
@@ -178,9 +176,8 @@ export class PostgresIdeaRepository implements IdeaRepository {
   async setIdeaStatus(id: string, userId: string, status: JoinedIdeaStatus): Promise<Idea> {
     return this.transaction(async db => {
       await requireIdea(db, id);
-      const result = await db.query(`UPDATE public.memberships SET archived = $3
-        WHERE idea_id = $1 AND user_id = $2 RETURNING idea_id`, [id, userId, status === "archived"]);
-      if (!result.rowCount) throw new AppError(403, "NOT_JOINED", "Tham gia ý tưởng để thay đổi phân loại");
+      if(!userId)throw new AppError(401,"AUTH_REQUIRED","Đăng nhập để đổi trạng thái chung");
+      await db.query(`UPDATE public.ideas SET status=$3,status_updated_by=$2,status_updated_at=clock_timestamp() WHERE id=$1`,[id,userId,status]);
       return getIdea(db, id, userId);
     });
   }
