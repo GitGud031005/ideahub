@@ -1,5 +1,7 @@
 @import "./hero.css";
 
+.ih-classification-note{display:block;margin-top:6px;font-size:11px;line-height:1.6;color:#77776d}
+
 :root{color-scheme:light;--ink:#191919;--muted:#79796f;--line:#e5e5dd;--paper:#fbfbfa;--font-sans:"Montserrat Variable",Montserrat,sans-serif;--content-width:1320px;--page-gutter:clamp(20px,3.5vw,48px);--field-bg:#fafaf9;--field-border:#deded8;--field-placeholder:#74746d;--field-error:#934f46}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;min-width:320px;background:var(--paper)}

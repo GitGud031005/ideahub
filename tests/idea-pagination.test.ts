@@ -83,13 +83,13 @@ for (const storage of ["memory", "postgres"] as const) {
 
       const member = "joining-viewer";
       for (const row of base.slice(0, 4)) await repo.joinIdea(row.id, member);
-      const joined = await repo.listIdeas(member, { ...query, view: "potential" });
+      const joined = await repo.listIdeas(member, { ...query, view: "new",q:"idea" });
       assert(joined.nextCursor);
       while (Date.now() <= Date.parse(JSON.parse(Buffer.from(joined.nextCursor, "base64url").toString()).snapshot)) await new Promise(resolve => setTimeout(resolve, 1));
       await repo.joinIdea(base[4].id, member);
-      const next = await repo.listIdeas(member, { ...query, view: "potential", cursor: joined.nextCursor });
-      assert.equal(next.total, 4); assert.equal(next.nextCursor, null);
-      assert.deepEqual([...joined.items, ...next.items].map(i => i.id).sort(), base.slice(0, 4).map(i => i.id));
+      const next = await repo.listIdeas(member, { ...query, view: "new",q:"idea", cursor: joined.nextCursor });
+      assert.equal(next.total, base.length-4); assert.equal(next.nextCursor, null);
+      assert.deepEqual([...joined.items, ...next.items].map(i => i.id).sort(), base.slice(4).map(i => i.id));
     } finally { await database?.close(); }
   });
 }

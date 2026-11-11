@@ -11,6 +11,8 @@ export interface Idea {
   title: string;
   description: string;
   status: IdeaStatus;
+  /** Personal discovery marker, independent of shared classification. */
+  isNew?: boolean;
   category: Category;
   tags: string[];
   creator: Author;

@@ -7,7 +7,9 @@ export interface IdeaRecord {
   memberReadCursor?: Record<string, string>; // Historical baseline; never advance when opening a branch.
   memberReadComments?: Record<string, string[]>;
   discussionVersion?:number;
-  status?: IdeaStatus; // Legacy shared status, no longer projected.
+  status?: IdeaStatus; // Shared classification; legacy new maps to potential.
+  statusUpdatedBy?: string;
+  statusUpdatedAt?: string;
   memberArchived?: Record<string, boolean>;
 }
 export interface DataState { users?:Author[];notifications?:import("./collaboration").StoredNotification[];mutedRooms?:Record<string,string[]>;pushKeys?:{publicKey:string;privateKey:string};pushSubscriptions?:(import("@/lib/domain").PushRegistration & {userId:string})[]; version: 1; ideas: IdeaRecord[]; comments: Comment[]; attachments?:StoredAttachment[] }

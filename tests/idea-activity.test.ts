@@ -38,10 +38,10 @@ for(const storage of ["memory","postgres"] as const){
       await repo.markRead(a.id,user.id,[root.id,reply.id]);
       await repo.pinComment(b.id,other.id,user.id,true);
       await repo.setIdeaStatus(b.id,user.id,"archived");
-      assert.deepEqual((await repo.listIdeas(user.id,query)).items.map(i=>i.id),[a.id,empty.id,b.id]);
+      assert.deepEqual((await repo.listIdeas(user.id,query)).items.map(i=>i.id),[a.id,empty.id]);
       const fresh=await repo.createComment(b.id,user,{text:"Fresh reply",parentId:other.id});
       page=await repo.listIdeas(user.id,query);
-      assert.equal(page.items[0].id,b.id);assert.equal(page.items[0].lastCommentAt,fresh.createdAt);
+      assert(!page.items.some(i=>i.id===b.id));assert.equal((await repo.getIdea(b.id,user.id)).lastCommentAt,fresh.createdAt);
       assert.equal((await repo.listIdeas(user.id,{...query,view:"archived"})).items[0].id,b.id);
       assert.equal((await repo.listIdeas(user.id,{...query,q:"Old room"})).items[0].id,a.id);
     }finally{await db?.close();}
