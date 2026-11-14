@@ -6,10 +6,12 @@ test('PDF zoom supports reduction below fit width and bounded wheel increments w
  let zoom=1;for(let i=0;i<5;i++)zoom=clampPdfZoom(zoom-.1);assert.equal(zoom,.5);
  for(let i=0;i<5;i++)zoom=clampPdfZoom(zoom+.1);assert.equal(zoom,1);
 });
-test('file previews recognize existing octet-stream receipts without rendering office or archive files as HTML',()=>{
+test('file previews recognize supported file types and keep unsupported archives and legacy Office files closed',()=>{
  for(const name of ['notes.PDF','notes.pdf'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'pdf');
  for(const name of ['notes.txt','notes.CSV'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'text');
- for(const name of ['report.docx','sheet.xlsx','deck.pptx','archive.zip','script.html'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'unsupported');
+ for(const name of ['report.docx','report.DOCX'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'docx');
+ assert.equal(attachmentPreview({name:'document',mime:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',kind:'file'}),'docx');
+ for(const name of ['report.doc','report.docm','sheet.xlsx','deck.pptx','archive.zip','script.html'])assert.equal(attachmentPreview({name,mime:'application/octet-stream',kind:'file'}),'unsupported');
  assert.equal(attachmentPreview({name:'photo.png',mime:'image/png',kind:'image'}),'image');
 });
 test('download links retain authenticated paths, query parameters, fragments and local outbox blobs',()=>{
