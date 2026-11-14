@@ -7,6 +7,7 @@ import {fileSize,ATTACHMENT_MAX_BYTES} from '@/lib/shared-content';
 import {attachmentDownloadUrl,attachmentPreview} from '@/lib/attachment-preview';
 import styles from './attachment-preview.module.css';
 const PdfPreview=dynamic(()=>import('./pdf-preview').then(m=>m.PdfPreview),{ssr:false,loading:()=> <p className={styles.loading} role="status">Đang mở PDF…</p>});
+const DocxPreview=dynamic(()=>import('./docx-preview').then(m=>m.DocxPreview),{ssr:false,loading:()=> <p className={styles.loading} role="status">Đang mở tài liệu Word…</p>});
 
 export function AttachmentViewer({attachment,onClose}:{attachment:Attachment;onClose:()=>void}){
  const ref=useRef<HTMLDialogElement>(null),close=useRef<HTMLButtonElement>(null),[attempt,setAttempt]=useState(0);
@@ -40,6 +41,7 @@ function PreviewContent({attachment,retry}:{attachment:Attachment;retry:()=>void
  if(kind==='image')return <div className={styles.imageStage} aria-busy={status==='loading'}>{status==='loading'&&<p className={styles.loading} role="status">Đang tải ảnh…</p>}<img src={attachment.url} alt={attachment.name} onLoad={()=>setStatus('ready')} onError={()=>setStatus('error')}/></div>;
  if(status==='loading')return <div className={styles.empty} role="status">Đang tải xem trước…</div>;
  if(kind==='pdf'&&bytes)return <PdfPreview bytes={bytes} onError={()=>setStatus('error')}/>;
+ if(kind==='docx'&&bytes)return <DocxPreview bytes={bytes} onError={()=>setStatus('error')}/>;
  return <div className={styles.textStage}>{text.length>100000&&<p className={styles.notice}>Đang hiển thị 100.000 ký tự đầu. Tải xuống để đọc toàn bộ tệp.</p>}<pre>{text.slice(0,100000)}</pre></div>;
 }
 export {AttachmentList} from "./attachment-list";

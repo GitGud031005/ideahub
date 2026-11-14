@@ -2,6 +2,7 @@ import type {Attachment} from './domain';
 export function attachmentPreview(a:Pick<Attachment,'kind'|'mime'|'name'>){
  if(a.kind==='image')return 'image';
  if(a.mime==='application/pdf'||/\.pdf$/i.test(a.name))return 'pdf';
+ if(a.mime==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'||/\.docx$/i.test(a.name))return 'docx';
  if(['text/plain','text/csv'].includes(a.mime)||/\.(txt|csv)$/i.test(a.name))return 'text';
  return 'unsupported';
 }
