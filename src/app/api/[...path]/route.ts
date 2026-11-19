@@ -10,7 +10,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 type Context = { params: Promise<{ path: string[] }> };
 async function handler(request: Request, context: Context) {
-  if(storageMode()==="postgres")await prepareCollaboration(getDatabasePool());
+  if(storageMode()==="postgres" && process.env.IDEAHUB_SCHEMA_MANAGED !== "1"){
+    await prepareCollaboration(getDatabasePool());
+  }
   const path=(await context.params).path,result=await handleApi(request,path);
   if(result.ok&&((request.method==="POST"&&path.includes("comments"))||path[0]==="notifications"||path[0]==="push"))after(async()=>{try{await dispatchPendingPush(getRepository());}catch{console.warn("Push deferred; inbox retained");}});return result;
 }
