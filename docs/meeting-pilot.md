@@ -6,9 +6,30 @@ Mỗi block có một đường dẫn phòng họp. Mỗi phiên có một ID v�
 
 1. Dùng một database Supabase và một project LiveKit Cloud dành riêng cho thử nghiệm. Áp dụng đầy đủ migration theo thứ tự trong `supabase/migrations`. Đặt `IDEAHUB_STORAGE=postgres`, `DATABASE_URL` của preview và `IDEAHUB_SCHEMA_MANAGED=1` để app dùng schema đã cài với tài khoản runtime giới hạn quyền.
 2. Tắt tính năng tự tạo phòng trên project LiveKit Cloud thử nghiệm. Xác nhận trường `enableAutoCreate` là `false` trong cấu hình project. CLI hỗ trợ `lk project update PROJECT_ID --auto-create=false --user-auth` cho tài khoản có quyền quản trị project. Dùng project riêng vì cài đặt có hiệu lực với toàn bộ project. [API project](https://docs.livekit.io/reference/api/projects/) · [LiveKit CLI](https://docs.livekit.io/reference/developer-tools/livekit-cli/projects/)
-3. Cấu hình `LIVEKIT_URL` (địa chỉ `wss://` của project), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` và `IDEAHUB_MEETING_JOB_SECRET` (ít nhất 32 ký tự ngẫu nhiên) ở phía server. Đăng ký webhook `POST /api/meetings/webhook` với đúng API key đã cấu hình. Dùng địa chỉ preview cho phép LiveKit và Supabase gọi các endpoint đã có xác thực.
-4. Bật `pg_cron` và `pg_net` trên Supabase preview. Tạo secret `meeting_sweep_url` trong Vault với URL đầy đủ của `/api/meetings/sweep`, và `meeting_sweep_secret` với cùng giá trị dùng cho `IDEAHUB_MEETING_JOB_SECRET`. Chạy `supabase/operations/enable-meeting-sweeper.sql`. [Supabase Cron](https://supabase.com/docs/guides/cron) · [Supabase pg_net](https://supabase.com/docs/guides/database/extensions/pg_net)
+3. Cấu hình `LIVEKIT_URL` (địa chỉ `wss://` của project), `LIVEKIT_API_KEY` và `LIVEKIT_API_SECRET` ở phía server. Nếu đăng ký webhook `POST /api/meetings/webhook`, dùng đúng API key của ứng dụng. Worker vẫn đối chiếu trạng thái phòng khi webhook chưa được cấu hình.
+4. Bật `pg_cron` và `pg_net` trên Supabase preview. Triển khai Edge Function `meeting-sweeper` theo hướng dẫn bên dưới, kiểm tra request có khóa trả 200 và request thiếu khóa trả 401. Đặt URL của function vào `meeting_sweep_url` và khóa gọi function vào `meeting_sweep_secret` trong Vault. Chạy `supabase/operations/enable-meeting-sweeper.sql`. [Supabase Cron](https://supabase.com/docs/guides/cron) · [Supabase pg_net](https://supabase.com/docs/guides/database/extensions/pg_net)
 5. Kiểm tra webhook và job trên preview. Bật `IDEAHUB_MEETINGS_ENABLED=1` và đặt `IDEAHUB_MEETINGS_PILOT_ID` bằng ID của duy nhất block được thử. Dùng `IDEAHUB_MEETING_TEST_SECONDS=120` và `IDEAHUB_MEETING_TEST_WARNING_SECONDS=45` trên Vercel Preview hoặc local để đo vòng đời nhanh. Production luôn dùng 180 phút và cảnh báo ở phút 150.
+
+### Edge Function trên Supabase thử
+
+Đóng gói cùng mã xử lý phiên của ứng dụng, từ thư mục gốc sau khi chạy `npm ci`.
+
+```sh
+node_modules/.bin/esbuild supabase/functions/meeting-sweeper/index.ts \
+  --bundle --platform=neutral --format=esm \
+  --alias:pg=npm:pg@8.23.1 \
+  --alias:livekit-server-sdk=npm:livekit-server-sdk@2.20.0 \
+  '--external:npm:*' '--external:node:*' --outfile=/tmp/meeting-sweeper/index.ts
+```
+
+Triển khai file kết quả với tên `meeting-sweeper`. Function tự kiểm tra `Authorization: Bearer` bằng `MEETING_SWEEP_SECRET`, vì vậy đặt `verify_jwt=false` cho riêng function này. Cấu hình các biến sau trong Edge Function Secrets.
+
+| Biến | Giá trị |
+| --- | --- |
+| `MEETING_WORKER_DATABASE_URL` | URI pooler của tài khoản chỉ đọc và cập nhật trạng thái các phiên họp của block thử, đồng thời được đọc danh sách định danh LiveKit tương ứng |
+| `MEETING_LIVEKIT_URL`, `MEETING_LIVEKIT_KEY`, `MEETING_LIVEKIT_SECRET` | Địa chỉ và khóa dành riêng cho worker trong project LiveKit thử |
+| `MEETING_SWEEP_SECRET` | Ít nhất 32 ký tự ngẫu nhiên, trùng với `meeting_sweep_secret` trong Vault |
+| `MEETING_TEST_SECONDS`, `MEETING_TEST_WARNING_SECONDS` | `120` và `45` khi đo thời gian ngắn. Đặt giống cấu hình preview của ứng dụng |
 
 ## Vận hành và nghiệm thu
 
