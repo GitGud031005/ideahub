@@ -34,6 +34,8 @@ npm run build   # Build production
 npm start      # Production auth cần PostgreSQL
 ```
 
+Phòng họp pilot mặc định tắt. Xem [cấu hình và nghiệm thu phòng họp](docs/meeting-pilot.md).
+
 ## Deploy Vercel
 
 1. Import repo `GitGud031005/ideahub` trong Vercel.

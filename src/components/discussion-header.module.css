@@ -23,3 +23,19 @@
  .sort.sort>:global(.ih-sort-compact-icon){left:50%;transform:translate(-50%,-50%)}
 }
 @media(max-width:400px){.actions.actions{gap:3px}}
+.meeting {
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;flex-shrink:0;
+ min-height:44px;padding:0 12px;border:1px solid #dce4d8;border-radius:5px;
+ background:#f1f5ef;color:#335442;font-size:12px;font-weight:600;white-space:nowrap;text-decoration:none;
+}
+.meeting:hover{background:#e5eee3;color:#233e2e}
+.meeting:focus-visible{outline:2px solid #335442;outline-offset:2px}
+@container discussion-toolbar (max-width:640px){
+ .meeting{width:44px;padding:0}
+ .meeting>span{display:none}
+}
+@media(max-width:370px){
+ .withMeeting :global(.ih-discussion-heading)>h1{
+  position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap
+ }
+}

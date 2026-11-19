@@ -9,6 +9,9 @@ const config: NextConfig = {
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       { key: "X-Frame-Options", value: "DENY" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    ] }, { source: "/ideas/:id/meeting", headers: [
+      { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+      { key: "Cache-Control", value: "private, no-store" },
     ] }, { source:"/sw.js", headers:[{key:"Cache-Control",value:"no-cache, max-age=0, must-revalidate"}] }];
   },
 };
