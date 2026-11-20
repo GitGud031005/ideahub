@@ -49,7 +49,7 @@ export function MeetingPresentation({ children, presenters, presenterId, selectP
     const pane = viewport.current;
     if (!pane) return;
     function wheel(event: WheelEvent) {
-      if (!event.ctrlKey || !event.deltaY || !pane) return;
+      if (!event.deltaY || event.shiftKey || !pane) return;
       event.preventDefault();
       const bounds = pane.getBoundingClientRect();
       zoomTo(scale.current + (event.deltaY < 0 ? STEP : -STEP), { x: event.clientX - bounds.left, y: event.clientY - bounds.top });

@@ -245,7 +245,8 @@ export function MeetingCall({ ideaId, title, user, credentials, mic, camera, rec
         {screen && <MeetingPresentation key={screen.id} presenters={screens} presenterId={screen.id} selectPresenter={setPresenterId}>
           <TrackElement track={screen.track} />
         </MeetingPresentation>}
-        {participants.length ? <div className={screen ? styles.filmstrip : styles.grid}
+        {participants.length ? <div className={screen ? styles.presentationPeople : styles.grid}
+          data-count={screen ? undefined : participants.length}
           tabIndex={screen ? 0 : undefined} aria-label={screen ? "Video người tham gia" : undefined}>
           {participants.map(participant => <Tile key={participant.identity}
             participant={participant} local={participant === local} speaking={speaking.has(participant.identity)} avatarUrl={avatarFor(participant)} />)}
