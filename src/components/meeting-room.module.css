@@ -22,7 +22,7 @@
   padding: max(16px, env(safe-area-inset-top)) max(clamp(18px, 5vw, 64px), env(safe-area-inset-right))
     max(32px, env(safe-area-inset-bottom)) max(clamp(18px, 5vw, 64px), env(safe-area-inset-left));
 }
-.lobbyHeader { display: flex; min-height: 52px; align-items: center }
+.lobbyHeader { display: flex; min-height: 52px; align-items: center; justify-content: space-between; gap: 10px }
 .back {
   display: inline-flex; align-items: center; gap: 10px;
   min-height: 44px; color: var(--muted); font-size: 14px; font-weight: 650;
@@ -80,7 +80,7 @@
   color: #e8efe8;
 }
 .previewPlaceholder { display: grid; justify-items: center; gap: 13px; font-size: 13px; font-weight: 550 }
-.avatar {
+.page .avatar {
   display: inline-grid; place-items: center; flex: 0 0 auto;
   width: var(--avatar-size, 60px); height: var(--avatar-size, 60px); border-radius: 50%;
   background: #dceadd; color: #25442f;
@@ -124,12 +124,26 @@
   border-bottom: 1px solid #34433a;
 }
 .callHeading { min-width: 0 }
+.callActions { display: flex; flex-shrink: 0; align-items: center; gap: 7px }
+.linkShare { position: relative; flex-shrink: 0 }
+.lobbyHeader .rosterButton { color: var(--green); background: #fff; border-color: var(--line) }
+.lobbyHeader .rosterButton:hover { background: #e9eee5 }
+.linkStatus {
+  position: absolute; z-index: 2; top: calc(100% + 7px); right: 0;
+  padding: 7px 9px; border-radius: 7px; background: #d4ebd8; color: #193b26;
+  font-size: 12px; white-space: nowrap; box-shadow: 0 2px 12px #0a130e36;
+}
+.linkField {
+  box-sizing: border-box; width: 100%; min-height: 44px; margin-top: 10px;
+  padding: 8px 10px; border: 1px solid #53695b; border-radius: 8px;
+  background: #15221a; color: #f0f4ed; font-size: 16px;
+}
 .callHeading h1 {
   font-size: clamp(16px, 2vw, 23px); font-weight: 650;
   line-height: 1.25; letter-spacing: -.025em;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.callMeta { display: flex; align-items: center; gap: 7px; color: #ccd8ce; font-size: 12px; padding-top: 5px }
+.callMeta { display: flex; align-items: center; gap: 7px; color: #ccd8ce; font-size: 12px; padding-top: 5px; white-space: nowrap }
 .connectedDot, .speakingDot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #9ee2ac }
 .elapsed { margin-left: 7px; padding-left: 12px; border-left: 1px solid #55665a; font-variant-numeric: tabular-nums }
 .rosterButton, .iconButton {
@@ -147,21 +161,24 @@
 .warning span { margin-left: auto; flex-shrink: 0; font-variant-numeric: tabular-nums; font-weight: 700 }
 
 .stageViewport { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain }
+.stageViewport[data-presenting=true] { overflow: hidden }
+.stageViewport, .filmstrip, .presentationViewport { scrollbar-width: none }
+.stageViewport::-webkit-scrollbar, .filmstrip::-webkit-scrollbar, .presentationViewport::-webkit-scrollbar { display: none }
 .stage {
   width: min(100%, 1240px); min-height: 100%; margin: 0 auto;
-  display: grid; align-content: center; gap: 12px; padding: clamp(10px, 2.4vw, 24px);
+  display: grid; align-content: start; gap: 12px; padding: clamp(10px, 2.4vw, 24px);
 }
 .grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)) }
-.grid[data-count="2"], .grid[data-count="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)) }
-.grid[data-count="1"] { grid-template-columns: minmax(0, 620px); justify-content: center }
-.grid[data-sharing=true] { grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)) }
+.stageViewport:focus-visible, .presentationViewport:focus-visible, .filmstrip:focus-visible { outline: 2px solid #b0e9c0; outline-offset: -2px }
 .tile {
-  position: relative; display: grid; place-items: center; margin: 0; min-width: 0; overflow: hidden;
-  aspect-ratio: 16 / 10; max-height: 37dvh;
+  position: relative; margin: 0; min-width: 0; overflow: hidden;
+  aspect-ratio: 16 / 10; max-height: 30dvh;
   border: 2px solid #3a5143; border-radius: 13px; background: #2a3c34; color: #e5eee6;
+  --avatar-size: clamp(30px, 8dvh, 60px);
 }
-.grid[data-count="1"] .tile, .grid[data-count="2"] .tile { max-height: 55dvh }
-.grid[data-sharing=true] .tile { max-height: clamp(88px, 19dvh, 146px) }
+.tileAvatar {
+  display: grid; place-items: center; position: absolute; inset: 0 0 28px;
+}
 .tile.speaking { border-color: #a0dfac }
 .tile figcaption {
   position: absolute; bottom: 7px; left: 7px; right: auto; max-width: calc(100% - 14px);
@@ -171,11 +188,48 @@
 }
 .tile figcaption > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .mutedMic { display: inline-flex; flex-shrink: 0; color: #e8beb9 }
-.tile.screen {
-  width: min(100%, 920px); justify-self: center; max-height: 57dvh; aspect-ratio: 16 / 9;
-  background: #101713;
+.presentationLayout {
+  width: min(100%, 1440px); height: 100%; margin: 0 auto; min-width: 0;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 8px;
+  padding: 8px clamp(9px, 2vw, 24px);
 }
-.tile.screen video { object-fit: contain }
+.presentation {
+  display: grid; min-height: 0; min-width: 0; grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden; border: 1px solid #3a5143; border-radius: 11px; background: #101713;
+}
+.presentationBar {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px;
+  padding: 3px 7px 3px 11px; background: #24332b; color: #f0f4ed;
+}
+.presentationBar p { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 650; min-width: 0 }
+.presentationBar p svg { flex-shrink: 0 }
+.presentationBar p span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.presentationBar select {
+  width: fit-content; max-width: 100%; min-width: 0; min-height: 44px;
+  background: #26352d; color: inherit; border: 1px solid #506056;
+  border-radius: 7px; padding: 0 6px; font: inherit; font-size: 13px;
+}
+.zoomControls { display: flex; align-items: center; gap: 2px }
+.zoomControls button {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border: 0; border-radius: 7px; background: transparent; color: #f0f4ed;
+}
+.zoomControls button:hover:enabled { background: #415348 }
+.zoomControls output { min-width: 38px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums }
+.presentationViewport { min-width: 0; min-height: 0; overflow: hidden; overscroll-behavior: contain }
+.presentationViewport[data-zoomed=true] { overflow: auto; cursor: grab }
+.presentationViewport[data-zoomed=true]:active { cursor: grabbing }
+.presentationFrame video { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none }
+.filmstrip {
+  display: flex; justify-content: safe center; gap: 8px; min-width: 0;
+  overflow-x: auto; overscroll-behavior-x: contain;
+}
+.filmstrip .tile {
+  flex: 0 0 clamp(108px, 17vw, 170px); height: clamp(68px, 13dvh, 102px); max-height: none; aspect-ratio: auto;
+  --avatar-size: clamp(28px, 4.8dvh, 44px); --avatar-text: 13px;
+}
+.filmstrip .tile figcaption { font-size: 11px; gap: 4px }
+.filmstrip .tileAvatar { bottom: 31px }
 .connecting { display: grid; justify-items: center; gap: 14px; color: #d3ddd3; font-size: 14px; padding: 25px 0 }
 .spinner { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #678475; border-top-color: #c2ecc9; animation: spin 1s linear infinite }
 @keyframes spin { to { transform: rotate(1turn) } }
@@ -187,14 +241,15 @@
   border-top: 1px solid #34433a; background: #17211d;
 }
 .controls {
-  width: max-content; max-width: 100%; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  width: min(100%, 375px); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
   gap: 7px;
 }
 .controls .control, .leave {
-  min-width: 62px; min-height: 54px; padding: 6px 9px;
+  min-width: 0; min-height: 54px; padding: 6px 5px;
   border: 1px solid #506056; border-radius: 10px; background: #28362e; color: #f0f4ed;
 }
 .controls .control { flex-direction: column; gap: 4px; font-size: 11px }
+.controls .control span { white-space: nowrap }
 .controls .control:not([aria-pressed=true]):hover:enabled { background: #415348 }
 .controls .control[aria-pressed=true] { background: #d2e9d7; border-color: #d2e9d7; color: #1d3826 }
 .leave {
@@ -208,7 +263,15 @@
   min-height: 44px; padding: 8px 13px; border: 1px solid #cde8d4;
   border-radius: 9px; background: #d4ebd8; color: #193b26; font-size: 13px; font-weight: 700;
 }
-.callError { padding: 8px 10px; border-radius: 8px; background: #fbd8d3; color: #6e2327; font-size: 13px }
+.callError {
+  display: flex; align-items: center; gap: 4px; padding-left: 10px;
+  border-radius: 8px; background: #fbd8d3; color: #6e2327; font-size: 13px;
+}
+.callError button {
+  flex: 0 0 44px; min-height: 44px; display: grid; place-items: center;
+  border: 0; border-radius: 8px; background: transparent; color: inherit;
+}
+.callError button:hover { background: #f2c1bc }
 
 .roster {
   width: min(calc(100% - 28px), 410px); max-height: min(72dvh, 500px); padding: 0;
@@ -219,6 +282,7 @@
 .rosterContent header { display: flex; align-items: center; justify-content: space-between; gap: 8px }
 .rosterContent h2 { font-size: 16px; font-weight: 650 }
 .rosterContent h2 span { margin-left: 5px; color: #cebb98; font-size: 12px; white-space: nowrap }
+.rosterContent p { margin-top: 8px; font-size: 13px }
 .rosterContent ul { display: grid; gap: 8px; margin: 8px 0 0; padding: 0; list-style: none }
 .rosterContent li {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px;
@@ -234,25 +298,28 @@
   .lobbyDetails { gap: 8px }
   .lobbyActions > * { flex: 1 1 auto }
   .preview { max-height: 36dvh; min-height: 118px; border-radius: 13px }
-  .grid, .grid[data-count="4"], .grid[data-sharing=true] { grid-template-columns: repeat(2, minmax(0, 1fr)) }
-  .tile { border-radius: 9px; padding-bottom: 14px; --avatar-size: 40px; --avatar-text: 15px }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px }
+  .tile { min-height: 96px; border-radius: 9px; --avatar-size: 38px; --avatar-text: 15px }
+  .filmstrip .tile { min-height: 0 }
   .tile figcaption { font-size: 11px; gap: 5px }
-  .tile.screen { max-height: 46dvh }
   .roster {
     inset: auto 0 0; margin: 0 auto; width: min(100%, 520px); max-width: 100%;
     border-radius: 17px 17px 0 0; padding-bottom: env(safe-area-inset-bottom);
   }
 }
-@media (max-width: 680px) and (orientation: portrait) {
-  .grid[data-count="2"]:not([data-sharing=true]) { grid-template-columns: minmax(0, 1fr) }
-  .grid[data-count="2"]:not([data-sharing=true]) .tile { max-height: 32dvh }
-  .grid[data-count="1"]:not([data-sharing=true]) .tile { max-height: 47dvh }
-}
 @media (orientation: landscape) and (max-height: 460px) {
   .callHeader { padding-block: 5px }
   .callFooter { padding-block: 5px max(5px, env(safe-area-inset-bottom)) }
   .controls .control, .leave { min-height: 44px }
-  .tile.screen { max-height: 49dvh }
+  .presentationLayout { gap: 5px; padding-block: 5px }
+  .filmstrip .tile { height: 62px; --avatar-size: 27px }
+}
+@media (max-width: 360px) {
+  .callHeader { gap: 8px }
+  .callActions .linkShare .rosterButton { flex-direction: column; gap: 1px; padding: 3px 6px; font-size: 10px }
+  .callMeta { gap: 4px }
+  .elapsed { margin-left: 3px; padding-left: 6px }
+  .controls .control, .leave { padding-inline: 3px; font-size: 10px }
 }
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation: none }

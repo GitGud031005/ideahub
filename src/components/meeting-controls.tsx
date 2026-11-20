@@ -1,9 +1,10 @@
 import type { LucideIcon } from "lucide-react";
+import { Avatar } from "./avatar";
 import styles from "./meeting-room.module.css";
 
-export function MeetingAvatar({ name }: { name: string }) {
+export function MeetingAvatar({ name, avatarUrl }: { name: string; avatarUrl?: string | null }) {
   const initials = name.trim().split(/\s+/).slice(-2).map(word => Array.from(word)[0]).join("");
-  return <span className={styles.avatar} aria-hidden="true">{initials || "?"}</span>;
+  return <Avatar person={{ initial: initials || "?", avatarUrl }} className={styles.avatar} />;
 }
 
 export function MeetingControl({ icon: Icon, label, pressed, disabled, onClick }: {

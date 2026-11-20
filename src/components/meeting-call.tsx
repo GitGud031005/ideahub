@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Camera, CameraOff, Clock3, Mic, MicOff, MonitorUp, PhoneOff, UsersRound, Volume2, X } from "lucide-react";
 import { ConnectionState, DisconnectReason, Room, RoomEvent, Track, type Participant } from "livekit-client";
-import { ApiError } from "@/lib/api-client";
+import { ApiError, api } from "@/lib/api-client";
+import type { Author } from "@/lib/domain";
 import { MEETING_CAPACITY, meetingClock, type MeetingJoin, type MeetingStatus } from "@/lib/meeting";
 import { MeetingAvatar, MeetingControl } from "./meeting-controls";
+import { MeetingLinkShare } from "./meeting-link-share";
+import { MeetingPresentation } from "./meeting-presentation";
 import { mediaMessage } from "./meeting-preview";
 import styles from "./meeting-room.module.css";
 
 type Props = {
   ideaId: string;
   title: string;
+  user: Author;
   credentials: MeetingJoin;
   mic: boolean;
   camera: boolean;
@@ -24,7 +29,8 @@ type Props = {
 };
 
 const changes = [
-  RoomEvent.ParticipantConnected, RoomEvent.ParticipantDisconnected, RoomEvent.ParticipantNameChanged,
+  RoomEvent.ParticipantDisconnected, RoomEvent.ParticipantNameChanged,
+  RoomEvent.TrackPublished, RoomEvent.TrackUnpublished,
   RoomEvent.TrackSubscribed, RoomEvent.TrackUnsubscribed, RoomEvent.TrackMuted, RoomEvent.TrackUnmuted,
   RoomEvent.LocalTrackPublished, RoomEvent.LocalTrackUnpublished, RoomEvent.ActiveSpeakersChanged,
   RoomEvent.ConnectionStateChanged, RoomEvent.AudioPlaybackStatusChanged,
@@ -48,17 +54,18 @@ function TrackElement({ track, audio = false, mirror = false }: { track: Track; 
     : <video ref={node => { element.current = node; }} className={mirror ? styles.mirror : undefined} autoPlay muted playsInline />;
 }
 
-function Tile({ participant, speaking, local, screen = false }: {
-  participant: Participant; speaking: boolean; local: boolean; screen?: boolean;
+function Tile({ participant, speaking, local, avatarUrl }: {
+  participant: Participant; speaking: boolean; local: boolean; avatarUrl?: string | null;
 }) {
-  const item = participant.getTrackPublication(screen ? Track.Source.ScreenShare : Track.Source.Camera);
+  const item = participant.getTrackPublication(Track.Source.Camera);
   const name = participant.name || "Thành viên";
-  return <figure className={`${styles.tile} ${screen ? styles.screen : ""} ${speaking ? styles.speaking : ""}`}>
-    {item?.track && !item.isMuted ? <TrackElement track={item.track} mirror={local && !screen} /> : <MeetingAvatar name={name} />}
+  return <figure className={`${styles.tile} ${speaking ? styles.speaking : ""}`}>
+    {item?.track && !item.isMuted ? <TrackElement track={item.track} mirror={local} /> :
+      <div className={styles.tileAvatar}><MeetingAvatar name={name} avatarUrl={avatarUrl} /></div>}
     <figcaption>
-      <span>{screen ? `Màn hình của ${name}` : local ? "Bạn" : name}</span>
-      {!screen && !participant.isMicrophoneEnabled && <span className={styles.mutedMic} role="img" aria-label="Mic tắt"><MicOff size={14} aria-hidden="true" /></span>}
-      {!screen && speaking && <span className={styles.speakingDot} role="img" aria-label="Đang nói" />}
+      <span title={name}>{local ? "Bạn" : name}</span>
+      {!participant.isMicrophoneEnabled && <span className={styles.mutedMic} role="img" aria-label="Mic tắt"><MicOff size={14} aria-hidden="true" /></span>}
+      {speaking && <span className={styles.speakingDot} role="img" aria-label="Đang nói" />}
     </figcaption>
   </figure>;
 }
@@ -70,7 +77,7 @@ function countdown(seconds: number) {
   return hours ? `${hours}:${String(minutes % 60).padStart(2, "0")}:${remainder}` : `${minutes}:${remainder}`;
 }
 
-export function MeetingCall({ ideaId, title, credentials, mic, camera, received, status, statusReceived, statusError, exit, refresh }: Props) {
+export function MeetingCall({ ideaId, title, user, credentials, mic, camera, received, status, statusReceived, statusError, exit, refresh }: Props) {
   const row = credentials.status.session!;
   const [room, setRoom] = useState<Room | null>(null);
   const [, redraw] = useState(0);
@@ -78,16 +85,31 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
   const [pending, setPending] = useState(false);
   const [clientNow, setClientNow] = useState(received);
   const [opened, setOpened] = useState(false);
+  const [presenterId, setPresenterId] = useState("");
   const terminated = useRef(false);
   const roster = useRef<HTMLDialogElement>(null);
   const back = `/ideas/${encodeURIComponent(ideaId)}`;
+  const members = useQuery({
+    queryKey: ["room-members", ideaId, user.id],
+    queryFn: ({ signal }) => api<Author[]>(`${back}/members`, { signal }),
+    staleTime: 30000,
+  });
+  const refreshMembers = members.refetch;
 
   useEffect(() => {
     const call = new Room({ adaptiveStream: true, dynacast: true });
     let disposed = false;
     setRoom(call);
-    const sync = () => { if (!disposed) redraw(value => value + 1); };
-    const resync = () => { sync(); refresh(); };
+    let frame: number | null = null;
+    const sync = () => {
+      if (disposed || frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        if (!disposed) redraw(value => value + 1);
+      });
+    };
+    const memberJoined = () => { sync(); void refreshMembers({ cancelRefetch: false }); };
+    const resync = () => { memberJoined(); refresh(); };
     const disconnected = (reason?: DisconnectReason) => {
       if (disposed || terminated.current || reason === DisconnectReason.CLIENT_INITIATED) return;
       if (reason === DisconnectReason.DUPLICATE_IDENTITY) exit("Tài khoản của bạn đã chuyển sang thiết bị khác.");
@@ -99,6 +121,7 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
       if (event.persisted) exit("Bạn đã rời phòng. Bạn có thể vào lại nếu phiên còn mở.");
     };
     for (const event of changes) call.on(event, sync);
+    call.on(RoomEvent.ParticipantConnected, memberJoined);
     call.on(RoomEvent.Reconnected, resync).on(RoomEvent.Disconnected, disconnected);
     window.addEventListener("pagehide", pagehide);
     window.addEventListener("pageshow", pageshow);
@@ -122,12 +145,13 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
 
     return () => {
       disposed = true;
+      if (frame !== null) window.cancelAnimationFrame(frame);
       window.removeEventListener("pagehide", pagehide);
       window.removeEventListener("pageshow", pageshow);
       call.removeAllListeners();
       stopLocal(call);
     };
-  }, [credentials, mic, camera, exit, refresh]);
+  }, [credentials, mic, camera, exit, refresh, refreshMembers]);
 
   useEffect(() => {
     const tick = () => setClientNow(Date.now());
@@ -163,20 +187,26 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
 
   const local = room?.localParticipant;
   const remotes = room ? [...room.remoteParticipants.values()] : [];
-  const participants = local ? [local, ...remotes] : [];
+  const participants = local && opened ? [local, ...remotes] : [];
+  const profiles = new Map(members.data?.map(person => [person.id, person.avatarUrl]));
+  const avatarFor = (participant: Participant) => participant === local ? user.avatarUrl : profiles.get(participant.identity);
   const speaking = new Set(room?.activeSpeakers.map(speaker => speaker.identity));
-  const screen = participants.find(participant => {
+  const screens = participants.flatMap(participant => {
     const publication = participant.getTrackPublication(Track.Source.ScreenShare);
-    return publication?.track && !publication.isMuted;
+    return publication?.track && !publication.isMuted
+      ? [{ id: participant.identity, name: participant.name || "thành viên", track: publication.track }]
+      : [];
   });
+  const screen = screens.find(presentation => presentation.id === presenterId) ?? screens[0];
   const connected = room?.state === ConnectionState.Connected;
   const label = opened ? "Đang kết nối lại…" : "Đang kết nối…";
-  const mobile = /Android|iPhone|iPad|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const canShare = !mobile && typeof navigator.mediaDevices?.getDisplayMedia === "function";
 
   async function toggle(device: "microphone" | "camera" | "screen") {
     if (!local || !connected || pending) return;
+    if (device === "screen" && !local.isScreenShareEnabled && typeof navigator.mediaDevices?.getDisplayMedia !== "function") {
+      setError("Trình duyệt này chưa hỗ trợ phát màn hình. Bạn vẫn có thể xem và phóng to phần trình chiếu.");
+      return;
+    }
     setPending(true);
     setError("");
     try {
@@ -197,27 +227,33 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
           <span className={styles.elapsed} role="timer" aria-label="Thời gian đã họp">{countdown(Math.max(0, Math.floor((serverNow - row.startedAt!) / 1000)))}</span>
         </> : <span role="status">{label}</span>}</p>
       </div>
-      <button type="button" className={styles.rosterButton} aria-label={`Người tham gia (${participants.length})`}
-        onClick={() => roster.current?.showModal()}>
-        <UsersRound size={20} aria-hidden="true" /><span>{participants.length}</span>
-      </button>
+      <div className={styles.callActions}>
+        <MeetingLinkShare ideaId={ideaId} title={title} />
+        <button type="button" className={styles.rosterButton} aria-label={`Người tham gia (${participants.length})`}
+          onClick={() => roster.current?.showModal()} disabled={!participants.length}>
+          <UsersRound size={20} aria-hidden="true" /><span>{participants.length}</span>
+        </button>
+      </div>
     </header>
     {clock.warning && <aside className={styles.warning}>
       <Clock3 size={18} aria-hidden="true" />
       <p role="status">Phòng sẽ tự đóng khi hết giờ.</p>
       <span aria-label="Thời gian còn lại" role="timer">{countdown(clock.remainingSeconds)}</span>
     </aside>}
-    <div className={styles.stageViewport}>
-      <div className={styles.stage} role="region" aria-label="Video và màn hình chia sẻ">
-        {screen && <Tile participant={screen} speaking={false} local={screen === local} screen />}
-        {participants.length ? <div className={styles.grid} data-count={participants.length} data-sharing={!!screen}>
+    <div className={styles.stageViewport} data-presenting={!!screen} tabIndex={screen ? undefined : 0}>
+      <div className={screen ? styles.presentationLayout : styles.stage} role="region" aria-label="Video và màn hình chia sẻ">
+        {screen && <MeetingPresentation key={screen.id} presenters={screens} presenterId={screen.id} selectPresenter={setPresenterId}>
+          <TrackElement track={screen.track} />
+        </MeetingPresentation>}
+        {participants.length ? <div className={screen ? styles.filmstrip : styles.grid}
+          tabIndex={screen ? 0 : undefined} aria-label={screen ? "Video người tham gia" : undefined}>
           {participants.map(participant => <Tile key={participant.identity}
-            participant={participant} local={participant === local} speaking={speaking.has(participant.identity)} />)}
+            participant={participant} local={participant === local} speaking={speaking.has(participant.identity)} avatarUrl={avatarFor(participant)} />)}
         </div> : <div className={styles.connecting}>
           <span className={styles.spinner} aria-hidden="true" />
           <p>{label}</p>
         </div>}
-        {opened && !connected && <p className={styles.reconnecting}>Video và âm thanh sẽ tiếp tục khi có kết nối.</p>}
+        {opened && !connected && !screen && <p className={styles.reconnecting}>Video và âm thanh sẽ tiếp tục khi có kết nối.</p>}
       </div>
     </div>
     {remotes.flatMap(participant => [...participant.audioTrackPublications.values()].map(publication =>
@@ -232,7 +268,7 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
           </button>
         </header>
         <ul>{participants.map(participant => <li key={participant.identity}>
-          <MeetingAvatar name={participant.name || "Thành viên"} />
+          <MeetingAvatar name={participant.name || "Thành viên"} avatarUrl={avatarFor(participant)} />
           <span>{participant.name || "Thành viên"} {participant === local && "(bạn)"}</span>
           {participant.isMicrophoneEnabled ? <Mic size={17} role="img" aria-label="Mic bật" /> : <MicOff size={17} role="img" aria-label="Mic tắt" />}
         </li>)}</ul>
@@ -243,14 +279,17 @@ export function MeetingCall({ ideaId, title, credentials, mic, camera, received,
         setError("");
         void room.startAudio().catch(() => setError("Chạm lại để bật âm thanh."));
       }}><Volume2 size={19} aria-hidden="true" /> Bật âm thanh cuộc họp</button>}
-      {error && <p className={styles.callError} role="alert">{error}</p>}
+      {error && <div className={styles.callError}>
+        <p role="alert">{error}</p>
+        <button type="button" aria-label="Đóng thông báo" onClick={() => setError("")}><X size={17} aria-hidden="true" /></button>
+      </div>}
       <div className={styles.controls} role="group" aria-label="Điều khiển cuộc họp">
         <MeetingControl icon={local?.isMicrophoneEnabled ? Mic : MicOff} label="Mic" pressed={!!local?.isMicrophoneEnabled}
           disabled={!connected || pending} onClick={() => void toggle("microphone")} />
         <MeetingControl icon={local?.isCameraEnabled ? Camera : CameraOff} label="Camera" pressed={!!local?.isCameraEnabled}
           disabled={!connected || pending} onClick={() => void toggle("camera")} />
-        {canShare && <MeetingControl icon={MonitorUp} label="Chia sẻ" pressed={!!local?.isScreenShareEnabled}
-          disabled={!connected || pending} onClick={() => void toggle("screen")} />}
+        <MeetingControl icon={MonitorUp} label="Trình chiếu" pressed={!!local?.isScreenShareEnabled}
+          disabled={!connected || pending} onClick={() => void toggle("screen")} />
         <a className={styles.leave} href={back} onClick={() => { terminated.current = true; if (room) stopLocal(room); }}>
           <PhoneOff size={20} aria-hidden="true" /> <span>Rời phòng</span>
         </a>

@@ -5,10 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Camera, CameraOff, Mic, MicOff, UsersRound, Video } from "lucide-react";
 import { ApiError, api } from "@/lib/api-client";
-import type { Idea } from "@/lib/domain";
+import type { Author, Idea } from "@/lib/domain";
 import { MEETING_CAPACITY, meetingApi, type MeetingEndReason, type MeetingJoin, type MeetingStatus } from "@/lib/meeting";
 import { useAuth } from "./providers";
 import { MeetingAvatar, MeetingControl } from "./meeting-controls";
+import { MeetingLinkShare } from "./meeting-link-share";
 import { PreviewVideo, useMeetingPreview, useMicSignal } from "./meeting-preview";
 import styles from "./meeting-room.module.css";
 
@@ -33,7 +34,7 @@ export function MeetingRoom({ id }: { id: string }) {
   });
   const title = idea.data?.title || "Phòng họp";
   return <main className={styles.page}>
-    {ready && user ? <MemberRoom key={user.id} id={id} userId={user.id} name={user.name} title={title} />
+    {ready && user ? <MemberRoom key={user.id} id={id} user={user} title={title} />
       : <div className={styles.lobby}>
         <header className={styles.lobbyHeader}><Back id={id} /></header>
         <section className={styles.accessCard}>
@@ -54,10 +55,10 @@ function Back({ id }: { id: string }) {
   </a>;
 }
 
-function MemberRoom({ id, userId, name, title }: { id: string; userId: string; name: string; title: string }) {
+function MemberRoom({ id, user, title }: { id: string; user: Author; title: string }) {
   const path = meetingApi(id);
   const queryClient = useQueryClient();
-  const queryKey = ["meeting", id, userId];
+  const queryKey = ["meeting", id, user.id];
   const status = useQuery({
     queryKey,
     queryFn: ({ signal }) => api<MeetingStatus>(path, { signal }),
@@ -118,12 +119,15 @@ function MemberRoom({ id, userId, name, title }: { id: string; userId: string; n
   }
 
   const refreshRoom = useCallback(() => { void refresh(); }, [refresh]);
-  if (connection) return <MeetingCall {...connection} ideaId={id} title={title}
+  if (connection) return <MeetingCall {...connection} ideaId={id} user={user} title={title}
     status={status.data} statusError={status.error} statusReceived={status.dataUpdatedAt}
     exit={onExit} refresh={refreshRoom} />;
 
   return <div className={styles.lobby}>
-    <header className={styles.lobbyHeader}><Back id={id} /></header>
+    <header className={styles.lobbyHeader}>
+      <Back id={id} />
+      {canPrepare && <MeetingLinkShare ideaId={id} title={title} />}
+    </header>
     <section className={canPrepare ? styles.lobbyLayout : styles.accessCard} aria-labelledby="meeting-title">
       <div className={styles.lobbyDetails}>
         {title !== "Phòng họp" && <span className={styles.eyebrow}><Video size={16} aria-hidden="true" /> Phòng họp</span>}
@@ -146,7 +150,7 @@ function MemberRoom({ id, userId, name, title }: { id: string; userId: string; n
         <div className={styles.lobbyMedia}>
           <div className={styles.preview}>
             {preview.video ? <PreviewVideo stream={preview.video} /> : <div className={styles.previewPlaceholder}>
-              <MeetingAvatar name={name} /><span>Camera đang tắt</span>
+              <MeetingAvatar name={user.name} avatarUrl={user.avatarUrl} /><span>Camera đang tắt</span>
             </div>}
             <span className={styles.selfLabel}>Bạn</span>
           </div>
