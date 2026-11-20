@@ -2,13 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function mediaMessage(error: unknown) {
+export function mediaMessage(error: unknown, device?: Device | "screen") {
+  const nameOfDevice = device === "audio" ? "mic" : device === "video" ? "camera" : "thiết bị";
   const name = error instanceof Error ? error.name : "";
+  if (device === "screen") {
+    return "Chưa chia sẻ màn hình. Bạn có thể thử lại từ nút Chia sẻ.";
+  }
   if (name === "NotAllowedError" || name === "SecurityError")
-    return "Trình duyệt chưa cho phép dùng thiết bị. Bạn có thể tiếp tục ở chế độ chỉ nghe.";
+    return `Trình duyệt chưa cấp quyền dùng ${nameOfDevice}. Hãy kiểm tra quyền của trang hoặc tiếp tục cuộc họp.`;
   if (name === "NotFoundError" || name === "DevicesNotFoundError")
-    return "Không tìm thấy thiết bị. Bạn có thể tiếp tục ở chế độ chỉ nghe.";
-  return "Không mở được thiết bị. Bạn có thể tiếp tục ở chế độ chỉ nghe.";
+    return `Không tìm thấy ${nameOfDevice}. Hãy kiểm tra kết nối thiết bị.`;
+  return `Không bật được ${nameOfDevice}. Bạn có thể thử lại.`;
 }
 
 type Device = "audio" | "video";
@@ -16,7 +20,7 @@ type Device = "audio" | "video";
 export function useMeetingPreview() {
   const streams = useRef(new Map<Device, MediaStream>());
   const generation = useRef(0);
-  const [audio, setAudio] = useState(false);
+  const [audio, setAudio] = useState<MediaStream | null>(null);
   const [video, setVideo] = useState<MediaStream | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<Device | null>(null);
@@ -33,7 +37,7 @@ export function useMeetingPreview() {
 
   const stop = useCallback(() => {
     stopTracks();
-    setAudio(false);
+    setAudio(null);
     setVideo(null);
     setPending(null);
   }, [stopTracks]);
@@ -49,7 +53,7 @@ export function useMeetingPreview() {
     if (current) {
       for (const track of current.getTracks()) track.stop();
       streams.current.delete(device);
-      if (device === "audio") setAudio(false); else setVideo(null);
+      if (device === "audio") setAudio(null); else setVideo(null);
       return;
     }
     const request = ++generation.current;
@@ -62,15 +66,49 @@ export function useMeetingPreview() {
         return;
       }
       streams.current.set(device, stream);
-      if (device === "audio") setAudio(true); else setVideo(stream);
+      if (device === "audio") setAudio(stream); else setVideo(stream);
     } catch (failure) {
-      if (request === generation.current) setError(mediaMessage(failure));
+      if (request === generation.current) setError(mediaMessage(failure, device));
     } finally {
       if (request === generation.current) setPending(null);
     }
   }
 
   return { audio, video, toggle, stop, error, pending };
+}
+
+export function useMicSignal(stream: MediaStream | null) {
+  const [signal, setSignal] = useState(false);
+  useEffect(() => {
+    setSignal(false);
+    if (!stream) return;
+    const Audio = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Audio) return;
+
+    let context: AudioContext | undefined;
+    let interval: number | undefined;
+    try {
+      context = new Audio();
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 512;
+      context.createMediaStreamSource(stream).connect(analyser);
+      const samples = new Uint8Array(analyser.fftSize);
+      void context.resume().catch(() => {});
+      interval = window.setInterval(() => {
+        analyser.getByteTimeDomainData(samples);
+        setSignal(samples.some(value => Math.abs(value - 128) > 5));
+      }, 160);
+    } catch {
+      void context?.close().catch(() => {});
+      return;
+    }
+
+    return () => {
+      window.clearInterval(interval);
+      void context?.close().catch(() => {});
+    };
+  }, [stream]);
+  return stream && signal;
 }
 
 export function PreviewVideo({ stream }: { stream: MediaStream }) {

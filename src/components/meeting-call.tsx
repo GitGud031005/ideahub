@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, CameraOff, LogOut, Mic, MicOff, MonitorUp, Video } from "lucide-react";
+import { Camera, CameraOff, Clock3, Mic, MicOff, MonitorUp, PhoneOff, UsersRound, Volume2, X } from "lucide-react";
 import { ConnectionState, DisconnectReason, Room, RoomEvent, Track, type Participant } from "livekit-client";
 import { ApiError } from "@/lib/api-client";
 import { MEETING_CAPACITY, meetingClock, type MeetingJoin, type MeetingStatus } from "@/lib/meeting";
+import { MeetingAvatar, MeetingControl } from "./meeting-controls";
 import { mediaMessage } from "./meeting-preview";
 import styles from "./meeting-room.module.css";
 
 type Props = {
   ideaId: string;
+  title: string;
   credentials: MeetingJoin;
   mic: boolean;
   camera: boolean;
@@ -33,7 +35,7 @@ function stopLocal(room: Room) {
   void room.disconnect().catch(() => {});
 }
 
-function TrackElement({ track, audio = false }: { track: Track; audio?: boolean }) {
+function TrackElement({ track, audio = false, mirror = false }: { track: Track; audio?: boolean; mirror?: boolean }) {
   const element = useRef<HTMLMediaElement | null>(null);
   useEffect(() => {
     const node = element.current;
@@ -43,28 +45,32 @@ function TrackElement({ track, audio = false }: { track: Track; audio?: boolean 
   }, [track]);
   return audio
     ? <audio ref={node => { element.current = node; }} autoPlay />
-    : <video ref={node => { element.current = node; }} autoPlay muted playsInline />;
+    : <video ref={node => { element.current = node; }} className={mirror ? styles.mirror : undefined} autoPlay muted playsInline />;
 }
 
-function Tile({ participant, speaking, local, screen = false, featured = false }: {
-  participant: Participant; speaking: boolean; local: boolean; screen?: boolean; featured?: boolean;
+function Tile({ participant, speaking, local, screen = false }: {
+  participant: Participant; speaking: boolean; local: boolean; screen?: boolean;
 }) {
   const item = participant.getTrackPublication(screen ? Track.Source.ScreenShare : Track.Source.Camera);
-  return <figure className={`${styles.tile} ${screen ? styles.screen : ""} ${featured ? styles.featured : ""} ${speaking ? styles.speaking : ""}`}>
-    {item?.track && !item.isMuted ? <TrackElement track={item.track} /> : <Video size={26} aria-hidden="true" />}
+  const name = participant.name || "Thành viên";
+  return <figure className={`${styles.tile} ${screen ? styles.screen : ""} ${speaking ? styles.speaking : ""}`}>
+    {item?.track && !item.isMuted ? <TrackElement track={item.track} mirror={local && !screen} /> : <MeetingAvatar name={name} />}
     <figcaption>
-      {screen ? `Màn hình của ${participant.name || "thành viên"}` : (participant.name || "Thành viên")}
-      {!screen && local && " (bạn)"} {!screen && speaking && " · Đang nói"}
+      <span>{screen ? `Màn hình của ${name}` : local ? "Bạn" : name}</span>
+      {!screen && !participant.isMicrophoneEnabled && <span className={styles.mutedMic} role="img" aria-label="Mic tắt"><MicOff size={14} aria-hidden="true" /></span>}
+      {!screen && speaking && <span className={styles.speakingDot} role="img" aria-label="Đang nói" />}
     </figcaption>
   </figure>;
 }
 
 function countdown(seconds: number) {
+  const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+  const remainder = String(seconds % 60).padStart(2, "0");
+  return hours ? `${hours}:${String(minutes % 60).padStart(2, "0")}:${remainder}` : `${minutes}:${remainder}`;
 }
 
-export function MeetingCall({ ideaId, credentials, mic, camera, received, status, statusReceived, statusError, exit, refresh }: Props) {
+export function MeetingCall({ ideaId, title, credentials, mic, camera, received, status, statusReceived, statusError, exit, refresh }: Props) {
   const row = credentials.status.session!;
   const [room, setRoom] = useState<Room | null>(null);
   const [, redraw] = useState(0);
@@ -73,6 +79,7 @@ export function MeetingCall({ ideaId, credentials, mic, camera, received, status
   const [clientNow, setClientNow] = useState(received);
   const [opened, setOpened] = useState(false);
   const terminated = useRef(false);
+  const roster = useRef<HTMLDialogElement>(null);
   const back = `/ideas/${encodeURIComponent(ideaId)}`;
 
   useEffect(() => {
@@ -105,10 +112,12 @@ export function MeetingCall({ ideaId, credentials, mic, camera, received, status
         camera ? call.localParticipant.setCameraEnabled(true) : Promise.resolve(),
       ]);
       if (disposed || terminated.current) { stopLocal(call); return; }
-      const failure = results.find(result => result.status === "rejected");
-      if (failure) setError(mediaMessage(failure.reason));
+      const microphone = results[0];
+      const cameraResult = results[1];
+      if (microphone.status === "rejected") setError(mediaMessage(microphone.reason, "audio"));
+      else if (cameraResult.status === "rejected") setError(mediaMessage(cameraResult.reason, "video"));
     }).catch(() => {
-      if (!disposed && !terminated.current) exit("Không thể kết nối. Nếu phòng đã đầy, hãy đợi có chỗ rồi thử lại.");
+      if (!disposed && !terminated.current) exit("Chưa kết nối được với phòng. Hãy kiểm tra mạng và thử vào lại.");
     });
 
     return () => {
@@ -139,7 +148,8 @@ export function MeetingCall({ ideaId, credentials, mic, camera, received, status
   const useLatest = !!status && statusReceived >= received;
   const source = useLatest ? status! : credentials.status;
   const sourceReceived = useLatest ? statusReceived : received;
-  const clock = meetingClock(row.warnAt!, row.expiresAt!, source.serverNow + Math.max(0, clientNow - sourceReceived));
+  const serverNow = source.serverNow + Math.max(0, clientNow - sourceReceived);
+  const clock = meetingClock(row.warnAt!, row.expiresAt!, serverNow);
   const denied = statusError instanceof ApiError && [401, 403, 404].includes(statusError.status);
   const ended = useLatest && (status?.session?.id !== row.id || status.session.phase !== "active");
   const expired = clock.expired || (ended && status?.session?.id === row.id && status.session.reason === "expired");
@@ -160,9 +170,7 @@ export function MeetingCall({ ideaId, credentials, mic, camera, received, status
     return publication?.track && !publication.isMuted;
   });
   const connected = room?.state === ConnectionState.Connected;
-  const label = connected ? `${participants.length}/${MEETING_CAPACITY} người tham gia`
-    : opened ? "Đang kết nối lại…" : "Đang kết nối…";
-  const dominant = room?.activeSpeakers[0]?.identity ?? remotes[0]?.identity ?? local?.identity;
+  const label = opened ? "Đang kết nối lại…" : "Đang kết nối…";
   const mobile = /Android|iPhone|iPad|iPod/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const canShare = !mobile && typeof navigator.mediaDevices?.getDisplayMedia === "function";
@@ -176,46 +184,77 @@ export function MeetingCall({ ideaId, credentials, mic, camera, received, status
       if (device === "camera") await local.setCameraEnabled(!local.isCameraEnabled);
       if (device === "screen") await local.setScreenShareEnabled(!local.isScreenShareEnabled);
       if (terminated.current && room) stopLocal(room);
-    } catch (failure) { setError(mediaMessage(failure)); }
+    } catch (failure) { setError(mediaMessage(failure, device === "microphone" ? "audio" : device === "camera" ? "video" : "screen")); }
     finally { setPending(false); }
   }
 
   return <section className={styles.call}>
-    <header className={styles.callHeader}><h1>Phòng họp</h1><p role="status">{label}</p></header>
+    <header className={styles.callHeader}>
+      <div className={styles.callHeading}>
+        <h1>{title}</h1>
+        <p className={styles.callMeta}>{connected ? <>
+          <span className={styles.connectedDot} aria-hidden="true" /> Đang họp
+          <span className={styles.elapsed} role="timer" aria-label="Thời gian đã họp">{countdown(Math.max(0, Math.floor((serverNow - row.startedAt!) / 1000)))}</span>
+        </> : <span role="status">{label}</span>}</p>
+      </div>
+      <button type="button" className={styles.rosterButton} aria-label={`Người tham gia (${participants.length})`}
+        onClick={() => roster.current?.showModal()}>
+        <UsersRound size={20} aria-hidden="true" /><span>{participants.length}</span>
+      </button>
+    </header>
     {clock.warning && <aside className={styles.warning}>
-      <p role="status">Phòng sẽ tự đóng khi hết giờ. Bạn có thể mở cuộc họp mới sau khi phiên này kết thúc.</p>
+      <Clock3 size={18} aria-hidden="true" />
+      <p role="status">Phòng sẽ tự đóng khi hết giờ.</p>
       <span aria-label="Thời gian còn lại" role="timer">{countdown(clock.remainingSeconds)}</span>
     </aside>}
-    <div className={styles.stage} aria-label="Video và màn hình chia sẻ">
-      {screen && <Tile participant={screen} speaking={false} local={screen === local} screen />}
-      <div className={styles.grid}>
-        {participants.map(participant => <Tile key={participant.identity}
-          participant={participant} local={participant === local} speaking={speaking.has(participant.identity)}
-          featured={!screen && participant.identity === dominant} />)}
+    <div className={styles.stageViewport}>
+      <div className={styles.stage} role="region" aria-label="Video và màn hình chia sẻ">
+        {screen && <Tile participant={screen} speaking={false} local={screen === local} screen />}
+        {participants.length ? <div className={styles.grid} data-count={participants.length} data-sharing={!!screen}>
+          {participants.map(participant => <Tile key={participant.identity}
+            participant={participant} local={participant === local} speaking={speaking.has(participant.identity)} />)}
+        </div> : <div className={styles.connecting}>
+          <span className={styles.spinner} aria-hidden="true" />
+          <p>{label}</p>
+        </div>}
+        {opened && !connected && <p className={styles.reconnecting}>Video và âm thanh sẽ tiếp tục khi có kết nối.</p>}
       </div>
     </div>
     {remotes.flatMap(participant => [...participant.audioTrackPublications.values()].map(publication =>
       publication.track ? <TrackElement key={publication.trackSid} track={publication.track} audio /> : null))}
-    <details className={styles.roster}><summary>Người tham gia ({participants.length})</summary>
-      <ul>{participants.map(participant => <li key={participant.identity}>{participant.name || "Thành viên"}
-        {participant === local && " (bạn)"} {speaking.has(participant.identity) && " · Đang nói"}</li>)}</ul>
-    </details>
-    {room && !room.canPlaybackAudio &&
-      <button className={styles.audioStart} onClick={() => { void room.startAudio().catch(() => setError("Chạm lại để bật âm thanh.")); }}>Chạm để bật âm thanh</button>}
-    {error && <p className={styles.callError} role="alert">{error}</p>}
-    <div className={styles.controls}>
-      <button aria-pressed={!!local?.isMicrophoneEnabled} disabled={!connected || pending} onClick={() => void toggle("microphone")}>
-        {local?.isMicrophoneEnabled ? <Mic size={18} aria-hidden="true" /> : <MicOff size={18} aria-hidden="true" />} Mic
-      </button>
-      <button aria-pressed={!!local?.isCameraEnabled} disabled={!connected || pending} onClick={() => void toggle("camera")}>
-        {local?.isCameraEnabled ? <Camera size={18} aria-hidden="true" /> : <CameraOff size={18} aria-hidden="true" />} Camera
-      </button>
-      {canShare && <button aria-pressed={!!local?.isScreenShareEnabled} disabled={!connected || pending} onClick={() => void toggle("screen")}>
-        <MonitorUp size={18} aria-hidden="true" /> Chia sẻ màn hình
-      </button>}
-      <a className={styles.leave} href={back} onClick={() => { terminated.current = true; if (room) stopLocal(room); }}>
-        <LogOut size={18} aria-hidden="true" /> Rời phòng
-      </a>
-    </div>
+    <dialog ref={roster} className={styles.roster} aria-labelledby="meeting-roster-title"
+      onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+      <div className={styles.rosterContent}>
+        <header>
+          <h2 id="meeting-roster-title">Người tham gia <span>{participants.length}/{MEETING_CAPACITY}</span></h2>
+          <button type="button" className={styles.iconButton} aria-label="Đóng danh sách" onClick={() => roster.current?.close()}>
+            <X size={20} aria-hidden="true" />
+          </button>
+        </header>
+        <ul>{participants.map(participant => <li key={participant.identity}>
+          <MeetingAvatar name={participant.name || "Thành viên"} />
+          <span>{participant.name || "Thành viên"} {participant === local && "(bạn)"}</span>
+          {participant.isMicrophoneEnabled ? <Mic size={17} role="img" aria-label="Mic bật" /> : <MicOff size={17} role="img" aria-label="Mic tắt" />}
+        </li>)}</ul>
+      </div>
+    </dialog>
+    <footer className={styles.callFooter}>
+      {connected && room && !room.canPlaybackAudio && <button className={styles.audioStart} onClick={() => {
+        setError("");
+        void room.startAudio().catch(() => setError("Chạm lại để bật âm thanh."));
+      }}><Volume2 size={19} aria-hidden="true" /> Bật âm thanh cuộc họp</button>}
+      {error && <p className={styles.callError} role="alert">{error}</p>}
+      <div className={styles.controls} role="group" aria-label="Điều khiển cuộc họp">
+        <MeetingControl icon={local?.isMicrophoneEnabled ? Mic : MicOff} label="Mic" pressed={!!local?.isMicrophoneEnabled}
+          disabled={!connected || pending} onClick={() => void toggle("microphone")} />
+        <MeetingControl icon={local?.isCameraEnabled ? Camera : CameraOff} label="Camera" pressed={!!local?.isCameraEnabled}
+          disabled={!connected || pending} onClick={() => void toggle("camera")} />
+        {canShare && <MeetingControl icon={MonitorUp} label="Chia sẻ" pressed={!!local?.isScreenShareEnabled}
+          disabled={!connected || pending} onClick={() => void toggle("screen")} />}
+        <a className={styles.leave} href={back} onClick={() => { terminated.current = true; if (room) stopLocal(room); }}>
+          <PhoneOff size={20} aria-hidden="true" /> <span>Rời phòng</span>
+        </a>
+      </div>
+    </footer>
   </section>;
 }
